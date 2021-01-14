@@ -1,40 +1,32 @@
 <template>
   <div class="home">
+    <div class="error" v-if="collections.error">
+      Error loading collections
+    </div>
 
-    <!-- This image is not displayed -->
-    <img id="image" src="@/assets/test.jpg" alt="">
+    <div
+      class="loader_container"
+      v-else-if="collections.loading">
+      <Loader />
+    </div>
 
-    <canvas id="canvas" @click="canvas_clicked($event)"></canvas>
+    <ul v-else-if="collections.length > 0">
+      <li
+        v-for="collection in collections"
+        :key="collection.name">
+        <router-link
+          class="collection"
 
-    <div class="">
+          :to="{ name: 'collection', params: {collection: collection.name} }">
+          {{collection.name}}
+        </router-link>
+      </li>
+    </ul>
 
-      <div class="">
-        <button type="button" @click="new_polygon()">追加</button>
-      </div>
-
-      <div class="polygons_wrapper">
-        <div
-          class="polygon"
-          :class="{selected: selected_polygon === index}"
-          v-for="(polygon, index) in polygons"
-          :key="`polygon_${index}`"
-          @click="select_polygon(index)">
-
-          <span>{{index+1}}</span>
-          <span class="spacer"/>
-
-          <template v-if="selected_polygon === index">
-            <button type="button" v-if="polygons[selected_polygon].length > 0" @click="delete_last_point(index)">undo</button>
-            <button type="button" @click.stop="delete_polygon(index)">delete</button>
-          </template>
-
-
-
-        </div>
-      </div>
-
-
-
+    <div
+      class=""
+      v-else-if="collections.length < 1">
+      No collections available
     </div>
 
 
@@ -43,150 +35,38 @@
 
 <script>
 // @ is an alias to /src
-//import HelloWorld from '@/components/HelloWorld.vue'
+import Loader from '@moreillon/vue_loader'
 
 export default {
   name: 'Home',
   components: {
-
+    Loader
   },
   data(){
     return {
-      canvas: null,
-      ctx: null,
-      polygons: [[]],
-      selected_polygon: 0,
+      collections: [],
     }
   },
   mounted(){
-
-    this.canvas = document.getElementById('canvas')
-    this.ctx = this.canvas.getContext('2d')
-
-    // Needed otherwise image is not yet available
-    setTimeout(this.drawImage, 100)
-
-
+    this.get_collections()
   },
   methods: {
-    clearCanvas(){
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    },
-    drawImage(){
-      const image = document.getElementById('image')
-
-      this.canvas.width = image.width
-      this.canvas.height = image.height
-
-      this.ctx.drawImage(image,0,0)
-    },
-    drawAllPolygons(){
-
-
-
-      this.polygons.forEach((polygon, index) => {
-
-        if(polygon.length < 1) return
-
-        this.ctx.lineWidth  = 1
-
-        if(this.selected_polygon === index){
-          this.ctx.fillStyle = '#c0000044'
-          this.ctx.strokeStyle = '#c00000'
-        }
-        else {
-          this.ctx.fillStyle = '#aaaaaa44'
-          this.ctx.strokeStyle = '#aaaaaa'
-        }
-
-        this.ctx.beginPath()
-        this.ctx.moveTo(polygon[0].x, polygon[0].y)
-
-
-
-        for (let point of polygon) {
-          this.ctx.lineTo(point.x,point.y)
-        }
-
-        this.ctx.closePath()
-        this.ctx.fill()
-        this.ctx.stroke()
-
-        this.ctx.lineWidth  = 4
-        for (let point of polygon) {
-          this.ctx.beginPath()
-          this.ctx.arc(point.x,point.y, 1, 0, 2 * Math.PI)
-          this.ctx.closePath()
-          this.ctx.stroke()
-        }
-
-        if(this.selected_polygon === index){
-          this.ctx.fillStyle = '#c00000'
-        }
-        else {
-          this.ctx.fillStyle = '#aaaaaa'
-        }
-
-        this.ctx.font = "20px Arial";
-        this.ctx.fillText(index+1, polygon[0].x+5, polygon[0].y-10)
-
-
+    get_collections() {
+      this.$set(this.collections,'loading',true)
+      this.axios.get(`${process.env.VUE_APP_STORAGE_SERVICE_API_URL}/collections`)
+      .then(response => {
+        this.collections = []
+        response.data.forEach((doc) => {
+          this.collections.push(doc)
+        });
       })
-
-
-
-    },
-    redraw_all(){
-      this.clearCanvas()
-      this.drawImage()
-      this.drawAllPolygons()
-    },
-
-    canvas_clicked(event){
-
-      const canvas_rendered_dimensions = {width: event.target.offsetWidth, height: event.target.offsetHeight}
-      const click_rendered_position = {x: event.offsetX, y: event.offsetY}
-
-      // click position must be computed better
-      const click_position = {
-        x: this.canvas.width * click_rendered_position.x/canvas_rendered_dimensions.width,
-        y: this.canvas.height * click_rendered_position.y/canvas_rendered_dimensions.height
-      }
-
-      // Create polygon if it does not exist
-      if(this.polygons.length < 1) this.new_polygon()
-
-      // creater a point if it is far enough from others
-      this.polygons[this.selected_polygon].push(click_position)
-
-
-      this.redraw_all()
-
-    },
-    new_polygon(){
-      this.polygons.push([])
-      this.select_polygon(this.polygons.length-1)
-    },
-    delete_polygon(index){
-      this.polygons.splice(index,1)
-
-      // does not work
-      if(index > 0) this.select_polygon(index-1)
-      else this.select_polygon(0)
-
-
-      //this.redraw_all()
-    },
-    select_polygon(index){
-      this.selected_polygon = index
-      this.redraw_all()
-    },
-    delete_last_point(index){
-      this.polygons[index].pop()
+      .catch(error =>{
+        this.$set(this.collections,'error',true)
+        if(error.response) console.log(error.response.data)
+        else console.log(error)
+      })
+      .finally(()=>{this.$set(this.collections,'loading',false)})
     }
-  },
-  computed: {
-
   }
 }
 </script>
@@ -194,37 +74,19 @@ export default {
 <style scoped>
 
 .home {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-gap: 10px;
-  margin: 10px;
-}
-#image {
-  display: none;
-}
-canvas {
 
 }
 
-.polygon {
+li {
   margin: 0.5em 0;
-  padding: 0.5em;
-  border: 1px solid #dddddd;
-  display: flex;
-  align-items: center;
-  height: 3em;
-  cursor: pointer;
+}
+.collection {
+  ;
+  color: #c00000;
+  text-decoration: none;
+  font-weight: bold;
+
 }
 
-.polygon > *:not(:last-child) {
-  margin-right: 0.5em;
-}
 
-.spacer {
-  flex-grow: 1;
-}
-
-.selected {
-  border-color: #c00000;
-}
 </style>
