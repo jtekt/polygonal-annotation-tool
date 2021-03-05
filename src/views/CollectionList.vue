@@ -1,5 +1,8 @@
 <template>
   <div class="home">
+
+    <h1>Collections</h1>
+
     <div class="error" v-if="collections.error">
       Error loading collections
     </div>
@@ -13,12 +16,12 @@
     <ul v-else-if="collections.length > 0">
       <li
         v-for="collection in collections"
-        :key="collection.name">
+        :key="collection">
         <router-link
           class="collection"
 
           :to="{ name: 'collection', params: {collection: collection.name} }">
-          {{collection.name}}
+          {{collection}}
         </router-link>
       </li>
     </ul>
@@ -38,7 +41,7 @@
 import Loader from '@moreillon/vue_loader'
 
 export default {
-  name: 'Home',
+  name: 'CollectionList',
   components: {
     Loader
   },

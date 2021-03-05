@@ -87,7 +87,7 @@ export default {
   methods: {
     get_list(){
       this.$set(this.collection,'loading',true)
-      this.axios.get(`${this.api_url}/collections/${this.$route.params.collection}`)
+      this.axios.get(`${this.api_url}/collections/${this.$route.params.collection}/images`)
       .then(response => {
         this.collection = []
         response.data.forEach((doc) => {
