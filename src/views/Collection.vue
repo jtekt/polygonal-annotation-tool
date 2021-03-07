@@ -3,6 +3,14 @@
 
     <h1>{{$route.params.collection}}</h1>
 
+    <p>
+      <router-link :to="{ name: 'annotate', params: {collection: $route.params.collection, document_id: 'random'} }">
+        Annotate random item
+      </router-link>
+    </p>
+
+
+
     <div
       class="error"
       v-if="collection.error">
@@ -11,7 +19,7 @@
 
     <div
       class="loader_container"
-      v-else-if="collection.loading">
+      v-else-if="loading">
       <Loader />
     </div>
 
@@ -27,13 +35,14 @@
           <th>Image</th>
           <th>Time</th>
           <th>File name</th>
+          <th>Annotated</th>
         </tr>
 
         <tr
           class="doc"
           v-for="doc in collection"
           :key="doc._id"
-          @click="$router.push({path: `/${$route.params.collection}/${doc._id}`})">
+          @click="$router.push({name: 'annotate', params: {document_id: doc._id, collection: $route.params.collection}})">
 
 
           <td>
@@ -41,6 +50,7 @@
           </td>
           <td>{{format_date(doc.time)}}</td>
           <td>{{doc.image}}</td>
+          <td>{{!!doc.annotation}}</td>
 
 
         </tr>
@@ -72,6 +82,8 @@ export default {
   },
   data(){
     return {
+      loading: false,
+      error: null,
       collection: [],
       api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL
     }
@@ -86,8 +98,14 @@ export default {
 
   methods: {
     get_list(){
-      this.$set(this.collection,'loading',true)
-      this.axios.get(`${this.api_url}/collections/${this.$route.params.collection}/images`)
+      this.loading = true
+      const url = `${this.api_url}/collections/${this.$route.params.collection}/images`
+      const options = {
+        params : {
+
+        }
+      }
+      this.axios.get(url, options)
       .then(response => {
         this.collection = []
         response.data.forEach((doc) => {
@@ -99,7 +117,7 @@ export default {
         if(error.response) console.log(error.response.data)
         else console.log(error)
       })
-      .finally(()=>{this.$set(this.collection,'loading',false)})
+      .finally(()=>{ this.loading = false })
     },
 
     format_date(date){
