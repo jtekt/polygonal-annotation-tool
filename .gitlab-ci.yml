@@ -1,0 +1,15 @@
+stages:
+  - containerization
+
+variables:
+  APPLICATION_NAME: annotation-tool-polygon
+  CONTAINER_IMAGE: ${CONTAINER_REGISTRY}/${APPLICATION_NAME}
+
+containerization:
+  stage: containerization
+  tags:
+    - "x86"
+  script:
+    - docker build -t ${CONTAINER_IMAGE} .
+    - docker push ${CONTAINER_IMAGE}
+    - docker image rm ${CONTAINER_IMAGE}

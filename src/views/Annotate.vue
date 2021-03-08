@@ -214,10 +214,9 @@ export default {
       this.axios.get(url,options)
       .then(response => {
         const item = response.data[0]
+        // Prevent reloading current route
         if(this.document_id === item._id) return
-
         this.$router.push({name: 'annotate', params: {collection: this.collection_name, document_id: item._id}})
-
       })
       .catch(error =>{
         this.error = true
@@ -336,9 +335,10 @@ export default {
       this.grabbed_point = -1
     },
     pointMouseMove(event){
+      // Used to move a point around
       if(this.grabbed_point < 0) return
-      
-      const {left, top} = this.$refs.image.getBoundingClientRect().left
+
+      const {left, top} = this.$refs.image.getBoundingClientRect()
 
       this.polygons[this.selected_polygon][this.grabbed_point].x = event.x - left
       this.polygons[this.selected_polygon][this.grabbed_point].y = event.y- top
