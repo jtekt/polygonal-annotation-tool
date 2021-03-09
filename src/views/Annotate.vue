@@ -51,12 +51,13 @@
           <div
             v-if="polygon.length > 2"
             class="polygon"
+            :class="polygonClasses(polygon_index)"
             :style="polygonStyles(polygon_index)"
             :key="`polygon_${polygon_index}`"
             @click="select_polygon(polygon_index)">
           </div>
 
-          <!-- Polygon info -->
+          <!-- Polygon info, currently delete button -->
           <div
             v-if="polygon.length > 2"
             class="polygon_content"
@@ -66,7 +67,7 @@
             <transition name="fade" mode="out-in">
               <button
                 v-if="selected_polygon === polygon_index"
-                class="polygon_delete_button"
+                class="polygon_delete delete_button"
                 type="button"
                 @click.stop="delete_polygon(polygon_index)">
                 <CloseIcon/>
@@ -78,6 +79,7 @@
           <div
             draggable="false"
             class="point"
+            :class="pointClasses(polygon_index,point_index)"
             v-for="(point, point_index) in polygon"
             :key="`polygon_${polygon_index}_point${point_index}`"
             :style="pointStyles(polygon_index,point_index)"
@@ -88,7 +90,7 @@
               <button
                 :key="`polygon_${polygon_index}_point_${point_index}_delete`"
                 v-if="selected_polygon === polygon_index && selected_point === point_index"
-                class="point_delete_buttom"
+                class="point_delete delete_button"
                 type="button"
                 @click="delete_point(polygon_index, point_index)">
                 <CloseIcon />
@@ -99,36 +101,6 @@
         </template>
 
       </div>
-
-      <!--
-      <div class="">
-        <div class="">
-          <button type="button" @click="save_item()">保存</button>
-          <button type="button" @click="get_random_unannotated_item()">次</button>
-        </div>
-
-        <div class="polygons_wrapper">
-
-          <div
-            class="polygon_info"
-            :class="{selected: selected_polygon === index}"
-            v-for="(polygon, index) in polygons"
-            :key="`polygon_${index}_info`"
-            @click="select_polygon(index)">
-
-            <span>{{index+1}}</span>
-            <span class="spacer"/>
-
-            <template v-if="selected_polygon === index">
-              <button type="button" @click.stop="delete_polygon(index)">delete</button>
-            </template>
-
-          </div>
-        </div>
-
-      </div>
-        -->
-
 
     </div>
 
@@ -251,32 +223,36 @@ export default {
       }, {x:0, y:0})
 
     },
-
-
     pointStyles(polygon_index, point_index){
       const polygon = this.polygons[polygon_index]
       const point = polygon[point_index]
-      let background_color = '#aaaaaa'
-      if(this.selected_polygon === polygon_index) background_color = '#c00000'
-      if(this.selected_polygon === polygon_index && this.selected_point === point_index) background_color = '#ffffff'
-      const size = this.selected_polygon === polygon_index ? '1em' : '0.25em'
+
+      // Selected should be a class
+
       return {
-        'width': size,
-        'height': size,
         'left': `${point.x}px`,
         'top': `${point.y}px`,
-        'background-color': background_color,
-
       }
+    },
+    pointClasses(polygon_index, point_index){
+      // polygon is selected (active)
+      return {
+        active: this.selected_polygon === polygon_index,
+        selected: this.selected_polygon === polygon_index && this.selected_point === point_index,
+      }
+
     },
     polygonStyles(index){
       const polygon = this.polygons[index]
-      const path = polygon.map(point => {return `${point.x}px ${point.y}px`}).join(',')
-      const background_color = this.selected_polygon === index ? '#c0000044' : '#aaaaaa44'
+      const path = polygon.map(point =>  `${point.x}px ${point.y}px`).join(',')
 
       return {
         'clip-path': `polygon(${path})`,
-        'background-color': background_color,
+      }
+    },
+    polygonClasses(index){
+      return {
+        active: this.selected_polygon === index,
       }
     },
 
@@ -287,6 +263,12 @@ export default {
         'color': this.selected_polygon === index ? '#c00000' : '#ffffff',
         'left': `${com.x}px`,
         'top': `${com.y}px`,
+      }
+    },
+    polygonContentClass(index){
+
+      return {
+        active: this.selected_polygon === index,
       }
     },
 
@@ -380,19 +362,31 @@ export default {
 .point {
   position: absolute;
   z-index: 6;
-
   border-radius: 50%;
 
-  background-color: #c00000;
+  background-color:  #c0c0c0;
 
   transform: translate(-50%,-50%);
-
   cursor: grab;
+
+  width: 0.5vmin;
+  height: 0.5vmin;
+
 
   transition:
     width 0.25s,
     height 0.25s,
-    background_color 0.25s;
+    background-color 0.25s;
+}
+
+.point.active {
+  background-color: #c00000;
+  width: 2vmin;
+  height: 2vmin;
+}
+
+.point.selected {
+  background-color: white;
 }
 
 
@@ -403,58 +397,43 @@ export default {
   bottom: 0;
   right: 0;
   z-index: 5;
+  background-color: #c0c0c044;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.25s;
+}
+
+.polygon.active {
   background-color: #c0000044;
+}
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
+.delete_button{
+  width: 4vmin;
+  height: 4vmin;
+  font-size: 2vmin;
   cursor: pointer;
-
-  transition: background_color 0.25s;
-}
-
-
-/* list stuff */
-.polygon_info {
-  margin: 0.5em 0;
-  padding: 0.5em;
-  border: 1px solid #dddddd;
-  display: flex;
-  align-items: center;
-  height: 3em;
-  cursor: pointer;
-}
-
-.polygon_info > *:not(:last-child) {
-  margin-right: 0.5em;
-}
-
-.spacer {
-  flex-grow: 1;
-}
-
-.selected {
-  border-color: #c00000;
-}
-
-.point_delete_buttom {
-  position: absolute;
-  top: 150%;
-  left: 50%;
-  transform: translateX(-50%);
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2em;
-  height: 2em;
-  border-radius: 50%;
+  color: white;
   background-color: #c00000;
+
+  transform: translate(-50%,-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   border: none;
   outline: none;
-  color: white;
-  cursor: pointer;
+  border-radius: 50%;
+}
+
+.point_delete {
+  position: absolute;
+  top: 250%;
+  left: 50%;
+
+  //clip-path: polygon(50% 0, 100% 25%, 100% 90%, 0 90%, 0 25%);
 }
 
 .toolbar {
@@ -483,10 +462,7 @@ export default {
   position: absolute;
   z-index: 6;
 
-
   font-size: 120%;
-
-  transform: translate(-50%,-50%);
 
   display: flex;
   align-items: center;
@@ -494,18 +470,8 @@ export default {
   flex-direction: column;
 }
 
-.polygon_delete_button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2em;
-  height: 2em;
-  border-radius: 50%;
-  background-color: #c00000;
-  border: none;
-  outline: none;
-  color: white;
-  cursor: pointer;
+.polygon_delete {
+
 }
 
 .fade-enter-active, .fade-leave-active {

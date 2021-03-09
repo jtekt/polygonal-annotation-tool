@@ -2,7 +2,7 @@
   <div id="app">
 
     <header>
-      Annotation tool
+      Annotation tool v{{version}}
     </header>
 
     <nav>
@@ -40,13 +40,20 @@
 <script>
 
 import ChevronRightIcon from 'vue-material-design-icons/ChevronRight.vue'
-import 'vue-material-design-icons/styles.css';
+import 'vue-material-design-icons/styles.css'
+import pjson from '@/../package.json'
 
 export default {
   name: 'App',
   components: {
     ChevronRightIcon
   },
+  data(){
+    return {
+      version: pjson.version,
+
+    }
+  }
 
 }
 </script>

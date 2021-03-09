@@ -2,7 +2,7 @@
   <div class="application_template">
     <header>
       <div class="application_title">
-        {{application_name}}
+        {{application_name}} v{{version}}
       </div>
       <div class="spacer"/>
       <a
@@ -71,6 +71,7 @@ import 'vue-material-design-icons/styles.css';
 import AppsIcon from 'vue-material-design-icons/Apps.vue';
 import ChevronRightIcon from 'vue-material-design-icons/ChevronRight.vue';
 import InformationOutlineIcon from 'vue-material-design-icons/InformationOutline.vue';
+import pjson from '@/../package.json';
 
 export default {
   name: 'AppTemplate',
@@ -84,6 +85,7 @@ export default {
   },
   data() {
     return {
+      version: pjson.version,
       homepage_url: process.env.VUE_APP_HOMEPAGE_URL,
     }
   }
