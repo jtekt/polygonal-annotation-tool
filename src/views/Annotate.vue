@@ -410,18 +410,17 @@ export default {
 }
 
 .delete_button{
-  width: 4vmin;
-  height: 4vmin;
+
+  padding: 0.5em;
+  line-height: 0;
+
   font-size: 2vmin;
+
   cursor: pointer;
   color: white;
   background-color: #c00000;
 
   transform: translate(-50%,-50%);
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
 
   border: none;
   outline: none;
