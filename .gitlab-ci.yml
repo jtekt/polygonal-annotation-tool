@@ -1,5 +1,6 @@
 stages:
   - containerization
+  - containerization-aarch64
 
 variables:
   APPLICATION_NAME: annotation-tool-polygon
@@ -8,8 +9,20 @@ variables:
 containerization:
   stage: containerization
   tags:
-    - "x86"
+    - x86
   script:
     - docker build -t ${CONTAINER_IMAGE} .
     - docker push ${CONTAINER_IMAGE}
     - docker image rm ${CONTAINER_IMAGE}
+
+containerization-aarch64:
+  stage: containerization-aarch64
+  tags:
+    - aarch64
+  script:
+    - >
+      docker build
+      --build-arg HTTP_PROXY=http://10.115.1.14:5000
+      --build-arg HTTPS_PROXY=http://10.115.1.14:5000
+      -t ${CONTAINER_IMAGE}-aarch64 .
+    - docker push ${CONTAINER_IMAGE}-aarch64
