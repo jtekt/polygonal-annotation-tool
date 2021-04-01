@@ -4,7 +4,7 @@
     <div class="toolbar">
       <button
         class=""
-        type="button" @click="selected_polygon = -1">
+        type="button" @click="selected_annotation = -1">
         <ShapePolygonPlusIcon />
       </button>
 
@@ -41,35 +41,31 @@
           alt=""
           @click="image_clicked($event)">
 
-
-
-        <!--<canvas id="canvas" @click="canvas_clicked($event)" />-->
-
-        <template v-for="(polygon, polygon_index) in polygons">
+        <template v-for="(annotation, annotation_index) in annotations">
 
           <!-- The polygon background -->
           <div
-            v-if="polygon.length > 2"
+            v-if="annotation.points.length > 2"
             class="polygon"
-            :class="polygonClasses(polygon_index)"
-            :style="polygonStyles(polygon_index)"
-            :key="`polygon_${polygon_index}`"
-            @click="select_polygon(polygon_index)">
+            :class="polygonClasses(annotation_index)"
+            :style="polygonStyles(annotation_index)"
+            :key="`polygon_${annotation_index}`"
+            @click="select_polygon(annotation_index)">
           </div>
 
           <!-- Polygon info, currently delete button -->
           <div
-            v-if="polygon.length > 2"
+            v-if="annotation.points.length > 2"
             class="polygon_content"
-            :key="`polygon_${polygon_index}_info`"
-            :style="polygonContentStyles(polygon_index)">
-            <!--<span>{{polygon_index}}</span>-->
+            :key="`polygon_${annotation_index}_info`"
+            :style="polygonContentStyles(annotation_index)">
+            <!--<span>{{annotation_index}}</span>-->
             <transition name="fade" mode="out-in">
               <button
-                v-if="selected_polygon === polygon_index"
+                v-if="selected_annotation === annotation_index"
                 class="polygon_delete delete_button"
                 type="button"
-                @click.stop="delete_polygon(polygon_index)">
+                @click.stop="delete_polygon(annotation_index)">
                 <CloseIcon/>
               </button>
             </transition>
@@ -79,20 +75,20 @@
           <div
             draggable="false"
             class="point"
-            :class="pointClasses(polygon_index,point_index)"
-            v-for="(point, point_index) in polygon"
-            :key="`polygon_${polygon_index}_point${point_index}`"
-            :style="pointStyles(polygon_index,point_index)"
-            @mousedown="grab_point(polygon_index,point_index)">
+            :class="pointClasses(annotation_index,point_index)"
+            v-for="(point, point_index) in annotation.points"
+            :key="`polygon_${annotation_index}_point${point_index}`"
+            :style="pointStyles(annotation_index, point_index)"
+            @mousedown="grab_point(annotation_index,point_index)">
 
             <!-- Point delete button -->
             <transition name="fade" mode="out-in">
               <button
-                :key="`polygon_${polygon_index}_point_${point_index}_delete`"
-                v-if="selected_polygon === polygon_index && selected_point === point_index"
+                :key="`polygon_${annotation_index}_point_${point_index}_delete`"
+                v-if="selected_annotation === annotation_index && selected_point === point_index"
                 class="point_delete delete_button"
                 type="button"
-                @click="delete_point(polygon_index, point_index)">
+                @click="delete_point(annotation_index, point_index)">
                 <CloseIcon />
               </button>
             </transition>
@@ -134,10 +130,9 @@ export default {
       show_saved_snackbar: false,
       loading: false,
       item: null,
-      canvas: null,
       ctx: null,
-      polygons: [],
-      selected_polygon: 0,
+      annotations: [],
+      selected_annotation: 0,
       grabbed_point: -1,
       selected_point: -1,
       api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
@@ -155,14 +150,14 @@ export default {
   methods: {
     get_item(){
       this.loading = true
-      this.polygons = []
+      this.annotations = []
       const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
       this.axios.get(url)
       .then(response => {
         this.item = response.data
         if(this.item.annotation){
           this.item.annotation.forEach((polygon) => {
-            this.polygons.push(polygon)
+            this.annotations.push(polygon)
           })
         }
 
@@ -199,7 +194,7 @@ export default {
     },
     save_item(){
       const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
-      const body = {annotation: this.polygons}
+      const body = {annotation: this.annotations}
       this.axios.patch(url,body)
       .then(() => {
         this.show_saved_snackbar = true
@@ -213,54 +208,52 @@ export default {
       })
     },
 
-    polygon_center_of_mass(polygon){
-      return polygon.reduce(({x,y}, point) => {
+    polygon_center_of_mass(points){
+      return points.reduce(({x,y}, point) => {
         return {
-          x: x + (point.x)/polygon.length,
-          y: y + (point.y)/polygon.length,
+          x: x + (point.x)/points.length,
+          y: y + (point.y)/points.length,
         }
 
       }, {x:0, y:0})
 
     },
-    pointStyles(polygon_index, point_index){
-      const polygon = this.polygons[polygon_index]
-      const point = polygon[point_index]
-
-      // Selected should be a class
-
+    pointStyles(annotation_index, point_index){
+      const point = this.annotations[annotation_index].points[point_index]
+      if(!point) return {}
       return {
         'left': `${point.x}px`,
         'top': `${point.y}px`,
       }
     },
-    pointClasses(polygon_index, point_index){
+    pointClasses(annotation_index, point_index){
       // polygon is selected (active)
       return {
-        active: this.selected_polygon === polygon_index,
-        selected: this.selected_polygon === polygon_index && this.selected_point === point_index,
+        active: this.selected_annotation === annotation_index,
+        selected: this.selected_annotation === annotation_index && this.selected_point === point_index,
       }
 
     },
     polygonStyles(index){
-      const polygon = this.polygons[index]
-      const path = polygon.map(point =>  `${point.x}px ${point.y}px`).join(',')
 
-      return {
-        'clip-path': `polygon(${path})`,
-      }
+      const path = this.annotations[index].points
+        .map(point =>  `${point.x}px ${point.y}px`)
+        .join(',')
+
+      return { 'clip-path': `polygon(${path})` }
+
     },
     polygonClasses(index){
       return {
-        active: this.selected_polygon === index,
+        active: this.selected_annotation === index,
       }
     },
 
     polygonContentStyles(index){
-      const polygon = this.polygons[index]
+      const polygon = this.annotations[index].points
       const com = this.polygon_center_of_mass(polygon)
       return {
-        'color': this.selected_polygon === index ? '#c00000' : '#ffffff',
+        'color': this.selected_annotation === index ? '#c00000' : '#ffffff',
         'left': `${com.x}px`,
         'top': `${com.y}px`,
       }
@@ -268,7 +261,7 @@ export default {
     polygonContentClass(index){
 
       return {
-        active: this.selected_polygon === index,
+        active: this.selected_annotation === index,
       }
     },
 
@@ -282,34 +275,40 @@ export default {
       }
 
       // Create polygon if it does not exist
-      if(this.polygons.length < 1) this.new_polygon()
+      if(this.annotations.length < 1) this.new_annotation()
 
-      if(!this.polygons[this.selected_polygon]) this.new_polygon()
+      const annotation = this.annotations[this.selected_annotation]
+
+      if(!annotation) this.new_annotation()
 
       // creater a point if it is far enough from others
-      this.polygons[this.selected_polygon].push(click_position)
+      annotation.points.push(click_position)
 
-      //this.selected_point = this.polygons[this.selected_polygon].length -1
+
+      //this.selected_point = this.annotations[this.selected_annotation].length -1
 
     },
-    new_polygon(){
-      this.polygons.push([])
-      this.select_polygon(this.polygons.length-1)
+    new_annotation(){
+      this.annotations.push({
+        label: 'NG',
+        points: []
+      })
+      this.select_polygon(this.annotations.length-1)
     },
     delete_polygon(index){
-      this.polygons.splice(index,1)
+      this.annotations.splice(index,1)
       if(index > 0) this.select_polygon(index-1)
       else this.select_polygon(0)
     },
     select_polygon(index){
-      this.selected_polygon = index
+      this.selected_annotation = index
       this.selected_point = -1;
     },
     delete_last_point(index){
-      this.polygons[index].pop()
+      this.annotations[index].points.pop()
     },
-    grab_point(polygon_index, point_index){
-      this.select_polygon(polygon_index)
+    grab_point(annotation_index, point_index){
+      this.select_polygon(annotation_index)
       this.grabbed_point = point_index
       this.selected_point = this.grabbed_point
     },
@@ -322,12 +321,15 @@ export default {
 
       const {left, top} = this.$refs.image.getBoundingClientRect()
 
-      this.polygons[this.selected_polygon][this.grabbed_point].x = event.x - left
-      this.polygons[this.selected_polygon][this.grabbed_point].y = event.y- top
+      const points = this.annotations[this.selected_annotation].points
+
+      points[this.grabbed_point].x = event.x - left
+      points[this.grabbed_point].y = event.y - top
     },
-    delete_point(polygon_index, point_index){
-      this.polygons[polygon_index].splice(point_index,1)
-      if(this.polygons[polygon_index].length === 0) this.delete_polygon(polygon_index)
+    delete_point(annotation_index, point_index){
+      const polygon = this.annotations[annotation_index].points
+      polygon.splice(point_index,1)
+      if(polygon.length === 0) this.delete_polygon(annotation_index)
     }
   },
   computed: {
