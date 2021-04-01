@@ -35,7 +35,7 @@
           <th>Image</th>
           <th>Time</th>
           <th>File name</th>
-          <th>Annotated</th>
+          <th>Annotation</th>
         </tr>
 
         <tr
@@ -50,7 +50,18 @@
           </td>
           <td>{{format_date(doc.time)}}</td>
           <td>{{doc.image}}</td>
-          <td>{{!!doc.annotation}}</td>
+
+
+          <td>
+            <template v-if="doc.annotation">
+
+              <span class="red label" v-if="doc.annotation.length > 0">NG</span>
+              <span class="green label" v-else>OK</span>
+            </template>
+
+            <span v-else>-</span>
+
+          </td>
 
 
         </tr>
@@ -72,12 +83,15 @@
 // @ is an alias to /src
 import Loader from '@moreillon/vue_loader'
 
-
+//import CloseIcon from 'vue-material-design-icons/Close.vue'
+//import CheckIcon from 'vue-material-design-icons/Check.vue'
 
 export default {
   name: 'List',
   components: {
     Loader,
+    //CloseIcon,
+    //CheckIcon
 
   },
   data(){
@@ -171,4 +185,15 @@ tr:not(:first-child):hover {
   margin-right: 1em;
 }
 
+.red {
+  color: #c00000;
+}
+
+.green {
+  color: #00c000;
+}
+
+.label {
+  font-weight: bold;
+}
 </style>

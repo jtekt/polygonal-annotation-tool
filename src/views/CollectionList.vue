@@ -54,12 +54,14 @@ import Loader from '@moreillon/vue_loader'
 import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import FormatListBulletedIcon from 'vue-material-design-icons/FormatListBulleted.vue'
 
+
 export default {
   name: 'Home',
   components: {
     Loader,
     MagnifyIcon,
-    FormatListBulletedIcon
+    FormatListBulletedIcon,
+
   },
   data(){
     return {
