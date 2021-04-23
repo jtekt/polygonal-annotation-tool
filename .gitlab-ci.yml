@@ -1,6 +1,7 @@
 stages:
   - containerization
   - containerization-aarch64
+  - deployment
 
 variables:
   APPLICATION_NAME: annotation-tool-polygon
@@ -26,3 +27,14 @@ containerization-aarch64:
       --build-arg HTTPS_PROXY=http://10.115.1.14:5000
       -t ${CONTAINER_IMAGE}-aarch64 .
     - docker push ${CONTAINER_IMAGE}-aarch64
+
+deployment:
+  stage: deployment
+  tags:
+    - kubectl
+  script:
+    - kubectl rollout restart deployment ${APPLICATION_NAME}
+  environment:
+    name: production
+    kubernetes:
+      namespace: ${KUBERNETES_NAMESPACE} # Obtained from GitLab
