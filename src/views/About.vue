@@ -1,6 +1,6 @@
 <template>
   <div class="about">
-    <h1>Image storage service GUI</h1>
+    <h1>Annotation tool</h1>
     <p>Author: Maxime MOREILLON</p>
     <h2>Services</h2>
     <table>
@@ -39,11 +39,6 @@ export default {
           name: 'Image storage API',
           url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
           version: null
-        },
-        {
-          name: 'Image storage API (WS)',
-          url: process.env.VUE_APP_WS_SERVER_URL,
-          version: 'N/A'
         },
       ],
     }
