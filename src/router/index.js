@@ -7,17 +7,13 @@ Vue.use(VueRouter)
 const routes = [
   {
     path: '/',
-    name: 'Home',
+    name: 'collections',
     component: CollectionList,
-  },
-  {
-    path: '/collections',
-    name: 'collection_list',
-    component: CollectionList,
+    alias: '/collections'
   },
   {
     path: '/about',
-    name: 'About',
+    name: 'about',
     component: () => import('@/views/About.vue')
   },
   {

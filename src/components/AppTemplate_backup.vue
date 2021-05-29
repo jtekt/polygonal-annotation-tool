@@ -1,9 +1,8 @@
 <template>
   <div class="application_template">
-
     <header>
       <div class="application_title">
-        {{application_name}}
+        {{application_name}} v{{version}}
       </div>
       <div class="spacer"/>
       <a
@@ -13,9 +12,9 @@
       </a>
     </header>
 
-    <!-- Navigation is breadcrumbs -->
     <nav>
-      <router-link :to="{ name: 'collections' }">
+
+      <router-link :to="{ name: 'home' }">
         Collections
       </router-link>
 
@@ -42,6 +41,9 @@
         <InformationOutlineIcon />
         <span>Info</span>
       </router-link>
+
+
+
     </nav>
 
     <main>
@@ -65,10 +67,11 @@
 </template>
 
 <script>
-import 'vue-material-design-icons/styles.css'
-import AppsIcon from 'vue-material-design-icons/Apps.vue'
-import ChevronRightIcon from 'vue-material-design-icons/ChevronRight.vue'
-import InformationOutlineIcon from 'vue-material-design-icons/InformationOutline.vue'
+import 'vue-material-design-icons/styles.css';
+import AppsIcon from 'vue-material-design-icons/Apps.vue';
+import ChevronRightIcon from 'vue-material-design-icons/ChevronRight.vue';
+import InformationOutlineIcon from 'vue-material-design-icons/InformationOutline.vue';
+import pjson from '@/../package.json';
 
 export default {
   name: 'AppTemplate',
@@ -82,6 +85,7 @@ export default {
   },
   data() {
     return {
+      version: pjson.version,
       homepage_url: process.env.VUE_APP_HOMEPAGE_URL,
     }
   }
@@ -97,6 +101,7 @@ body {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
 }
 
 .material-design-icon > * {
@@ -172,16 +177,7 @@ main {
   margin: 0 15px;
 }
 
-main a {
-  text-decoration: none;
-  color: #c00000;
-  font-weight: bold;
-  transition: 0.25s;
-}
 
-main a:hover {
-  color: #666666;
-}
 
 footer {
   margin-top: 1em;
@@ -234,13 +230,10 @@ footer > div {
   flex-grow: 1;
 }
 
-button,
-.button {
-  font-size: 0.9em;
-  color: currentcolor;
-  font-weight: normal;
+button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   border: 1px solid #444444;
   background-color: white;
   border-radius: 0.25em;
@@ -249,34 +242,13 @@ button,
   transition: 0.25s;
 }
 
-button > *:not(:last-child),
-.button > *:not(:last-child) {
+button > *:not(:last-child) {
   margin-right: 0.25em;
 }
 
-button:hover,
-.button:hover  {
+button:hover {
   color: #c00000;
   border-color: #c00000;
-}
-
-button.dangerous,
-.button.dangerous {
-  color: #c00000;
-  border-color: #c00000;
-}
-
-button.dangerous:hover,
-.button.dangerous:hover {
-  background-color: #c00000;
-  color: white;
-}
-
-button:disabled,
-.button:disabled {
-  color: #dddddd;
-  border-color: #dddddd;
-  cursor: not-allowed;
 }
 
 </style>

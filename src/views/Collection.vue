@@ -17,57 +17,70 @@
       Error loading collection
     </div>
 
-    <div
-      class="loader_container"
-      v-else-if="loading">
-      <Loader />
-    </div>
 
-    <template v-else>
 
-      <div class="buttons_wrapper">
+    <template v-if="!error">
 
+      <p>
+        Collection {{collection_name}} contains {{count}} item(s)
+      </p>
+
+      <template v-if="collection.length > 0">
+
+        <div class="table_wrapper">
+          <table>
+            <tr>
+              <th>Image</th>
+              <th>Time</th>
+              <th>File name</th>
+              <th>Annotation</th>
+            </tr>
+
+            <tr
+              class="doc"
+              v-for="doc in collection"
+              :key="doc._id"
+              @click="$router.push({name: 'annotate', params: {document_id: doc._id, collection: $route.params.collection}})">
+
+
+              <td>
+                <img :src="`${api_url}/collections/${collection_name}/images/${doc._id}/image`">
+              </td>
+              <td>{{format_date(doc.time)}}</td>
+              <td>{{doc.image}}</td>
+
+
+              <td>
+                <template v-if="doc.annotation">
+
+                  <span class="red label" v-if="doc.annotation.length > 0">NG</span>
+                  <span class="green label" v-else>OK</span>
+                </template>
+
+                <span v-else>-</span>
+
+              </td>
+
+            </tr>
+          </table>
+        </div>
+
+      </template>
+
+
+      <div
+        v-if="!all_loaded && !loading"
+        class="load_more_container">
+        <button type="button" @click="get_list()">Load more</button>
       </div>
 
+      <div
+        class="loader_container"
+        v-else-if="loading">
+        <Loader />
+      </div>
 
-      <table v-if="collection.length > 0">
-        <tr>
-          <th>Image</th>
-          <th>Time</th>
-          <th>File name</th>
-          <th>Annotation</th>
-        </tr>
-
-        <tr
-          class="doc"
-          v-for="doc in collection"
-          :key="doc._id"
-          @click="$router.push({name: 'annotate', params: {document_id: doc._id, collection: $route.params.collection}})">
-
-
-          <td>
-            <img :src="`${api_url}/images/${$route.params.collection}/${doc.image}`">
-          </td>
-          <td>{{format_date(doc.time)}}</td>
-          <td>{{doc.image}}</td>
-
-
-          <td>
-            <template v-if="doc.annotation">
-
-              <span class="red label" v-if="doc.annotation.length > 0">NG</span>
-              <span class="green label" v-else>OK</span>
-            </template>
-
-            <span v-else>-</span>
-
-          </td>
-
-
-        </tr>
-      </table>
-
-      <div class="" v-else>
+      <div class="" v-if="!loading && !error && collection.length === 0">
         Collection is empty
       </div>
     </template>
@@ -99,39 +112,60 @@ export default {
       loading: false,
       error: null,
       collection: [],
-      api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL
+      api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
+      batch_size: 50,
+      all_loaded: false,
+      count: 0,
     }
   },
   mounted(){
+    this.get_db_document_count()
+    this.clear_list()
     this.get_list()
   },
   beforeRouteUpdate (to, from, next) {
-    this.get_list(to.query.collection)
+    this.get_db_document_count()
+    this.clear_list()
+    this.get_list()
     next()
   },
 
   methods: {
-    get_list(){
-      this.loading = true
-      const url = `${this.api_url}/collections/${this.$route.params.collection}/images`
-      const options = {
-        params : {
-
-        }
-      }
-      this.axios.get(url, options)
+    clear_list(){
+      this.collection.splice(0,this.collection.length)
+      this.all_loaded = false
+    },
+    get_db_document_count(){
+      const url = `${this.api_url}/collections/${this.collection_name}`
+      this.axios.get(url)
       .then(response => {
-        this.collection = []
-        response.data.forEach((doc) => {
-          this.collection.push(doc)
-        });
+        this.count = response.data.documents
       })
       .catch(error =>{
-        this.$set(this.collection,'error',true)
         if(error.response) console.log(error.response.data)
         else console.log(error)
       })
-      .finally(()=>{ this.loading = false })
+    },
+    get_list(){
+      this.loading = true
+      const url = `${this.api_url}/collections/${this.collection_name}/images`
+
+      let params = {
+        start_index: this.collection.length,
+        batch_size: this.batch_size,
+      }
+
+      this.axios.get(url, {params})
+      .then(({data}) => {
+        data.forEach((doc) => { this.collection.push(doc) })
+        if(data.length < this.batch_size) this.all_loaded = true
+      })
+      .catch(error =>{
+        this.error = true
+        if(error.response) console.log(error.response.data)
+        else console.log(error)
+      })
+      .finally(()=>{this.loading = false})
     },
 
     format_date(date){
@@ -149,6 +183,11 @@ export default {
 
     }
   },
+  computed: {
+    collection_name(){
+      return this.$route.params.collection
+    },
+  }
 }
 </script>
 
@@ -195,5 +234,9 @@ tr:not(:first-child):hover {
 
 .label {
   font-weight: bold;
+}
+.load_more_container{
+  margin-top: 1em;
+  text-align: center;
 }
 </style>
