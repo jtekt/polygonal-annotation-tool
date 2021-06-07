@@ -2,11 +2,6 @@
   <div class="annotate">
 
     <div class="toolbar">
-      <button
-        class=""
-        type="button" @click="selected_annotation = -1">
-        <ShapePolygonPlusIcon />
-      </button>
 
       <button
         class=""
@@ -16,7 +11,15 @@
 
       <button
         class=""
-        type="button" @click="get_random_unannotated_item">
+        type="button" @click="new_annotation()">
+        <ShapePolygonPlusIcon />
+      </button>
+
+
+
+      <button
+        class=""
+        type="button" @click="get_next_unannotated_item">
         <ArrowRightIcon />
       </button>
 
@@ -82,6 +85,9 @@
             :style="pointStyles(annotation_index, point_index)"
             @mousedown="grab_point(annotation_index,point_index)">
 
+            <!-- the visible part of the button -->
+            <div class="point_visible" />
+
             <!-- Point delete button -->
             <transition name="fade" mode="out-in">
               <button
@@ -99,10 +105,32 @@
 
       </div>
 
+      <div class="image_metadata_wrapper">
+
+        <table>
+          <tr>
+            <td>Time</td>
+            <td>{{item.time}}</td>
+          </tr>
+          <tr>
+            <td>File</td>
+            <td>{{item.image}}</td>
+          </tr>
+          <!--
+          <tr>
+            <td>Index</td>
+            <td>{{image_index}}</td>
+          </tr>
+          -->
+        </table>
+
+      </div>
+
     </div>
 
     <transition name="fade">
-      <div class="snackbar save_snackbar" v-if="show_saved_snackbar">
+      <div class="snackbar save_snackbar"
+        v-if="show_saved_snackbar">
         Save successful
       </div>
     </transition>
@@ -137,6 +165,7 @@ export default {
       grabbed_point: -1,
       selected_point: -1,
       api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
+      image_index: 0,
     }
   },
   watch: {
@@ -146,15 +175,15 @@ export default {
   },
   mounted(){
 
-    if(this.document_id === 'random') this.get_random_unannotated_item()
+    if(this.document_id === 'random') this.get_next_unannotated_item()
     else this.get_item()
 
-    document.addEventListener("keydown", this.handle_save)
+    document.addEventListener("keydown", this.handle_keydown)
 
 
   },
   beforeDestroy() {
-    document.removeEventListener("keydown", this.handle_save)
+    document.removeEventListener("keydown", this.handle_keydown)
   },
   methods: {
 
@@ -179,12 +208,43 @@ export default {
       })
       .finally(() => this.loading = false)
     },
-    get_random_unannotated_item(){
+    get_next_unannotated_item(){
       this.loading = true
       const url = `${this.api_url}/collections/${this.collection_name}/images/`
       const options = {
         params: {
           filter: { annotation: { $not: {$exists: true}  } },
+          limit: 1,
+        }
+      }
+      this.axios.get(url,options)
+      .then(response => {
+        const item = response.data[0]
+        // Prevent reloading current route
+        if(this.document_id === item._id) return
+        this.$router.push({name: 'annotate', params: {collection: this.collection_name, document_id: item._id}})
+      })
+      .catch(error =>{
+        this.error = true
+        if(error.response) console.log(error.response.data)
+        else console.log(error)
+      })
+      .finally(() => this.loading = false)
+    },
+    get_next_item(){
+      this.image_index ++
+      this.get_image_by_index(this.image_index)
+    },
+    get_previous_item(){
+      this.image_index --
+      this.get_image_by_index(this.image_index)
+    },
+    get_image_by_index(index){
+      this.loading = true
+      const url = `${this.api_url}/collections/${this.collection_name}/images/`
+      const options = {
+        params: {
+          start_index: index,
           limit: 1,
         }
       }
@@ -217,10 +277,22 @@ export default {
         else console.log(error)
       })
     },
-    handle_save(e){
-      if (!(e.keyCode === 83 && e.ctrlKey)) return
+    handle_keydown(e){
       e.preventDefault()
-      this.save_item()
+      if ((e.keyCode === 83 && e.ctrlKey)) {
+        this.save_item()
+      }
+      else if ((e.keyCode === 65 && e.ctrlKey)) {
+        this.new_annotation()
+      }
+      else if ((e.keyCode === 37)) {
+        this.get_previous_item()
+      }
+      else if ((e.keyCode === 39)) {
+        this.get_next_item()
+      }
+
+
     },
 
     polygon_center_of_mass(points){
@@ -365,7 +437,10 @@ export default {
 
 .main_item_wrapper {
   display: flex;
-  justify-content: center;
+  //justify-content: center;
+  flex-direction: column;
+  align-items: center;
+
 }
 
 .image_wrapper {
@@ -385,7 +460,9 @@ export default {
   z-index: 6;
   border-radius: 50%;
 
-  background-color:  #c0c0c0;
+  //border: 1px solid red;
+
+  //background-color:  #c0c0c0;
 
   transform: translate(-50%,-50%);
   cursor: grab;
@@ -398,15 +475,27 @@ export default {
     width 0.25s,
     height 0.25s,
     background-color 0.25s;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .point.active {
-  background-color: #c00000;
+  //background-color: #c00000;
   width: 2vmin;
   height: 2vmin;
 }
 
-.point.selected {
+.point_visible {
+  background-color: #c00000;
+  border-radius: 50%;
+
+  height: 5px;
+  width: 5px;
+}
+
+.point.selected .point_visible {
   background-color: white;
 }
 
@@ -506,14 +595,39 @@ export default {
   font-size: 120%;
   padding: 0.5em;
   bottom: 10vh;
-  width: 50vw;
-  left: 50%;
-  transform: translateX(-50%);
+  width: 10em;
+  height: 2em;
+  right: 10vh;
+  //transform: translateX(-50%);
   z-index: 100;
   text-align: center;
   background-color: #00c00044;
   border: 2px solid #00c000;
   color: #00c000;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+.image_metadata_wrapper{
+  margin-top: 1em;
+}
+
+.image_metadata_wrapper table {
+  border-collapse: collapse;
+}
+
+.image_metadata_wrapper table > *+* {
+  border-top: 1px solid #dddddd;
+}
+
+.image_metadata_wrapper td {
+  padding: 0.5em;
+}
+.image_metadata_wrapper tr > *+* {
+  padding-left: 1em;
 }
 
 
