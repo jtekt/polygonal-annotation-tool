@@ -1,5 +1,7 @@
 # annotation_tool_polygon
 
+A simple tool to annotate an ML dataset
+
 ## Project setup
 ```
 npm install
