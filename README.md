@@ -2,6 +2,7 @@
 
 A simple tool to annotate an ML dataset
 
+This is the example branch
 ## Project setup
 ```
 npm install
