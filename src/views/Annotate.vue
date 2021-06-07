@@ -27,13 +27,14 @@
 
     <div class="main_item_wrapper" v-if="!loading && item">
 
-
+      <!-- Wrapper for the image so as to draw polygons in overlay -->
       <!-- Tracking mouse movoment using mousemove events -->
       <div
         class="image_wrapper"
         @mousemove='pointMouseMove'
         @mouseup="release_point()">
 
+        <!-- The actual image -->
         <img
           draggable="false"
           :src="image_src"
@@ -144,10 +145,19 @@ export default {
     }
   },
   mounted(){
+
     if(this.document_id === 'random') this.get_random_unannotated_item()
     else this.get_item()
+
+    document.addEventListener("keydown", this.handle_save)
+
+
+  },
+  beforeDestroy() {
+    document.removeEventListener("keydown", this.handle_save)
   },
   methods: {
+
     get_item(){
       this.loading = true
       this.annotations = []
@@ -206,6 +216,11 @@ export default {
         if(error.response) console.log(error.response.data)
         else console.log(error)
       })
+    },
+    handle_save(e){
+      if (!(e.keyCode === 83 && e.ctrlKey)) return
+      e.preventDefault()
+      this.save_item()
     },
 
     polygon_center_of_mass(points){
@@ -357,6 +372,10 @@ export default {
   position: relative;
 }
 
+.image_wrapper:focus {
+  outline: 3px solid red;
+}
+
 .image_wrapper * {
   user-select: none;
 }
@@ -496,4 +515,6 @@ export default {
   border: 2px solid #00c000;
   color: #00c000;
 }
+
+
 </style>
