@@ -26,8 +26,6 @@
     </div>
 
 
-
-
     <div class="main_item_wrapper" v-if="!loading && item">
 
       <!-- Wrapper for the image so as to draw polygons in overlay -->
@@ -45,6 +43,7 @@
           alt=""
           @click="image_clicked($event)">
 
+        <!-- Annotations-->
         <template v-for="(annotation, annotation_index) in annotations">
 
           <!-- The polygon background -->
@@ -86,7 +85,7 @@
             @mousedown="grab_point(annotation_index,point_index)">
 
             <!-- the visible part of the button -->
-            <div class="point_visible" />
+            <div class="point_marker" />
 
             <!-- Point delete button -->
             <transition name="fade" mode="out-in">
@@ -192,14 +191,9 @@ export default {
       this.annotations = []
       const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
       this.axios.get(url)
-      .then(response => {
-        this.item = response.data
-        if(this.item.annotation){
-          this.item.annotation.forEach((polygon) => {
-            this.annotations.push(polygon)
-          })
-        }
-
+      .then(({data}) => {
+        this.item = data
+        if(this.item.annotation) this.annotations = this.item.annotation
       })
       .catch(error =>{
         this.error = true
@@ -285,12 +279,17 @@ export default {
       else if ((e.keyCode === 65 && e.ctrlKey)) {
         this.new_annotation()
       }
+      else if ((e.keyCode === 32)) {
+        this.new_annotation()
+      }
+      /*
       else if ((e.keyCode === 37)) {
         this.get_previous_item()
       }
       else if ((e.keyCode === 39)) {
         this.get_next_item()
       }
+      */
 
 
     },
@@ -301,7 +300,6 @@ export default {
           x: x + (point.x)/points.length,
           y: y + (point.y)/points.length,
         }
-
       }, {x:0, y:0})
 
     },
@@ -314,7 +312,8 @@ export default {
       }
     },
     pointClasses(annotation_index, point_index){
-      // polygon is selected (active)
+      // Active: Annotation selected
+      // Selected: Specxific point selected
       return {
         active: this.selected_annotation === annotation_index,
         selected: this.selected_annotation === annotation_index && this.selected_point === point_index,
@@ -361,7 +360,7 @@ export default {
         y: offsetY
       }
 
-      // Create polygon if it does not exist
+      // Create annotation if there is none yet
       if(this.annotations.length < 1) this.new_annotation()
 
       const annotation = this.annotations[this.selected_annotation]
@@ -487,20 +486,36 @@ export default {
   height: 2vmin;
 }
 
-.point_visible {
-  background-color: #c00000;
+/* The visible marker of a point */
+.point_marker {
   border-radius: 50%;
-
-  height: 5px;
-  width: 5px;
+  background-color:  #c0c0c0;
+  height: 25%;
+  width: 25%;
+  transition:
+    width 0.25s,
+    height 0.25s,
+    background-color 0.25s;
 }
 
-.point.selected .point_visible {
+
+
+.point.active:hover .point_marker {
+  height: 100%;
+  width: 100%;
+}
+
+.point.active .point_marker {
+  background-color: #c00000;
+}
+
+.point.selected .point_marker {
   background-color: white;
 }
 
 
 .polygon {
+  /* Polygon takes all the surface of the wrapper and gets cut using clip */
   position: absolute;
   top: 0;
   left: 0;
