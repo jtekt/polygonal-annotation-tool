@@ -115,12 +115,6 @@
             <td>File</td>
             <td>{{item.image}}</td>
           </tr>
-          <!--
-          <tr>
-            <td>Index</td>
-            <td>{{image_index}}</td>
-          </tr>
-          -->
         </table>
 
       </div>
@@ -164,21 +158,20 @@ export default {
       grabbed_point: -1,
       selected_point: -1,
       api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
-      image_index: 0,
     }
   },
   watch: {
     document_id () {
-      this.get_item()
+      this.get_item_by_id()
     }
   },
   mounted(){
 
     if(this.document_id === 'random') this.get_next_unannotated_item()
-    else this.get_item()
+    else this.get_item_by_id()
 
+    // Listen to keyboard events for key shortcuts
     document.addEventListener("keydown", this.handle_keydown)
-
 
   },
   beforeDestroy() {
@@ -186,7 +179,7 @@ export default {
   },
   methods: {
 
-    get_item(){
+    get_item_by_id(){
       this.loading = true
       this.annotations = []
       const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
@@ -202,49 +195,25 @@ export default {
       })
       .finally(() => this.loading = false)
     },
+
     get_next_unannotated_item(){
-      this.loading = true
-      const url = `${this.api_url}/collections/${this.collection_name}/images/`
       const options = {
         params: {
           filter: { annotation: { $not: {$exists: true}  } },
           limit: 1,
         }
       }
-      this.axios.get(url,options)
-      .then(response => {
-        const item = response.data[0]
-        // Prevent reloading current route
-        if(this.document_id === item._id) return
-        this.$router.push({name: 'annotate', params: {collection: this.collection_name, document_id: item._id}})
-      })
-      .catch(error =>{
-        this.error = true
-        if(error.response) console.log(error.response.data)
-        else console.log(error)
-      })
-      .finally(() => this.loading = false)
+      this.get_items_with_options(options)
     },
-    get_next_item(){
-      this.image_index ++
-      this.get_image_by_index(this.image_index)
-    },
-    get_previous_item(){
-      this.image_index --
-      this.get_image_by_index(this.image_index)
-    },
-    get_image_by_index(index){
+
+    get_items_with_options(options){
+      if(this.loading) return
       this.loading = true
       const url = `${this.api_url}/collections/${this.collection_name}/images/`
-      const options = {
-        params: {
-          start_index: index,
-          limit: 1,
-        }
-      }
       this.axios.get(url,options)
-      .then(response => {
-        const item = response.data[0]
+      .then(({data}) => {
+        if(data.length === 0) return alert('No more items')
+        const item = data[0]
         // Prevent reloading current route
         if(this.document_id === item._id) return
         this.$router.push({name: 'annotate', params: {collection: this.collection_name, document_id: item._id}})
@@ -256,6 +225,29 @@ export default {
       })
       .finally(() => this.loading = false)
     },
+
+    get_next_item_by_date(){
+
+      const params = {
+        filter: {time: {'$lt' : this.item.time}},
+        limit: 1,
+      }
+
+      this.get_items_with_options({params})
+    },
+
+    get_previous_item_by_date(){
+
+      const params = {
+        filter: {time: {'$gt' : this.item.time}},
+        sort: {time: 1},
+        limit: 1,
+      }
+
+      this.get_items_with_options({params})
+    },
+
+
     save_item(){
       const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
       const body = {annotation: this.annotations}
@@ -282,14 +274,14 @@ export default {
       else if ((e.keyCode === 32)) {
         this.new_annotation()
       }
-      /*
       else if ((e.keyCode === 37)) {
-        this.get_previous_item()
+        this.get_previous_item_by_date()
       }
+      // Right arrow key
       else if ((e.keyCode === 39)) {
-        this.get_next_item()
+        this.get_next_item_by_date()
       }
-      */
+
 
 
     },
