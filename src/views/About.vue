@@ -31,7 +31,7 @@ export default {
       ws_url: process.env.VUE_APP_WS_SERVER_URL,
       services: [
         {
-          name: 'Image storage GUI',
+          name: 'Annotation tool',
           url: window.location.origin,
           version: pjson.version
         },
