@@ -54,25 +54,27 @@
             :style="polygonStyles(annotation_index)"
             :key="`polygon_${annotation_index}`"
             @click="select_polygon(annotation_index)">
+            <!-- Polygon info, currently delete button -->
+            <!-- Would be better in the polygon -->
+            <div
+              v-if="annotation.points.length > 2"
+              class="polygon_content"
+              :key="`polygon_${annotation_index}_info`"
+              :style="polygonContentStyles(annotation_index)">
+              <!--<span>{{annotation_index}}</span>-->
+              <transition name="fade" mode="out-in">
+                <button
+                  v-if="selected_annotation === annotation_index"
+                  class="polygon_delete delete_button"
+                  type="button"
+                  @click.stop="delete_polygon(annotation_index)">
+                  <CloseIcon/>
+                </button>
+              </transition>
+            </div>
           </div>
 
-          <!-- Polygon info, currently delete button -->
-          <div
-            v-if="annotation.points.length > 2"
-            class="polygon_content"
-            :key="`polygon_${annotation_index}_info`"
-            :style="polygonContentStyles(annotation_index)">
-            <!--<span>{{annotation_index}}</span>-->
-            <transition name="fade" mode="out-in">
-              <button
-                v-if="selected_annotation === annotation_index"
-                class="polygon_delete delete_button"
-                type="button"
-                @click.stop="delete_polygon(annotation_index)">
-                <CloseIcon/>
-              </button>
-            </transition>
-          </div>
+
 
           <!-- The plygon points -->
           <div
@@ -542,14 +544,19 @@ export default {
   border: none;
   outline: none;
   border-radius: 50%;
+
+  transition: 0.25s;
+}
+
+.delete_button:hover {
+  background-color: white;
+  color: #c00000;
 }
 
 .point_delete {
   position: absolute;
   top: 250%;
   left: 50%;
-
-  //clip-path: polygon(50% 0, 100% 25%, 100% 90%, 0 90%, 0 25%);
 }
 
 .toolbar {
@@ -587,8 +594,12 @@ export default {
 }
 
 .polygon_delete {
-
+  opacity: 0;
 }
+.polygon:hover .polygon_delete{
+  opacity: 1;
+}
+
 
 .fade-enter-active, .fade-leave-active {
   transition: opacity .25s;
