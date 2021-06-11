@@ -106,20 +106,45 @@
 
       </div>
 
-      <div class="image_metadata_wrapper">
 
-        <table>
-          <tr>
-            <td>Time</td>
-            <td>{{item.time}}</td>
-          </tr>
-          <tr>
-            <td>File</td>
-            <td>{{item.image}}</td>
-          </tr>
-        </table>
 
-      </div>
+    </div>
+
+    <div class="annotation_list">
+      <table class="annotation_table">
+        <tr>
+          <th>Index</th>
+          <th>Label</th>
+          <th>Points</th>
+          <th>Delete</th>
+        </tr>
+        <tr
+          :class="{selected: index === selected_annotation}"
+          v-for="(annotation, index) in annotations"
+          :key="index">
+          <td>{{index}}</td>
+          <td>{{annotation.label}}</td>
+          <td>{{annotation.points.length}}</td>
+          <td>
+            <button type="button" @click="delete_polygon(index)">delete</button>
+          </td>
+        </tr>
+      </table>
+
+    </div>
+
+    <div class="image_metadata_wrapper">
+
+      <table v-if="item">
+        <tr>
+          <td>Time</td>
+          <td>{{item.time}}</td>
+        </tr>
+        <tr>
+          <td>File</td>
+          <td>{{item.image}}</td>
+        </tr>
+      </table>
 
     </div>
 
@@ -357,9 +382,7 @@ export default {
       // Create annotation if there is none yet
       if(this.annotations.length < 1) this.new_annotation()
 
-      const annotation = this.annotations[this.selected_annotation]
-
-      if(!annotation) this.new_annotation()
+      const annotation = this.annotations[this.selected_annotation] || this.new_annotation()
 
       // creater a point if it is far enough from others
       annotation.points.push(click_position)
@@ -374,11 +397,16 @@ export default {
         points: []
       })
       this.select_polygon(this.annotations.length-1)
+      return this.annotations[this.selected_annotation]
     },
     delete_polygon(index){
+      if(!confirm(`Delete polygon ${index}?`)) return
       this.annotations.splice(index,1)
+      /*
       if(index > 0) this.select_polygon(index-1)
       else this.select_polygon(0)
+      */
+      this.select_polygon(-1)
     },
     select_polygon(index){
       this.selected_annotation = index
@@ -428,7 +456,27 @@ export default {
 
 <style scoped>
 
+.annotate {
+  margin-top: 1em;
+  display: grid;
+  grid-template-areas:
+    'image toolbar'
+    'image metadata'
+    'image annotation_list';
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto 1fr;
+  grid-gap: 1em;
+
+}
+
+
+
+.annotation_list {
+  grid-area: annotation_list;
+}
 .main_item_wrapper {
+  grid-area: image;
+
   display: flex;
   //justify-content: center;
   flex-direction: column;
@@ -560,6 +608,7 @@ export default {
 }
 
 .toolbar {
+  grid-area: toolbar;
   display: flex;
   justify-content: center;
 }
@@ -630,7 +679,7 @@ export default {
 
 
 .image_metadata_wrapper{
-  margin-top: 1em;
+  grid-area: metadata;
 }
 
 .image_metadata_wrapper table {
@@ -648,5 +697,25 @@ export default {
   padding-left: 1em;
 }
 
+.annotation_table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.annotation_table tr:not(:last-child) {
+  border-bottom: 1px solid #dddddd;
+}
+
+.annotation_table tr.selected {
+  background-color: #c0000044;
+}
+
+.annotation_table th {
+  text-align: left;
+}
+
+.annotation_table th, .annotation_table td {
+  padding: 0.5em;
+}
 
 </style>
