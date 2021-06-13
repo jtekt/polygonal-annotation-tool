@@ -5,6 +5,13 @@
 
       <button
         class=""
+        type="button" @click="get_previous_item_by_date()">
+        <ArrowLeftIcon />
+      </button>
+
+
+      <button
+        class=""
         type="button" @click="save_item()">
         <ContentSaveIcon />
       </button>
@@ -19,7 +26,7 @@
 
       <button
         class=""
-        type="button" @click="get_next_unannotated_item">
+        type="button" @click="get_next_item_by_date()">
         <ArrowRightIcon />
       </button>
 
@@ -32,7 +39,7 @@
       <!-- Tracking mouse movoment using mousemove events -->
       <div
         class="image_wrapper"
-        @mousemove='pointMouseMove'
+        @mousemove='pointMouseMove($event)'
         @mouseup="release_point()">
 
         <!-- The actual image -->
@@ -50,10 +57,10 @@
           <div
             v-if="annotation.points.length > 2"
             class="polygon"
-            :class="polygonClasses(annotation_index)"
+            :class="{active: selected_annotation === annotation_index}"
             :style="polygonStyles(annotation_index)"
             :key="`polygon_${annotation_index}`"
-            @click="select_polygon(annotation_index)">
+            @click="select_annotation(annotation_index)">
             <!-- Polygon info, currently delete button -->
             <!-- Would be better in the polygon -->
             <div
@@ -121,7 +128,8 @@
         <tr
           :class="{selected: index === selected_annotation}"
           v-for="(annotation, index) in annotations"
-          :key="index">
+          :key="index"
+          @click="select_annotation(index)">
           <td>{{index}}</td>
           <td>{{annotation.label}}</td>
           <td>{{annotation.points.length}}</td>
@@ -165,6 +173,7 @@ import CloseIcon from 'vue-material-design-icons/Close.vue'
 import ShapePolygonPlusIcon from 'vue-material-design-icons/ShapePolygonPlus.vue'
 import ContentSaveIcon from 'vue-material-design-icons/ContentSave.vue'
 import ArrowRightIcon from 'vue-material-design-icons/ArrowRight.vue'
+import ArrowLeftIcon from 'vue-material-design-icons/ArrowLeft.vue'
 
 export default {
   name: 'Annotate',
@@ -173,17 +182,19 @@ export default {
     ShapePolygonPlusIcon,
     ContentSaveIcon,
     ArrowRightIcon,
+    ArrowLeftIcon,
   },
   data(){
     return {
       show_saved_snackbar: false,
       loading: false,
       item: null,
-      ctx: null,
       annotations: [],
+
       selected_annotation: 0,
       grabbed_point: -1,
       selected_point: -1,
+
       api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
     }
   },
@@ -292,6 +303,7 @@ export default {
     },
     handle_keydown(e){
       e.preventDefault()
+
       if ((e.keyCode === 83 && e.ctrlKey)) {
         this.save_item()
       }
@@ -308,12 +320,9 @@ export default {
       else if ((e.keyCode === 39)) {
         this.get_next_item_by_date()
       }
-
-
-
     },
 
-    polygon_center_of_mass(points){
+    get_polygon_center_of_mass(points){
       return points.reduce(({x,y}, point) => {
         return {
           x: x + (point.x)/points.length,
@@ -332,7 +341,7 @@ export default {
     },
     pointClasses(annotation_index, point_index){
       // Active: Annotation selected
-      // Selected: Specxific point selected
+      // Selected: Speccific point selected
       return {
         active: this.selected_annotation === annotation_index,
         selected: this.selected_annotation === annotation_index && this.selected_point === point_index,
@@ -348,67 +357,72 @@ export default {
       return { 'clip-path': `polygon(${path})` }
 
     },
-    polygonClasses(index){
-      return {
-        active: this.selected_annotation === index,
-      }
-    },
 
     polygonContentStyles(index){
       const polygon = this.annotations[index].points
-      const com = this.polygon_center_of_mass(polygon)
+      const com = this.get_polygon_center_of_mass(polygon)
       return {
         'color': this.selected_annotation === index ? '#c00000' : '#ffffff',
         'left': `${com.x}px`,
         'top': `${com.y}px`,
       }
     },
-    polygonContentClass(index){
 
-      return {
-        active: this.selected_annotation === index,
-      }
-    },
 
     image_clicked(event){
 
-      const {offsetX,offsetY} = event
+      const { offsetX, offsetY } = event
 
-      const click_position = {
-        x: offsetX,
-        y: offsetY
-      }
+      const click_position = { x: offsetX, y: offsetY }
+
+
+
+
 
       // Create annotation if there is none yet
       if(this.annotations.length < 1) this.new_annotation()
 
       const annotation = this.annotations[this.selected_annotation] || this.new_annotation()
 
-      // creater a point if it is far enough from others
+
       annotation.points.push(click_position)
 
 
+
+
+      // Select the newly created point
       //this.selected_point = this.annotations[this.selected_annotation].length -1
 
+
+
+    },
+    distance(p1, p2){
+      return Math.sqrt( Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) );
+    },
+    get_closest_point_of_polygon(pos, polygon){
+      return polygon.reduce((current_min_index, point, index) => {
+
+        if(this.distance(pos,point) < this.distance(pos,polygon[current_min_index]) ) return index
+        else return current_min_index
+
+      }, 0)
     },
     new_annotation(){
       this.annotations.push({
         label: 'NG',
         points: []
       })
-      this.select_polygon(this.annotations.length-1)
+      this.select_annotation(this.annotations.length-1)
       return this.annotations[this.selected_annotation]
     },
     delete_polygon(index){
       if(!confirm(`Delete polygon ${index}?`)) return
       this.annotations.splice(index,1)
-      /*
-      if(index > 0) this.select_polygon(index-1)
-      else this.select_polygon(0)
-      */
-      this.select_polygon(-1)
+
+      // Deselect polygon
+      this.select_annotation(-1)
     },
-    select_polygon(index){
+    select_annotation(index){
       this.selected_annotation = index
       this.selected_point = -1;
     },
@@ -416,7 +430,7 @@ export default {
       this.annotations[index].points.pop()
     },
     grab_point(annotation_index, point_index){
-      this.select_polygon(annotation_index)
+      this.select_annotation(annotation_index)
       this.grabbed_point = point_index
       this.selected_point = this.grabbed_point
     },
@@ -702,8 +716,15 @@ export default {
   border-collapse: collapse;
 }
 
-.annotation_table tr:not(:last-child) {
-  border-bottom: 1px solid #dddddd;
+
+
+.annotation_table tr:not(:first-child) {
+  border-top: 1px solid #dddddd;
+  cursor: pointer;
+}
+
+.annotation_table tr:not(:first-child):hover {
+  background-color: #eeeeee;
 }
 
 .annotation_table tr.selected {
