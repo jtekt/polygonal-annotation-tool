@@ -141,6 +141,17 @@
 
     </div>
 
+    <div class="help">
+      <table class="help_table">
+
+        <tr>
+          <td>Ctrl + s</td>
+          <td>保存</td>
+        </tr>
+      </table>
+
+    </div>
+
     <div class="image_metadata_wrapper">
 
       <table v-if="item">
@@ -376,19 +387,41 @@ export default {
       const click_position = { x: offsetX, y: offsetY }
 
 
-
-
-
       // Create annotation if there is none yet
       if(this.annotations.length < 1) this.new_annotation()
 
       const annotation = this.annotations[this.selected_annotation] || this.new_annotation()
 
+      /*
+      // Plae point by angle
+      if(annotation.points.length > 2) {
+        const com = this.get_polygon_center_of_mass(annotation.points)
+        const angle_of_new_point = this.angle_from_points(com, click_position)
+        const angles = annotation.points.map(point => this.angle_from_points(com, point))
+
+        //console.log(angles)
+        const closest_angle = angles.sort((a, b) =>  a - b)
+        .reduce((result, angle) => {
+          if(angle_of_new_point > angle) result = angle
+          return result
+        },0)
+
+        const found_index = annotation.points.findIndex(point => {
+          return this.angle_from_points(com, point) === closest_angle
+        })
+
+        annotation.points.splice(found_index, 0, click_position);
+
+        console.log(found_index)
+
+      }
+      else {
+        console.log('')
+
+      }
+      */
 
       annotation.points.push(click_position)
-
-
-
 
       // Select the newly created point
       //this.selected_point = this.annotations[this.selected_annotation].length -1
@@ -399,14 +432,13 @@ export default {
     distance(p1, p2){
       return Math.sqrt( Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) );
     },
-    get_closest_point_of_polygon(pos, polygon){
-      return polygon.reduce((current_min_index, point, index) => {
-
-        if(this.distance(pos,point) < this.distance(pos,polygon[current_min_index]) ) return index
-        else return current_min_index
-
-      }, 0)
+    angle_from_points(p1, p2){
+      return Math.atan2((p1.y-p2.y),(p1.x-p2.x)) + Math.PI
     },
+    rad_to_deg(x){
+      return 180.00 * x / Math.PI
+    },
+
     new_annotation(){
       this.annotations.push({
         label: 'NG',
@@ -416,7 +448,7 @@ export default {
       return this.annotations[this.selected_annotation]
     },
     delete_polygon(index){
-      if(!confirm(`Delete polygon ${index}?`)) return
+      //if(!confirm(`Delete polygon ${index}?`)) return
       this.annotations.splice(index,1)
 
       // Deselect polygon
@@ -476,9 +508,10 @@ export default {
   grid-template-areas:
     'image toolbar'
     'image metadata'
+    'image help'
     'image annotation_list';
   grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto auto auto 1fr;
   grid-gap: 1em;
 
 }
@@ -737,6 +770,18 @@ export default {
 
 .annotation_table th, .annotation_table td {
   padding: 0.5em;
+}
+
+.help {
+  grid-area: help;
+}
+
+.help_table {
+  border-collapse: collapse;
+}
+
+.help_table td {
+  padding-right: 0.5em;
 }
 
 </style>
