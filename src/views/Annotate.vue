@@ -30,6 +30,13 @@
         <ArrowRightIcon />
       </button>
 
+      <select
+        v-if="false"
+        class="" v-model="mode">
+        <option value="polygon">Polygon</option>
+        <option value="rectangle">Rectangle</option>
+      </select>
+
     </div>
 
 
@@ -91,7 +98,8 @@
             v-for="(point, point_index) in annotation.points"
             :key="`polygon_${annotation_index}_point${point_index}`"
             :style="pointStyles(annotation_index, point_index)"
-            @mousedown="grab_point(annotation_index,point_index)">
+            @mousedown="grab_point(annotation_index,point_index)"
+            @click="point_clicked(annotation_index,point_index)">
 
             <!-- the visible part of the button -->
             <div class="point_marker" />
@@ -207,6 +215,9 @@ export default {
       selected_point: -1,
 
       api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
+
+      mode: 'polygon',
+      rectangle_started: false,
     }
   },
   watch: {
@@ -315,21 +326,24 @@ export default {
     handle_keydown(e){
       e.preventDefault()
 
-      if ((e.keyCode === 83 && e.ctrlKey)) {
+      if (e.keyCode === 83 && e.ctrlKey) {
         this.save_item()
       }
-      else if ((e.keyCode === 65 && e.ctrlKey)) {
+      else if (e.keyCode === 65 && e.ctrlKey) {
         this.new_annotation()
       }
-      else if ((e.keyCode === 32)) {
+      else if (e.keyCode === 32) {
         this.new_annotation()
       }
-      else if ((e.keyCode === 37)) {
+      else if (e.keyCode === 37) {
         this.get_previous_item_by_date()
       }
       // Right arrow key
-      else if ((e.keyCode === 39)) {
+      else if (e.keyCode === 39) {
         this.get_next_item_by_date()
+      }
+      else if (event.ctrlKey && e.key === 'z') {
+        this.undo()
       }
     },
 
@@ -421,7 +435,36 @@ export default {
       }
       */
 
-      annotation.points.push(click_position)
+      if(annotation.points.length === 0 || this.rectangle_started){
+        if(this.mode === 'polygon'){
+          console.log('mode was polygon')
+          annotation.points.push(click_position)
+        }
+        else if(this.mode === 'rectangle') {
+
+          if(!this.rectangle_started){
+            console.log('rectangle started')
+            this.rectangle_started = true
+            annotation.points.push(click_position)
+          }
+          else {
+            console.log('rectangle finished')
+            this.rectangle_started = false
+            this.mode = 'polygon'
+            annotation.points.push({x: click_position.x, y: annotation.points[0].y})
+            annotation.points.push(click_position)
+            annotation.points.push({x: annotation.points[0].x, y: click_position.y})
+          }
+
+        }
+      }
+      else {
+        console.log('Not eligible for rectangle')
+        annotation.points.push(click_position)
+      }
+
+
+
 
       // Select the newly created point
       //this.selected_point = this.annotations[this.selected_annotation].length -1
@@ -455,16 +498,33 @@ export default {
       this.select_annotation(-1)
     },
     select_annotation(index){
-      this.selected_annotation = index
-      this.selected_point = -1;
+      // only change annotation if current is not the right one
+      if(this.selected_annotation !== index) {
+        this.selected_annotation = index
+        this.selected_point = -1
+      }
+
     },
     delete_last_point(index){
       this.annotations[index].points.pop()
     },
+    undo(){
+      if(!this.annotations[this.selected_annotation]) return
+      this.annotations[this.selected_annotation].points.pop()
+    },
     grab_point(annotation_index, point_index){
       this.select_annotation(annotation_index)
       this.grabbed_point = point_index
-      this.selected_point = this.grabbed_point
+
+    },
+    point_clicked(annotation_index, point_index){
+
+      if(point_index === this.selected_point){
+        this.selected_point = -1
+      }
+      else {
+        this.selected_point = point_index
+      }
     },
     release_point(){
       this.grabbed_point = -1
