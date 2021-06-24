@@ -338,25 +338,31 @@ export default {
       })
     },
     handle_keydown(e){
-      e.preventDefault()
+
 
       if (e.keyCode === 83 && e.ctrlKey) {
+        e.preventDefault()
         this.save_item()
       }
       else if (e.keyCode === 65 && e.ctrlKey) {
+        e.preventDefault()
         this.new_annotation()
       }
       else if (e.keyCode === 32) {
+        e.preventDefault()
         this.new_annotation()
       }
       else if (e.keyCode === 37) {
+        e.preventDefault()
         this.get_previous_item_by_date()
       }
       // Right arrow key
       else if (e.keyCode === 39) {
+        e.preventDefault()
         this.get_next_item_by_date()
       }
       else if (event.ctrlKey && e.key === 'z') {
+        e.preventDefault()
         this.undo()
       }
     },
