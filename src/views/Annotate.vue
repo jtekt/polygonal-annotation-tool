@@ -30,6 +30,7 @@
         <ArrowRightIcon />
       </button>
 
+      <!-- select shape -->
       <select
         v-if="false"
         class="" v-model="mode">
@@ -126,6 +127,7 @@
     </div>
 
     <div class="annotation_list">
+      <h2>Annotations</h2>
       <table class="annotation_table">
         <tr>
           <th>Index</th>
@@ -139,7 +141,9 @@
           :key="index"
           @click="select_annotation(index)">
           <td>{{index}}</td>
-          <td>{{annotation.label}}</td>
+          <td>
+            <input type="text" v-model="annotation.label">
+          </td>
           <td>{{annotation.points.length}}</td>
           <td>
             <button type="button" @click="delete_polygon(index)">delete</button>
@@ -150,17 +154,27 @@
     </div>
 
     <div class="help">
+      <h2>Keyboard shortcuts</h2>
       <table class="help_table">
 
         <tr>
           <td>Ctrl + s</td>
           <td>保存</td>
         </tr>
+        <tr>
+          <td>Space</td>
+          <td>New annotation</td>
+        </tr>
+        <tr>
+          <td>← / →</td>
+          <td>Next / previous image</td>
+        </tr>
       </table>
 
     </div>
 
     <div class="image_metadata_wrapper">
+      <h2>Item info</h2>
 
       <table v-if="item">
         <tr>
@@ -406,6 +420,8 @@ export default {
 
       const annotation = this.annotations[this.selected_annotation] || this.new_annotation()
 
+      annotation.points.push(click_position)
+
       /*
       // Plae point by angle
       if(annotation.points.length > 2) {
@@ -435,6 +451,8 @@ export default {
       }
       */
 
+      /*
+      // Logic for rectangles
       if(annotation.points.length === 0 || this.rectangle_started){
         if(this.mode === 'polygon'){
           console.log('mode was polygon')
@@ -462,6 +480,7 @@ export default {
         console.log('Not eligible for rectangle')
         annotation.points.push(click_position)
       }
+      */
 
 
 
@@ -566,12 +585,11 @@ export default {
   margin-top: 1em;
   display: grid;
   grid-template-areas:
-    'image toolbar'
-    'image metadata'
-    'image help'
-    'image annotation_list';
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto auto 1fr;
+    'image toolbar toolbar'
+    'image metadata help'
+    'image annotation_list annotation_list';
+  grid-template-columns: auto 1fr 1fr;
+  grid-template-rows: auto auto 1fr;
   grid-gap: 1em;
 
 }
