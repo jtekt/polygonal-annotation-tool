@@ -40,23 +40,34 @@
 
     </div>
 
-
+    <!-- Not sure this wrapper is necessary -->
     <div class="main_item_wrapper" v-if="!loading && item">
 
       <!-- Wrapper for the image so as to draw polygons in overlay -->
       <!-- Tracking mouse movoment using mousemove events -->
       <div
         class="image_wrapper"
-        @mousemove='pointMouseMove($event)'
+
+        @mousemove="pointMouseMove($event)"
         @mouseup="release_point()">
 
         <!-- The actual image -->
         <img
+          @click="image_clicked($event)"
           draggable="false"
           :src="image_src"
           ref="image"
-          alt=""
-          @click="image_clicked($event)">
+          alt="">
+
+        <!--
+        <svg height="100%" width="100%">
+          <polygon
+            :class="{active: selected_annotation === annotation_index}"
+            v-for="(annotation, annotation_index) in annotations"
+            :key="`polygon_${annotation_index}`"
+            :points="`${annotation.points.reduce( (output,point) => output + ` ${point.x},${point.y}`, '' )}`"/>
+        </svg>
+        -->
 
         <!-- Annotations-->
         <template v-for="(annotation, annotation_index) in annotations">
@@ -69,8 +80,8 @@
             :style="polygonStyles(annotation_index)"
             :key="`polygon_${annotation_index}`"
             @click="select_annotation(annotation_index)">
+
             <!-- Polygon info, currently delete button -->
-            <!-- Would be better in the polygon -->
             <div
               v-if="annotation.points.length > 2"
               class="polygon_content"
@@ -121,9 +132,6 @@
         </template>
 
       </div>
-
-
-
     </div>
 
     <div class="annotation_list">
@@ -142,7 +150,13 @@
           @click="select_annotation(index)">
           <td>{{index}}</td>
           <td>
-            <input type="text" v-model="annotation.label">
+            <input list="labels" v-model="annotation.label">
+            <datalist id="labels">
+              <option
+                v-for="label in labels"
+                :key="label"
+                :value="label"/>
+            </datalist>
           </td>
           <td>{{annotation.points.length}}</td>
           <td>
@@ -420,81 +434,12 @@ export default {
 
       const click_position = { x: offsetX, y: offsetY }
 
-
       // Create annotation if there is none yet
       if(this.annotations.length < 1) this.new_annotation()
 
       const annotation = this.annotations[this.selected_annotation] || this.new_annotation()
 
       annotation.points.push(click_position)
-
-      /*
-      // Plae point by angle
-      if(annotation.points.length > 2) {
-        const com = this.get_polygon_center_of_mass(annotation.points)
-        const angle_of_new_point = this.angle_from_points(com, click_position)
-        const angles = annotation.points.map(point => this.angle_from_points(com, point))
-
-        //console.log(angles)
-        const closest_angle = angles.sort((a, b) =>  a - b)
-        .reduce((result, angle) => {
-          if(angle_of_new_point > angle) result = angle
-          return result
-        },0)
-
-        const found_index = annotation.points.findIndex(point => {
-          return this.angle_from_points(com, point) === closest_angle
-        })
-
-        annotation.points.splice(found_index, 0, click_position);
-
-        console.log(found_index)
-
-      }
-      else {
-        console.log('')
-
-      }
-      */
-
-      /*
-      // Logic for rectangles
-      if(annotation.points.length === 0 || this.rectangle_started){
-        if(this.mode === 'polygon'){
-          console.log('mode was polygon')
-          annotation.points.push(click_position)
-        }
-        else if(this.mode === 'rectangle') {
-
-          if(!this.rectangle_started){
-            console.log('rectangle started')
-            this.rectangle_started = true
-            annotation.points.push(click_position)
-          }
-          else {
-            console.log('rectangle finished')
-            this.rectangle_started = false
-            this.mode = 'polygon'
-            annotation.points.push({x: click_position.x, y: annotation.points[0].y})
-            annotation.points.push(click_position)
-            annotation.points.push({x: annotation.points[0].x, y: click_position.y})
-          }
-
-        }
-      }
-      else {
-        console.log('Not eligible for rectangle')
-        annotation.points.push(click_position)
-      }
-      */
-
-
-
-
-      // Select the newly created point
-      //this.selected_point = this.annotations[this.selected_annotation].length -1
-
-
 
     },
     distance(p1, p2){
@@ -580,6 +525,9 @@ export default {
     },
     image_src(){
       return `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}/image`
+    },
+    labels(){
+      return process.env.VUE_APP_LABELS.split(',')
     }
   }
 }
@@ -591,11 +539,12 @@ export default {
   margin-top: 1em;
   display: grid;
   grid-template-areas:
-    'image toolbar toolbar'
-    'image metadata help'
-    'image annotation_list annotation_list';
+    'image toolbar'
+    'image metadata '
+    'image annotation_list'
+    'image help';
   grid-template-columns: auto 1fr 1fr;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto auto auto 1fr;
   grid-gap: 1em;
 
 }
@@ -605,6 +554,7 @@ export default {
 .annotation_list {
   grid-area: annotation_list;
 }
+
 .main_item_wrapper {
   grid-area: image;
 
@@ -625,6 +575,22 @@ export default {
 
 .image_wrapper * {
   user-select: none;
+}
+
+.image_wrapper svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+polygon {
+  fill: #c0c0c044;
+}
+
+polygon.active {
+  fill: #c0000044;
 }
 
 .point {
