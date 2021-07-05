@@ -99,7 +99,7 @@ export default {
     }
   },
   mounted(){
-    this.get_items()
+
     this.get_item_count()
   },
   watch: {
@@ -109,6 +109,9 @@ export default {
       },
       deep: true,
     },
+    collection_name(){
+      this.get_item_count()
+    }
   },
   methods: {
     get_items(){
@@ -151,8 +154,12 @@ export default {
 
     get_item_count(){
       const url = `${this.api_url}/collections/${this.collection_name}`
+      this.items = []
       this.axios.get(url)
-      .then(({data}) => { this.item_count = data.documents })
+      .then(({data}) => {
+        this.item_count = data.documents
+        this.get_items()
+       })
       .catch(error =>{
         if(error.response) console.log(error.response.data)
         else console.log(error)

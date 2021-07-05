@@ -167,8 +167,16 @@
         <v-col>
 
           <div
+            v-if="loading"
+            class="text-center text-h5 mt-5">
+            <v-progress-circular
+
+              indeterminate/>
+          </div>
+
+          <div
             class="text-center text-h5 mt-5"
-            v-if="!item.annotation">
+            v-else-if="!item.annotation">
             No annotation
           </div>
 
@@ -180,7 +188,6 @@
 
           <v-data-table
             v-else-if="item.annotation.length > 0"
-            hide-default-header
             hide-default-footer
             :itemsPerPage="-1"
             :loading="loading"
@@ -190,7 +197,7 @@
             <template v-slot:item="row">
               <tr
                 :style="{'background-color': selected_annotation === row.index ? '#c0000044' : '', cursor: 'pointer' }"
-                @click="select_annotation(row.index)">
+                @click="selected_annotation = row.index">
                 <td>{{row.index}}</td>
                 <td>
                   <v-combobox
@@ -202,7 +209,7 @@
                   <v-icon
                     small
                     class="mr-2"
-                    @click="delete_polygon(row.index)">
+                    @click="delete_single_annotation(row.index)">
                     mdi-delete
                   </v-icon>
                 </td>
@@ -210,6 +217,30 @@
             </template>
 
           </v-data-table>
+
+          <v-list class="mt-5">
+            <v-list-item two-line>
+              <v-list-item-content>
+                <v-list-item-subtitle>File name</v-list-item-subtitle>
+                <v-list-item-title>{{ item.image }}</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+            <v-list-item two-line>
+              <v-list-item-content>
+                <v-list-item-subtitle>Timestamp</v-list-item-subtitle>
+                <v-list-item-title>{{ item.time }}</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+            <v-list-item
+              v-if="item.annotation && item.annotator_id"
+              two-line>
+              <v-list-item-content>
+                <v-list-item-subtitle>Annotator ID</v-list-item-subtitle>
+                <v-list-item-title>{{ item.annotator_id }}</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+          </v-list>
+
 
         </v-col>
       </v-row>
@@ -255,14 +286,14 @@ export default {
 
       // probably don"t need both item and annotation since annotation is in item
       item: {
-        annotation: null
+        annotation: null,
       },
 
 
       headers: [
-        {text: '', value: 'index'},
+        {text: 'ID', value: 'index'},
         {text: 'Label', value: 'label'},
-        {text: '', value: 'actions'},
+        {text: 'Delete', value: 'actions'},
       ],
 
       selected_annotation: -1,
@@ -328,16 +359,6 @@ export default {
       .finally(() => this.loading = false)
     },
 
-    get_next_unannotated_item(){
-      const options = {
-        params: {
-          filter: { annotation: { $not: {$exists: true}  } },
-          limit: 1,
-        }
-      }
-      this.get_items_with_options(options)
-    },
-
     get_items_with_options(options){
       if(this.loading) return
       this.loading = true
@@ -363,6 +384,15 @@ export default {
       .finally(() => this.loading = false)
     },
 
+    get_next_unannotated_item(){
+      const options = {
+        params: {
+          filter: { annotation: { $not: {$exists: true}  } },
+          limit: 1,
+        }
+      }
+      this.get_items_with_options(options)
+    },
     get_next_item_by_date(){
 
       const params = {
@@ -372,7 +402,6 @@ export default {
 
       this.get_items_with_options({params})
     },
-
     get_previous_item_by_date(){
 
       const params = {
@@ -385,11 +414,10 @@ export default {
     },
 
     create_annotation_array(){
-      if(!this.item.annotation) {
-        this.$set(this.item, 'annotation', [])
-      }
+      // If the item has not been annotated yet. the annotation property must be created as an array
+      // Note the usage of $set for reactivity
+      if(!this.item.annotation) this.$set(this.item, 'annotation', [])
     },
-
 
     save_item(){
       this.snackbar.show = true
@@ -400,7 +428,6 @@ export default {
         annotation: this.item.annotation,
         annotator_id: this.$store.state.current_user.identity || this.$store.state.current_user._id
       }
-
 
       this.axios.patch(url,body)
       .then(() => {
@@ -415,6 +442,7 @@ export default {
     },
 
     handle_keydown(e){
+      // Keyboard events
 
       // CTRL S
       if (e.keyCode === 83 && e.ctrlKey) {
@@ -432,22 +460,11 @@ export default {
         this.get_next_item_by_date()
       }
     },
-
-
-    delete_polygon(index){
-      // Deselect polygon
-      this.select_annotation(-1)
-
-      //if(!confirm(`Delete polygon ${index}?`)) return
+    delete_single_annotation(index){
+      if(!confirm(`Delete polygon ${index}?`)) return
       this.itme.annotation.splice(index,1)
-
-
+      this.selected_annotation = -1
     },
-    select_annotation(index){
-      this.selected_annotation = index
-    },
-
-
   },
   computed: {
     collection_name(){
@@ -481,6 +498,9 @@ export default {
   position: relative;
 }
 
+tr {
+  transition: background-color 0.25s;
+}
 
 tr.selected {
   background-color: #c0000044;
