@@ -18,6 +18,9 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 80
+        env:
+        - name: VUE_APP_LABELS
+          value: NG,makure,kizu,ketuniku,arabiki,usui,hagare,tare,yuzu,butu,test
         # Get environment variables from secret
         envFrom:
         - secretRef:
