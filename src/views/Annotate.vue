@@ -17,12 +17,11 @@
       </button>
 
       <button
+        v-if="false"
         class=""
         type="button" @click="new_annotation()">
         <ShapePolygonPlusIcon />
       </button>
-
-
 
       <button
         class=""
@@ -30,106 +29,29 @@
         <ArrowRightIcon />
       </button>
 
-      <!-- select shape -->
-      <select
-        v-if="false"
-        class="" v-model="mode">
-        <option value="polygon">Polygon</option>
-        <option value="rectangle">Rectangle</option>
-      </select>
-
     </div>
 
-    <!-- Not sure this wrapper is necessary -->
-    <div class="main_item_wrapper" v-if="!loading && item">
+    <!-- This wrapper can be resized -->
+    <div class="image_wrapper_outer" >
 
-      <!-- Wrapper for the image so as to draw polygons in overlay -->
-      <!-- Tracking mouse movoment using mousemove events -->
+      <!-- This wrapper gets the same size as the img -->
       <div
-        class="image_wrapper"
-
-        @mousemove="pointMouseMove($event)"
-        @mouseup="release_point()">
+        v-if="!loading && item"
+        class="image_wrapper">
 
         <!-- The actual image -->
         <img
-          @click="image_clicked($event)"
           draggable="false"
           :src="image_src"
           ref="image"
           alt="">
 
-        <!--
-        <svg height="100%" width="100%">
-          <polygon
-            :class="{active: selected_annotation === annotation_index}"
-            v-for="(annotation, annotation_index) in annotations"
-            :key="`polygon_${annotation_index}`"
-            :points="`${annotation.points.reduce( (output,point) => output + ` ${point.x},${point.y}`, '' )}`"/>
-        </svg>
-        -->
-
-        <!-- Annotations-->
-        <template v-for="(annotation, annotation_index) in annotations">
-
-          <!-- The polygon background -->
-          <div
-            v-if="annotation.points.length > 2"
-            class="polygon"
-            :class="{active: selected_annotation === annotation_index}"
-            :style="polygonStyles(annotation_index)"
-            :key="`polygon_${annotation_index}`"
-            @click="select_annotation(annotation_index)">
-
-            <!-- Polygon info, currently delete button -->
-            <div
-              v-if="annotation.points.length > 2"
-              class="polygon_content"
-              :key="`polygon_${annotation_index}_info`"
-              :style="polygonContentStyles(annotation_index)">
-              <!--<span>{{annotation_index}}</span>-->
-              <transition name="fade" mode="out-in">
-                <button
-                  v-if="selected_annotation === annotation_index"
-                  class="polygon_delete delete_button"
-                  type="button"
-                  @click.stop="delete_polygon(annotation_index)">
-                  <CloseIcon/>
-                </button>
-              </transition>
-            </div>
-          </div>
-
-
-
-          <!-- The plygon points -->
-          <div
-            draggable="false"
-            class="point"
-            :class="pointClasses(annotation_index,point_index)"
-            v-for="(point, point_index) in annotation.points"
-            :key="`polygon_${annotation_index}_point${point_index}`"
-            :style="pointStyles(annotation_index, point_index)"
-            @mousedown="grab_point(annotation_index,point_index)"
-            @click="point_clicked(annotation_index,point_index)">
-
-            <!-- the visible part of the button -->
-            <div class="point_marker" />
-
-            <!-- Point delete button -->
-            <transition name="fade" mode="out-in">
-              <button
-                :key="`polygon_${annotation_index}_point_${point_index}_delete`"
-                v-if="selected_annotation === annotation_index && selected_point === point_index"
-                class="point_delete delete_button"
-                type="button"
-                @click="delete_point(annotation_index, point_index)">
-                <CloseIcon />
-              </button>
-            </transition>
-          </div>
-
-        </template>
+        <!-- The polygon editing tool -->
+        <PolygonEditor
+          :mode="mode"
+          :polygons="annotations"
+          :selected_polygon_index.sync="selected_annotation"
+          @polygon_created="$event.label=labels[0]"/>
 
       </div>
     </div>
@@ -140,7 +62,6 @@
         <tr>
           <th>Index</th>
           <th>Label</th>
-          <th>Points</th>
           <th>Delete</th>
         </tr>
         <tr
@@ -214,9 +135,11 @@
 </template>
 
 <script>
-// @ is an alias to /src
-//import HelloWorld from '@/components/HelloWorld.vue'
-import CloseIcon from 'vue-material-design-icons/Close.vue'
+
+import PolygonEditor from '@/components/PolygonEditor.vue'
+
+// Icons
+// import CloseIcon from 'vue-material-design-icons/Close.vue'
 import ShapePolygonPlusIcon from 'vue-material-design-icons/ShapePolygonPlus.vue'
 import ContentSaveIcon from 'vue-material-design-icons/ContentSave.vue'
 import ArrowRightIcon from 'vue-material-design-icons/ArrowRight.vue'
@@ -225,7 +148,10 @@ import ArrowLeftIcon from 'vue-material-design-icons/ArrowLeft.vue'
 export default {
   name: 'Annotate',
   components: {
-    CloseIcon,
+    PolygonEditor,
+
+    // Icons
+    // CloseIcon,
     ShapePolygonPlusIcon,
     ContentSaveIcon,
     ArrowRightIcon,
@@ -238,14 +164,11 @@ export default {
       item: null,
       annotations: [],
 
-      selected_annotation: 0,
-      grabbed_point: -1,
-      selected_point: -1,
+      selected_annotation: -1,
 
       api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
 
       mode: 'polygon',
-      rectangle_started: false,
     }
   },
   watch: {
@@ -351,115 +274,27 @@ export default {
         else console.log(error)
       })
     },
+
     handle_keydown(e){
 
-
+      // CTRL S
       if (e.keyCode === 83 && e.ctrlKey) {
         e.preventDefault()
         this.save_item()
       }
-      else if (e.keyCode === 65 && e.ctrlKey) {
-        e.preventDefault()
-        this.new_annotation()
-      }
-      else if (e.keyCode === 32) {
-        e.preventDefault()
-        this.new_annotation()
-      }
+      // Left arrow key: previous item
       else if (e.keyCode === 37) {
         e.preventDefault()
         this.get_previous_item_by_date()
       }
-      // Right arrow key
+      // Right arrow key: next item
       else if (e.keyCode === 39) {
         e.preventDefault()
         this.get_next_item_by_date()
       }
-      else if (event.ctrlKey && e.key === 'z') {
-        e.preventDefault()
-        this.undo()
-      }
-    },
-
-    get_polygon_center_of_mass(points){
-      return points.reduce(({x,y}, point) => {
-        return {
-          x: x + (point.x)/points.length,
-          y: y + (point.y)/points.length,
-        }
-      }, {x:0, y:0})
-
-    },
-    pointStyles(annotation_index, point_index){
-      const point = this.annotations[annotation_index].points[point_index]
-      if(!point) return {}
-      return {
-        'left': `${point.x}px`,
-        'top': `${point.y}px`,
-      }
-    },
-    pointClasses(annotation_index, point_index){
-      // Active: Annotation selected
-      // Selected: Speccific point selected
-      return {
-        active: this.selected_annotation === annotation_index,
-        selected: this.selected_annotation === annotation_index && this.selected_point === point_index,
-      }
-
-    },
-    polygonStyles(index){
-
-      const path = this.annotations[index].points
-        .map(point =>  `${point.x}px ${point.y}px`)
-        .join(',')
-
-      return { 'clip-path': `polygon(${path})` }
-
-    },
-
-    polygonContentStyles(index){
-      const polygon = this.annotations[index].points
-      const com = this.get_polygon_center_of_mass(polygon)
-      return {
-        'color': this.selected_annotation === index ? '#c00000' : '#ffffff',
-        'left': `${com.x}px`,
-        'top': `${com.y}px`,
-      }
     },
 
 
-    image_clicked(event){
-
-      const { offsetX, offsetY } = event
-
-      const click_position = { x: offsetX, y: offsetY }
-
-      // Create annotation if there is none yet
-      if(this.annotations.length < 1) this.new_annotation()
-
-      const annotation = this.annotations[this.selected_annotation] || this.new_annotation()
-
-      annotation.points.push(click_position)
-
-    },
-    distance(p1, p2){
-      return Math.sqrt( Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) );
-    },
-    angle_from_points(p1, p2){
-      return Math.atan2((p1.y-p2.y),(p1.x-p2.x)) + Math.PI
-    },
-    rad_to_deg(x){
-      return 180.00 * x / Math.PI
-    },
-
-    new_annotation(){
-      this.annotations.push({
-        label: 'NG',
-        points: []
-      })
-      this.select_annotation(this.annotations.length-1)
-      return this.annotations[this.selected_annotation]
-    },
     delete_polygon(index){
       //if(!confirm(`Delete polygon ${index}?`)) return
       this.annotations.splice(index,1)
@@ -473,48 +308,8 @@ export default {
         this.selected_annotation = index
         this.selected_point = -1
       }
+    },
 
-    },
-    delete_last_point(index){
-      this.annotations[index].points.pop()
-    },
-    undo(){
-      if(!this.annotations[this.selected_annotation]) return
-      this.annotations[this.selected_annotation].points.pop()
-    },
-    grab_point(annotation_index, point_index){
-      this.select_annotation(annotation_index)
-      this.grabbed_point = point_index
-
-    },
-    point_clicked(annotation_index, point_index){
-
-      if(point_index === this.selected_point){
-        this.selected_point = -1
-      }
-      else {
-        this.selected_point = point_index
-      }
-    },
-    release_point(){
-      this.grabbed_point = -1
-    },
-    pointMouseMove(event){
-      // Used to move a point around
-      if(this.grabbed_point < 0) return
-
-      const {left, top} = this.$refs.image.getBoundingClientRect()
-
-      const points = this.annotations[this.selected_annotation].points
-
-      points[this.grabbed_point].x = event.x - left
-      points[this.grabbed_point].y = event.y - top
-    },
-    delete_point(annotation_index, point_index){
-      const polygon = this.annotations[annotation_index].points
-      polygon.splice(point_index,1)
-      if(polygon.length === 0) this.delete_polygon(annotation_index)
-    }
   },
   computed: {
     collection_name(){
@@ -555,7 +350,7 @@ export default {
   grid-area: annotation_list;
 }
 
-.main_item_wrapper {
+.image_wrapper_outer {
   grid-area: image;
 
   display: flex;
@@ -569,140 +364,6 @@ export default {
   position: relative;
 }
 
-.image_wrapper:focus {
-  outline: 3px solid red;
-}
-
-.image_wrapper * {
-  user-select: none;
-}
-
-.image_wrapper svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-polygon {
-  fill: #c0c0c044;
-}
-
-polygon.active {
-  fill: #c0000044;
-}
-
-.point {
-  position: absolute;
-  z-index: 6;
-  border-radius: 50%;
-
-  //border: 1px solid red;
-
-  //background-color:  #c0c0c0;
-
-  transform: translate(-50%,-50%);
-  cursor: grab;
-
-  width: 0.5vmin;
-  height: 0.5vmin;
-
-
-  transition:
-    width 0.25s,
-    height 0.25s,
-    background-color 0.25s;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.point.active {
-  //background-color: #c00000;
-  width: 2vmin;
-  height: 2vmin;
-}
-
-/* The visible marker of a point */
-.point_marker {
-  border-radius: 50%;
-  background-color:  #c0c0c0;
-  height: 25%;
-  width: 25%;
-  transition:
-    width 0.25s,
-    height 0.25s,
-    background-color 0.25s;
-}
-
-
-
-.point.active:hover .point_marker {
-  height: 100%;
-  width: 100%;
-}
-
-.point.active .point_marker {
-  background-color: #c00000;
-}
-
-.point.selected .point_marker {
-  background-color: white;
-}
-
-
-.polygon {
-  /* Polygon takes all the surface of the wrapper and gets cut using clip */
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  z-index: 5;
-  background-color: #c0c0c044;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.25s;
-}
-
-.polygon.active {
-  background-color: #c0000044;
-}
-
-.delete_button{
-
-  padding: 0.5em;
-  line-height: 0;
-
-  font-size: 2vmin;
-
-  cursor: pointer;
-  color: white;
-  background-color: #c00000;
-
-  transform: translate(-50%,-50%);
-
-  border: none;
-  outline: none;
-  border-radius: 50%;
-
-  transition: 0.25s;
-}
-
-.delete_button:hover {
-  background-color: white;
-  color: #c00000;
-}
-
-.point_delete {
-  position: absolute;
-  top: 250%;
-  left: 50%;
-}
 
 .toolbar {
   grid-area: toolbar;
@@ -727,26 +388,7 @@ polygon.active {
 }
 
 
-.polygon_content {
-  position: absolute;
-  z-index: 6;
-
-  font-size: 120%;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-}
-
-.polygon_delete {
-  opacity: 0;
-}
-.polygon:hover .polygon_delete{
-  opacity: 1;
-}
-
-
+/* Fade used for snackbar */
 .fade-enter-active, .fade-leave-active {
   transition: opacity .25s;
 }
