@@ -1,20 +1,28 @@
 <template>
-  <AppTemplate application_name="Annotation tool" />
+  <v-app>
+    <v-app-bar
+      app
+      color="primary"
+      dark
+    >
+
+    </v-app-bar>
+
+    <v-main>
+      <v-container fluid>
+        <router-view/>
+      </v-container>
+    </v-main>
+  </v-app>
 </template>
 
 <script>
-import AppTemplate from '@/components/AppTemplate.vue'
 
 export default {
   name: 'App',
-  components: {
-    AppTemplate
-  },
-  data() {
-    return {
 
-    }
-  }
-
-}
+  data: () => ({
+    //
+  }),
+};
 </script>

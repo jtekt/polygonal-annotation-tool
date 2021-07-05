@@ -1,174 +1,232 @@
 <template>
-  <div class="annotate">
 
-    <div class="toolbar">
+  <v-card>
+    <v-toolbar flat>
 
-      <button
-        class=""
-        type="button" @click="get_previous_item_by_date()">
-        <ArrowLeftIcon />
-      </button>
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            icon
+            v-bind="attrs"
+            v-on="on"
+            exact
+            :to="{name: 'collection', params: {collection_name: $route.params.collection_name}}">
+            <v-icon>mdi-format-list-bulleted</v-icon>
+          </v-btn>
+        </template>
+        <span>Return to collection</span>
+      </v-tooltip>
+
+      <v-divider vertical/>
+
+      <v-btn-toggle
+        v-model="mode_index"
+        borderless
+        group>
+        <v-btn
+          text>
+          <v-icon>mdi-vector-polygon</v-icon>
+        </v-btn>
+
+        <v-btn
+          text>
+          <v-icon>mdi-vector-rectangle</v-icon>
+        </v-btn>
+      </v-btn-toggle>
+
+      <v-divider vertical/>
+
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            icon
+            v-bind="attrs"
+            v-on="on"
+            @click="save_item()">
+            <v-icon>mdi-content-save</v-icon>
+          </v-btn>
+        </template>
+        <div class="text-center">
+          <div class="">
+            Save
+          </div>
+          <div class="">
+            (Ctrl + S)
+          </div>
+        </div>
+      </v-tooltip>
 
 
-      <button
-        class=""
-        type="button" @click="save_item()">
-        <ContentSaveIcon />
-      </button>
+      <v-spacer></v-spacer>
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            icon
+            v-bind="attrs"
+            v-on="on"
+            @click="get_previous_item_by_date()">
+            <v-icon>mdi-arrow-left</v-icon>
+          </v-btn>
+        </template>
+        <div class="text-center">
+          <div class="">
+            Previous item
+          </div>
+          <div class="">
+            (←)
+          </div>
+        </div>
+      </v-tooltip>
 
-      <button
-        v-if="false"
-        class=""
-        type="button" @click="new_annotation()">
-        <ShapePolygonPlusIcon />
-      </button>
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            icon
+            v-bind="attrs"
+            v-on="on"
+            @click="get_next_item_by_date()">
+            <v-icon>mdi-arrow-right</v-icon>
+          </v-btn>
+        </template>
+        <div class="text-center">
+          <div class="">
+            Next item
+          </div>
+          <div class="">
+            (→)
+          </div>
+        </div>
+      </v-tooltip>
 
-      <button
-        class=""
-        type="button" @click="get_next_item_by_date()">
-        <ArrowRightIcon />
-      </button>
 
-    </div>
 
-    <!-- This wrapper can be resized -->
-    <div class="image_wrapper_outer" >
 
-      <!-- This wrapper gets the same size as the img -->
-      <div
-        v-if="!loading && item"
-        class="image_wrapper">
 
-        <!-- The actual image -->
-        <img
-          draggable="false"
-          :src="image_src"
-          ref="image"
-          alt="">
+    </v-toolbar>
+    <v-divider/>
 
-        <!-- The polygon editing tool -->
-        <PolygonEditor
-          :mode="mode"
-          :polygons="annotations"
-          :selected_polygon_index.sync="selected_annotation"
-          @polygon_created="$event.label=labels[0]"/>
+    <v-container fluid>
+      <v-row>
+        <v-col class="image_wrapper_outer">
+          <!-- This wrapper gets the same size as the img -->
+          <div
+            v-if="!loading && item"
+            class="image_wrapper">
 
-      </div>
-    </div>
+            <!-- The actual image -->
+            <img
+              draggable="false"
+              :src="image_src"
+              ref="image"
+              alt="">
 
-    <div class="annotation_list">
-      <h2>Annotations</h2>
-      <table class="annotation_table">
-        <tr>
-          <th>Index</th>
-          <th>Label</th>
-          <th>Delete</th>
-        </tr>
-        <tr
-          :class="{selected: index === selected_annotation}"
-          v-for="(annotation, index) in annotations"
-          :key="index"
-          @click="select_annotation(index)">
-          <td>{{index}}</td>
-          <td>
-            <input list="labels" v-model="annotation.label">
-            <datalist id="labels">
-              <option
-                v-for="label in labels"
-                :key="label"
-                :value="label"/>
-            </datalist>
-          </td>
-          <td>{{annotation.points.length}}</td>
-          <td>
-            <button type="button" @click="delete_polygon(index)">delete</button>
-          </td>
-        </tr>
-      </table>
+            <!-- The polygon editing tool -->
+            <PolygonEditor
+              :mode="mode_lookup[mode_index]"
+              :polygons="annotations"
+              :selected_polygon_index.sync="selected_annotation"
+              @polygon_created="$event.label=labels[0]"/>
 
-    </div>
+          </div>
+        </v-col>
+        <v-col>
 
-    <div class="help">
-      <h2>Keyboard shortcuts</h2>
-      <table class="help_table">
+          <v-data-table
+            hide-default-header
+            hide-default-footer
+            :itemsPerPage="-1"
+            :loading="loading"
+            :items="annotations"
+            :headers="headers">
 
-        <tr>
-          <td>Ctrl + s</td>
-          <td>保存</td>
-        </tr>
-        <tr>
-          <td>Space</td>
-          <td>New annotation</td>
-        </tr>
-        <tr>
-          <td>← / →</td>
-          <td>Next / previous image</td>
-        </tr>
-      </table>
+            <template v-slot:item="row">
+              <tr
+                :style="{'background-color': selected_annotation === row.index ? '#c0000044' : '', cursor: 'pointer' }"
+                @click="select_annotation(row.index)">
+                <td>{{row.index}}</td>
+                <td>
+                  <v-combobox
+                    v-model="row.item.label"
+                    :items="labels"/>
+                </td>
 
-    </div>
+                <td>
+                  <v-icon
+                    small
+                    class="mr-2"
+                    @click="delete_polygon(row.index)">
+                    mdi-delete
+                  </v-icon>
+                </td>
+              </tr>
+            </template>
 
-    <div class="image_metadata_wrapper">
-      <h2>Item info</h2>
+          </v-data-table>
 
-      <table v-if="item">
-        <tr>
-          <td>Time</td>
-          <td>{{item.time}}</td>
-        </tr>
-        <tr>
-          <td>File</td>
-          <td>{{item.image}}</td>
-        </tr>
-      </table>
+        </v-col>
+      </v-row>
+    </v-container>
 
-    </div>
 
-    <transition name="fade">
-      <div class="snackbar save_snackbar"
-        v-if="show_saved_snackbar">
-        Save successful
-      </div>
-    </transition>
 
-  </div>
+    <v-snackbar v-model="snackbar.show">
+      {{ snackbar.text }}
+
+      <template v-slot:action="{ attrs }">
+        <v-btn
+          color="pink"
+          text
+          v-bind="attrs"
+          @click="snackbar.show">
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
+
+  </v-card>
+
+
+
 </template>
 
 <script>
 
 import PolygonEditor from '@/components/PolygonEditor.vue'
 
-// Icons
-// import CloseIcon from 'vue-material-design-icons/Close.vue'
-import ShapePolygonPlusIcon from 'vue-material-design-icons/ShapePolygonPlus.vue'
-import ContentSaveIcon from 'vue-material-design-icons/ContentSave.vue'
-import ArrowRightIcon from 'vue-material-design-icons/ArrowRight.vue'
-import ArrowLeftIcon from 'vue-material-design-icons/ArrowLeft.vue'
+
 
 export default {
   name: 'Annotate',
   components: {
     PolygonEditor,
 
-    // Icons
-    // CloseIcon,
-    ShapePolygonPlusIcon,
-    ContentSaveIcon,
-    ArrowRightIcon,
-    ArrowLeftIcon,
   },
   data(){
     return {
-      show_saved_snackbar: false,
       loading: false,
+
+      // probably don"t need both item and annotations since annotations is in item
       item: null,
       annotations: [],
+
+      headers: [
+        {text: '', value: 'index'},
+        {text: 'Label', value: 'label'},
+        {text: '', value: 'actions'},
+      ],
 
       selected_annotation: -1,
 
       api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
 
-      mode: 'polygon',
+      mode_index: 0,
+      mode_lookup: ['polygon','rectangle'],
+
+      snackbar: {
+        show: false,
+        text: '',
+      },
+
     }
   },
   watch: {
@@ -223,7 +281,10 @@ export default {
       const url = `${this.api_url}/collections/${this.collection_name}/images/`
       this.axios.get(url,options)
       .then(({data}) => {
-        if(data.length === 0) return alert('No more items')
+        if(data.length === 0) {
+          this.snackbar.show = true
+          this.snackbar.text = 'No more items'
+        }
         const item = data[0]
         // Prevent reloading current route
         if(this.document_id === item._id) return
@@ -260,13 +321,15 @@ export default {
 
 
     save_item(){
+      this.snackbar.show = true
+      this.snackbar.text = 'Saving...'
+
       const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
       const body = {annotation: this.annotations}
       this.axios.patch(url,body)
       .then(() => {
-        this.show_saved_snackbar = true
-        setTimeout(() => {this.show_saved_snackbar = false}, 3000)
-
+        this.snackbar.show = true
+        this.snackbar.text = 'Save successful'
       })
       .catch(error =>{
         this.error = true
@@ -296,19 +359,18 @@ export default {
 
 
     delete_polygon(index){
+      // Deselect polygon
+      this.select_annotation(-1)
+
       //if(!confirm(`Delete polygon ${index}?`)) return
       this.annotations.splice(index,1)
 
-      // Deselect polygon
-      this.select_annotation(-1)
+
     },
     select_annotation(index){
-      // only change annotation if current is not the right one
-      if(this.selected_annotation !== index) {
-        this.selected_annotation = index
-        this.selected_point = -1
-      }
+      this.selected_annotation = index
     },
+
 
   },
   computed: {
@@ -330,31 +392,10 @@ export default {
 
 <style scoped>
 
-.annotate {
-  margin-top: 1em;
-  display: grid;
-  grid-template-areas:
-    'image toolbar'
-    'image metadata '
-    'image annotation_list'
-    'image help';
-  grid-template-columns: auto 1fr 1fr;
-  grid-template-rows: auto auto auto 1fr;
-  grid-gap: 1em;
-
-}
-
-
-
-.annotation_list {
-  grid-area: annotation_list;
-}
 
 .image_wrapper_outer {
-  grid-area: image;
 
   display: flex;
-  //justify-content: center;
   flex-direction: column;
   align-items: center;
 
@@ -365,115 +406,8 @@ export default {
 }
 
 
-.toolbar {
-  grid-area: toolbar;
-  display: flex;
-  justify-content: center;
-}
-
-.toolbar button {
-  margin: 0.5em;
-  font-size: 150%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2em;
-  height: 2em;
-  background-color: #c00000;
-  border: none;
-  cursor: pointer;
-  outline: none;
-  color: white;
-  border-radius: 50%;
-}
-
-
-/* Fade used for snackbar */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity .25s;
-}
-.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
-  opacity: 0;
-}
-
-.snackbar {
-  position: fixed;
-  font-size: 120%;
-  padding: 0.5em;
-  bottom: 10vh;
-  width: 10em;
-  height: 2em;
-  right: 10vh;
-  //transform: translateX(-50%);
-  z-index: 100;
-  text-align: center;
-  background-color: #00c00044;
-  border: 2px solid #00c000;
-  color: #00c000;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-
-.image_metadata_wrapper{
-  grid-area: metadata;
-}
-
-.image_metadata_wrapper table {
-  border-collapse: collapse;
-}
-
-.image_metadata_wrapper table > *+* {
-  border-top: 1px solid #dddddd;
-}
-
-.image_metadata_wrapper td {
-  padding: 0.5em;
-}
-.image_metadata_wrapper tr > *+* {
-  padding-left: 1em;
-}
-
-.annotation_table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-
-
-.annotation_table tr:not(:first-child) {
-  border-top: 1px solid #dddddd;
-  cursor: pointer;
-}
-
-.annotation_table tr:not(:first-child):hover {
-  background-color: #eeeeee;
-}
-
-.annotation_table tr.selected {
+tr.selected {
   background-color: #c0000044;
-}
-
-.annotation_table th {
-  text-align: left;
-}
-
-.annotation_table th, .annotation_table td {
-  padding: 0.5em;
-}
-
-.help {
-  grid-area: help;
-}
-
-.help_table {
-  border-collapse: collapse;
-}
-
-.help_table td {
-  padding-right: 0.5em;
 }
 
 </style>
