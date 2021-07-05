@@ -1,242 +1,190 @@
 <template>
-  <div class="home">
+  <v-card>
 
-    <h1>{{$route.params.collection}}</h1>
+    <v-card-text>
 
-    <p>
-      <router-link :to="{ name: 'annotate', params: {collection: $route.params.collection, document_id: 'random'} }">
-        Annotate random item
-      </router-link>
-    </p>
+      <v-toolbar flat>
 
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on, attrs }">
+            <v-btn
+              icon
+              v-bind="attrs"
+              v-on="on"
+              exact
+              :to="{name: 'collections'}">
+              <v-icon>mdi-arrow-left</v-icon>
+            </v-btn>
+          </template>
+          <span>Return to home</span>
+        </v-tooltip>
 
-
-    <div
-      class="error"
-      v-if="collection.error">
-      Error loading collection
-    </div>
-
-
-
-    <template v-if="!error">
-
-      <p>
-        Collection {{collection_name}} contains {{count}} item(s)
-      </p>
-
-      <template v-if="collection.length > 0">
-
-        <div class="table_wrapper">
-          <table>
-            <tr>
-              <th>Image</th>
-              <th>Time</th>
-              <th>File name</th>
-              <th>Annotation</th>
-            </tr>
-
-            <tr
-              class="doc"
-              v-for="doc in collection"
-              :key="doc._id"
-              @click="$router.push({name: 'annotate', params: {document_id: doc._id, collection: $route.params.collection}})">
+        <v-toolbar-title>{{collection_name}}</v-toolbar-title>
 
 
-              <td>
-                <img :src="`${api_url}/collections/${collection_name}/images/${doc._id}/image`">
-              </td>
-              <td>{{format_date(doc.time)}}</td>
-              <td>{{doc.image}}</td>
 
-
-              <td>
-                <template v-if="doc.annotation">
-
-                  <span class="red label" v-if="doc.annotation.length > 0">NG</span>
-                  <span class="green label" v-else>OK</span>
-                </template>
-
-                <span v-else>-</span>
-
-              </td>
-
-            </tr>
-          </table>
-        </div>
-
-      </template>
-
-
-      <div
-        v-if="!all_loaded && !loading"
-        class="load_more_container">
-        <button type="button" @click="get_list()">Load more</button>
-      </div>
-
-      <div
-        class="loader_container"
-        v-else-if="loading">
-        <Loader />
-      </div>
-
-      <div class="" v-if="!loading && !error && collection.length === 0">
-        Collection is empty
-      </div>
-    </template>
+      </v-toolbar>
+      <v-divider/>
 
 
 
 
 
-  </div>
+      <v-data-table
+        :loading="loading"
+        :headers="headers"
+        :items="items"
+        :options.sync="options"
+        :server-items-length="item_count"
+        @click:row="$router.push({name: 'annotate', params: {document_id: $event._id, collection: collection_name}})">
+
+
+        <!-- Thumbnails -->
+        <template v-slot:item.image="{ item }">
+          <v-img
+            contain
+            max-height="100"
+            max-width="100"
+            :src="`${api_url}/collections/${collection_name}/images/${item._id}/image`"
+            alt="item"/>
+        </template>
+
+        <template v-slot:item.annotation="{ item }">
+          <span v-if="!item.annotation">-</span>
+          <span v-else-if="item.annotation.length === 0" class="green--text">OK</span>
+          <div class="" v-else>
+            <div class="red--text"
+              v-for="(summary_item, index) in annotation_summary(item.annotation)"
+              :key="`${item._id}_${index}`">
+
+              {{summary_item.label}}: {{summary_item.count}}
+
+            </div>
+          </div>
+        </template>
+
+      </v-data-table>
+
+    </v-card-text>
+
+
+
+  </v-card>
 </template>
 
 <script>
-// @ is an alias to /src
-import Loader from '@moreillon/vue_loader'
-
-//import CloseIcon from 'vue-material-design-icons/Close.vue'
-//import CheckIcon from 'vue-material-design-icons/Check.vue'
 
 export default {
-  name: 'List',
+  name: 'Collection',
+
   components: {
-    Loader,
-    //CloseIcon,
-    //CheckIcon
 
   },
   data(){
     return {
+      items: [],
+      item_count: 0,
+      options: {},
       loading: false,
-      error: null,
-      collection: [],
+      headers: [
+        {text: 'Image', value: "image"},
+        {text: 'Time', value: "time"},
+        {text: 'Annotation', value: 'annotation'}
+      ],
       api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
-      batch_size: 50,
-      all_loaded: false,
-      count: 0,
+      dates: [],
+      menu: false,
+      filter_key: null,
+      filter_property: null,
     }
   },
   mounted(){
-    this.get_db_document_count()
-    this.clear_list()
-    this.get_list()
+    this.get_items()
+    this.get_item_count()
   },
-  beforeRouteUpdate (to, from, next) {
-    this.get_db_document_count()
-    this.clear_list()
-    this.get_list()
-    next()
+  watch: {
+    options: {
+      handler () {
+        this.get_items()
+      },
+      deep: true,
+    },
   },
-
   methods: {
-    clear_list(){
-      this.collection.splice(0,this.collection.length)
-      this.all_loaded = false
-    },
-    get_db_document_count(){
-      const url = `${this.api_url}/collections/${this.collection_name}`
-      this.axios.get(url)
-      .then(response => {
-        this.count = response.data.documents
-      })
-      .catch(error =>{
-        if(error.response) console.log(error.response.data)
-        else console.log(error)
-      })
-    },
-    get_list(){
+    get_items(){
+
       this.loading = true
       const url = `${this.api_url}/collections/${this.collection_name}/images`
+      const { page, itemsPerPage, sortBy, sortDesc } = this.options
 
-      let params = {
-        start_index: this.collection.length,
-        batch_size: this.batch_size,
+      const sort = sortBy.reduce((acc, item, index) => {
+        acc[item] = sortDesc[index] ? 1 : -1
+        return acc
+      }, {})
+
+
+      const params = {
+        start_index: (page-1) * itemsPerPage,
+        limit: itemsPerPage === -1 ? 0 : itemsPerPage,
+        sort,
+        filter: {}
+      }
+
+      if(this.dates.length > 0) {
+        params.filter.time = {}
+        if(this.dates[0]) params.filter.time['$gte'] = this.dates[0]
+        if(this.dates[1]) params.filter.time['$lt'] = this.dates[1]
+      }
+
+      if(this.filter_property && this.filter_key) {
+        params.filter[this.filter_key] = this.filter_property
       }
 
       this.axios.get(url, {params})
       .then(({data}) => {
-        data.forEach((doc) => { this.collection.push(doc) })
-        if(data.length < this.batch_size) this.all_loaded = true
+        this.items = data
       })
+      .catch((error) => {console.error(error)})
+      .finally(() => {this.loading = false})
+    },
+
+
+    get_item_count(){
+      const url = `${this.api_url}/collections/${this.collection_name}`
+      this.axios.get(url)
+      .then(({data}) => { this.item_count = data.documents })
       .catch(error =>{
-        this.error = true
         if(error.response) console.log(error.response.data)
         else console.log(error)
       })
-      .finally(()=>{this.loading = false})
+    },
+    annotation_summary(annotation){
+      const summary = annotation.reduce((acc, item) => {
+        let found = acc.find(x => x.label === item.label)
+        if(!found) {
+          found =  {label: item.label, count: 0}
+          acc.push(found)
+        }
+        found.count ++
+        return acc
+      },[])
+
+      return summary
     },
 
-    format_date(date){
-
-      let options = {
-        hour12: false,
-        year:'numeric',
-        month:'2-digit',
-        day: '2-digit',
-        hour:'2-digit',
-        minute:'2-digit',
-        second: '2-digit'
-      }
-      return new Date(date).toLocaleString('ja-JP', options)
-
-    }
   },
   computed: {
     collection_name(){
       return this.$route.params.collection
     },
+
   }
+
 }
 </script>
 
-<style scoped>
-
-table {
-  border-collapse: collapse;
-  width: 100%;
-  text-align: center;
-}
+<style>
 td, th {
-  padding: 0.25em;
-}
-tr:not(:last-child){
-  border-bottom: 1px solid #dddddd;
-}
-tr:not(:first-child) {
-  cursor: pointer;
-  transition: background-color 0.25s;
-}
-tr:not(:first-child):hover {
-  background-color: #eeeeee;
-}
-
-.doc img {
-  width: 5em;
-}
-
-.buttons_wrapper {
-  margin: 1em 0;
-}
-
-.buttons_wrapper button:not(:last-child) {
-  margin-right: 1em;
-}
-
-.red {
-  color: #c00000;
-}
-
-.green {
-  color: #00c000;
-}
-
-.label {
-  font-weight: bold;
-}
-.load_more_container{
-  margin-top: 1em;
-  text-align: center;
+  white-space: nowrap;
 }
 </style>

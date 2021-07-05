@@ -2,17 +2,6 @@
   <div class="home">
     <h1>Collections</h1>
 
-    <div class="toolbar">
-
-
-      <input type="text" v-model="search" placeholder="Search">
-      <MagnifyIcon />
-
-
-
-
-    </div>
-
     <div class="error" v-if="collections.error">
       Error loading collections
     </div>
@@ -51,7 +40,6 @@
 // @ is an alias to /src
 import Loader from '@moreillon/vue_loader'
 
-import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import FormatListBulletedIcon from 'vue-material-design-icons/FormatListBulleted.vue'
 
 
@@ -59,7 +47,6 @@ export default {
   name: 'Home',
   components: {
     Loader,
-    MagnifyIcon,
     FormatListBulletedIcon,
 
   },
