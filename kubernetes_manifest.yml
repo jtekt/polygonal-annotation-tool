@@ -20,7 +20,7 @@ spec:
         - containerPort: 80
         env:
         - name: VUE_APP_LABELS
-          value: NG,makure,kizu,ketuniku,arabiki,usui,hagare,tare,yuzu,butu,test
+          value: NG,makure,kizu,ketuniku,arabiki,usui,hagare,tare,yuzu,butu,test1,test2
         # Get environment variables from secret
         envFrom:
         - secretRef:
