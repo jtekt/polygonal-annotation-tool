@@ -218,7 +218,7 @@
 
           </v-data-table>
 
-          <v-list class="mt-5">
+          <v-list class="mt-5" v-if="item">
             <v-list-item two-line>
               <v-list-item-content>
                 <v-list-item-subtitle>File name</v-list-item-subtitle>
