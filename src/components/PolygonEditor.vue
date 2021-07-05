@@ -52,7 +52,7 @@
 export default {
   name: 'PolygonEditor',
   props: {
-    polygons: {type: Array, default() {return []}},
+    polygons: {type: Array},
     mode: {type: String, default() {return 'polygon'}},
     selected_polygon_index: {type: Number, default() {return -1}},
 
@@ -98,29 +98,39 @@ export default {
     area_clicked(){
 
     },
-    area_mouseDown(){
+    area_mouseDown(event){
 
-      if(this.mode === 'polygon') {
-        const {offsetX: x, offsetY: y} = event
+      const {offsetX: x, offsetY: y} = event
 
-        let polygon = this.polygons[this.selected_polygon_index]
-        if(!polygon || !polygon.constructing) polygon = this.create_polygon()
-
-        polygon.points.push({x,y})
+      if(!this.polygons) {
+        this.$emit('create_polygons_array')
       }
 
-      else if(this.mode === 'rectangle') {
-        const {offsetX: x, offsetY: y} = event
-        const rectangle = this.create_polygon()
+      // Using NextTick because polygon array creation is done in parent
 
-        rectangle.constructing = true
+      this.$nextTick(() => {
+        if(this.mode === 'polygon') {
+          let polygon = this.polygons[this.selected_polygon_index]
+          if(!polygon || !polygon.constructing) polygon = this.create_polygon()
+          polygon.points.push({x,y})
 
-        // Give small offset to other points so as to see its a rectangle
-        rectangle.points.push({x,y})
-        rectangle.points.push({x,y: y+10})
-        rectangle.points.push({x: x+10,y: y+10})
-        rectangle.points.push({x: x+10,y})
-      }
+        }
+
+        else if(this.mode === 'rectangle') {
+          const rectangle = this.create_polygon()
+
+          // Add other points of the rectangle
+          rectangle.points.push({x,y})
+          rectangle.points.push({x,y: y+10})
+          rectangle.points.push({x: x+10,y: y+10})
+          rectangle.points.push({x: x+10,y})
+        }
+      })
+
+
+
+
+
 
     },
 
@@ -158,6 +168,8 @@ export default {
     },
 
     area_mouseMove(event){
+
+      if(!this.polygons) return
 
       const {offsetX: x, offsetY: y} = event
 
@@ -198,17 +210,23 @@ export default {
 
     create_polygon(){
 
-      this.polygons.push({
+      const new_polygon = {
         points: [],
         constructing: true,
-      })
+      }
+
+      this.polygons.push(new_polygon)
+
+
 
       this.select_polygon(this.polygons.length -1)
       this.selected_point_index = -1
 
-      this.$emit('polygon_created', this.polygons[this.polygons.length -1])
+      const created_polygon = this.polygons[this.polygons.length -1]
 
-      return this.polygons[this.polygons.length -1]
+      this.$emit('polygon_created', created_polygon)
+
+      return created_polygon
     },
 
     select_polygon(index){

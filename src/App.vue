@@ -3,8 +3,11 @@
     <v-app-bar
       app
       color="primary"
-      dark
-    >
+      dark>
+
+    <v-app-bar-title>
+      Annotation tool
+    </v-app-bar-title>
 
     </v-app-bar>
 

@@ -56,6 +56,40 @@
         </div>
       </v-tooltip>
 
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            icon
+            v-bind="attrs"
+            v-on="on"
+            @click="annotate_ok()">
+            <v-icon>mdi-check</v-icon>
+          </v-btn>
+        </template>
+        <div class="text-center">
+          <div class="">
+            Mark as OK
+          </div>
+        </div>
+      </v-tooltip>
+
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            icon
+            v-bind="attrs"
+            v-on="on"
+            @click="delete_annotation()">
+            <v-icon>mdi-delete</v-icon>
+          </v-btn>
+        </template>
+        <div class="text-center">
+          <div class="">
+            Mark as unannotated
+          </div>
+        </div>
+      </v-tooltip>
+
 
       <v-spacer></v-spacer>
       <v-tooltip bottom>
@@ -113,30 +147,44 @@
             v-if="!loading && item"
             class="image_wrapper">
 
-            <!-- The actual image -->
-            <img
-              draggable="false"
-              :src="image_src"
-              ref="image"
-              alt="">
+          <!-- The actual image -->
+          <img
+            draggable="false"
+            :src="image_src"
+            ref="image"
+            alt="">
 
-            <!-- The polygon editing tool -->
-            <PolygonEditor
-              :mode="mode_lookup[mode_index]"
-              :polygons="annotations"
-              :selected_polygon_index.sync="selected_annotation"
-              @polygon_created="$event.label=labels[0]"/>
+          <!-- The polygon editing tool -->
+          <PolygonEditor
+            :mode="mode_lookup[mode_index]"
+            :polygons="item.annotation"
+            :selected_polygon_index.sync="selected_annotation"
+            @create_polygons_array="create_annotation_array()"
+            @polygon_created="$event.label = labels[0]"/>
 
           </div>
         </v-col>
         <v-col>
 
+          <div
+            class="text-center text-h5 mt-5"
+            v-if="!item.annotation">
+            No annotation
+          </div>
+
+          <div
+            class="text-center text-h5 mt-5"
+            v-else-if="item.annotation.length === 0">
+            Annotation: <span class="green--text">OK</span>
+          </div>
+
           <v-data-table
+            v-else-if="item.annotation.length > 0"
             hide-default-header
             hide-default-footer
             :itemsPerPage="-1"
             :loading="loading"
-            :items="annotations"
+            :items="item.annotation"
             :headers="headers">
 
             <template v-slot:item="row">
@@ -205,9 +253,11 @@ export default {
     return {
       loading: false,
 
-      // probably don"t need both item and annotations since annotations is in item
-      item: null,
-      annotations: [],
+      // probably don"t need both item and annotation since annotation is in item
+      item: {
+        annotation: null
+      },
+
 
       headers: [
         {text: '', value: 'index'},
@@ -247,16 +297,29 @@ export default {
     document.removeEventListener("keydown", this.handle_keydown)
   },
   methods: {
+    delete_annotation(){
+      if(this.item.annotation && this.item.annotation.length > 0) {
+        if(!confirm('ホンマ？')) return
+      }
+
+      this.$set(this.item, 'annotation', null)
+    },
+    annotate_ok() {
+      if(this.item.annotation && this.item.annotation.length > 0) {
+        if(!confirm('ホンマ？')) return
+      }
+
+      this.$set(this.item, 'annotation', [])
+    },
 
     get_item_by_id(){
       this.loading = true
-      this.annotations = []
       const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
       this.axios.get(url)
       .then(({data}) => {
         this.item = data
-        if(this.item.annotation) this.annotations = this.item.annotation
-      })
+        this.$set(this.item, 'annotation', data.annotation)
+       })
       .catch(error =>{
         this.error = true
         if(error.response) console.log(error.response.data)
@@ -281,14 +344,16 @@ export default {
       const url = `${this.api_url}/collections/${this.collection_name}/images/`
       this.axios.get(url,options)
       .then(({data}) => {
+
         if(data.length === 0) {
           this.snackbar.show = true
           this.snackbar.text = 'No more items'
         }
-        const item = data[0]
+
+        this.item = data[0]
         // Prevent reloading current route
-        if(this.document_id === item._id) return
-        this.$router.push({name: 'annotate', params: {collection: this.collection_name, document_id: item._id}})
+        if(this.document_id === this.item._id) return
+        this.$router.push({name: 'annotate', params: {collection: this.collection_name, document_id: this.item._id}})
       })
       .catch(error =>{
         this.error = true
@@ -319,13 +384,22 @@ export default {
       this.get_items_with_options({params})
     },
 
+    create_annotation_array(){
+      if(!this.item.annotation) {
+        this.$set(this.item, 'annotation', [])
+      }
+    },
+
 
     save_item(){
       this.snackbar.show = true
       this.snackbar.text = 'Saving...'
 
       const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
-      const body = {annotation: this.annotations}
+      console.log(this.item.annotation)
+      const body = {annotation: this.item.annotation}
+
+
       this.axios.patch(url,body)
       .then(() => {
         this.snackbar.show = true
@@ -363,7 +437,7 @@ export default {
       this.select_annotation(-1)
 
       //if(!confirm(`Delete polygon ${index}?`)) return
-      this.annotations.splice(index,1)
+      this.itme.annotation.splice(index,1)
 
 
     },
