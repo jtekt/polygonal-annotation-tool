@@ -21,6 +21,8 @@ spec:
         env:
         - name: VUE_APP_LABELS
           value: NG,makure,kizu,ketuniku,arabiki,usui,hagare,tare,yuzu,butu,test1,test2
+        - name: VUE_APP_STORAGE_SERVICE_API_URL
+          value: http://172.16.116.51:31221
 ---
 apiVersion: v1
 kind: Service
