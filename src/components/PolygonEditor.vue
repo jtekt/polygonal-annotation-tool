@@ -254,7 +254,7 @@ export default {
     finish_current_polygon(){
       const polygon = this.polygons[this.selected_polygon_index]
       if(!polygon) return
-      polygon.constructing = false
+      delete polygon.constructing
       // maybe need a function for deleting the current polygon
       if(polygon.points.length < 3) {
         this.polygons.splice(this.selected_polygon_index,1)
