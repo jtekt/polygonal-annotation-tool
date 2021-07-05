@@ -2,6 +2,7 @@
   <div class="about">
     <h1>Annotation tool</h1>
     <p>Author: Maxime MOREILLON</p>
+    <p>Labels: {{labels}}</p>
     <h2>Services</h2>
     <table>
       <tr>
