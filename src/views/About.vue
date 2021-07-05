@@ -29,6 +29,7 @@ export default {
       version: pjson.version,
       api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
       ws_url: process.env.VUE_APP_WS_SERVER_URL,
+      labels: process.env.VUE_APP_LABELS,
       services: [
         {
           name: 'Annotation tool',

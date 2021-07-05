@@ -20,7 +20,6 @@
           class="collection"
           :to="{ name: 'collection', params: {collection} }">
 
-          <FormatListBulletedIcon class="icon"/>
           <span>{{collection}}</span>
 
         </router-link>
@@ -40,14 +39,12 @@
 // @ is an alias to /src
 import Loader from '@moreillon/vue_loader'
 
-import FormatListBulletedIcon from 'vue-material-design-icons/FormatListBulleted.vue'
 
 
 export default {
   name: 'Home',
   components: {
     Loader,
-    FormatListBulletedIcon,
 
   },
   data(){
