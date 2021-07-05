@@ -396,8 +396,10 @@ export default {
       this.snackbar.text = 'Saving...'
 
       const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
-      console.log(this.item.annotation)
-      const body = {annotation: this.item.annotation}
+      const body = {
+        annotation: this.item.annotation,
+        annotator_id: this.$store.state.current_user.identity || this.$store.state.current_user._id
+      }
 
 
       this.axios.patch(url,body)

@@ -8,6 +8,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@moreillon/vue_authentication_wall_vuetify": "^0.1.11",
     "@moreillon/vue_loader": "^1.0.1",
     "axios": "^0.21.1",
     "core-js": "^3.6.5",
