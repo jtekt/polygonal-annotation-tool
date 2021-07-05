@@ -349,7 +349,8 @@ export default {
       this.axios.get(url)
       .then(({data}) => {
         this.item = data
-        this.$set(this.item, 'annotation', data.annotation)
+        // For reactivity (needed?)
+        //if(data.annotation) this.$set(this.item, 'annotation', data.annotation)
        })
       .catch(error =>{
         this.error = true
@@ -360,6 +361,8 @@ export default {
     },
 
     get_items_with_options(options){
+      // This function simply navigates to the next item
+      // The item itself is obtained with get_item_by_id
       if(this.loading) return
       this.loading = true
       const url = `${this.api_url}/collections/${this.collection_name}/images/`
@@ -371,10 +374,12 @@ export default {
           this.snackbar.text = 'No more items'
         }
 
-        this.item = data[0]
+        const item = data[0]
         // Prevent reloading current route
-        if(this.document_id === this.item._id) return
-        this.$router.push({name: 'annotate', params: {collection: this.collection_name, document_id: this.item._id}})
+        if(this.document_id !== item._id) {
+          this.$router.push({name: 'annotate', params: {collection: this.collection_name, document_id: item._id}})
+        }
+
       })
       .catch(error =>{
         this.error = true
@@ -462,7 +467,7 @@ export default {
     },
     delete_single_annotation(index){
       if(!confirm(`Delete polygon ${index}?`)) return
-      this.itme.annotation.splice(index,1)
+      this.item.annotation.splice(index,1)
       this.selected_annotation = -1
     },
   },
