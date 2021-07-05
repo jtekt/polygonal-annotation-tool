@@ -6,6 +6,7 @@ stages:
 variables:
   APPLICATION_NAME: annotation-tool-polygon
   CONTAINER_IMAGE: ${CONTAINER_REGISTRY}/${APPLICATION_NAME}
+  SERVICE_PORT: 31226
 
 containerization:
   stage: containerization
@@ -33,8 +34,10 @@ deployment:
   tags:
     - kubectl
   script:
+    # create/update the deployment
+    - envsubst < kubernetes_manifest.yml | kubectl apply -f -
     - kubectl rollout restart deployment ${APPLICATION_NAME}
   environment:
     name: production
     kubernetes:
-      namespace: ${KUBERNETES_NAMESPACE} # Obtained from GitLab
+      namespace: edge-ai
