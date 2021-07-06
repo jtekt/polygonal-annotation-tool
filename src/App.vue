@@ -24,7 +24,10 @@
       <v-list
         dense
         nav>
-        <v-list-item :to="{name: 'collections'}">
+
+        <v-list-item
+          exact
+          :to="{name: 'collections'}">
           <v-list-item-icon>
             <v-icon>mdi-home</v-icon>
           </v-list-item-icon>
@@ -55,7 +58,9 @@
 
         </v-list-group>
 
-        <v-list-item :to="{name: 'about'}">
+        <v-list-item
+          exact
+          :to="{name: 'about'}">
           <v-list-item-icon>
             <v-icon>mdi-information-outline</v-icon>
           </v-list-item-icon>
@@ -68,7 +73,7 @@
 
     </v-navigation-drawer>
 
-    <v-main>
+    <v-main class="grey lighten-3">
       <AuthenticationWall
         :options="options"
         @user="get_user($event)">
