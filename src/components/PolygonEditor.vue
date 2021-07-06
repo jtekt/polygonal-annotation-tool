@@ -55,12 +55,9 @@ export default {
     polygons: {type: Array},
     mode: {type: String, default() {return 'polygon'}},
     selected_polygon_index: {type: Number, default() {return -1}},
-
-
   },
   data () {
     return {
-      //selected_polygon_index: -1,
       selected_point_index: -1,
       grabbed_point_index: -1,
     }
@@ -84,8 +81,6 @@ export default {
         e.preventDefault()
         this.finish_current_polygon()
       }
-
-
     },
 
     midpoint(p1,p2){
@@ -96,18 +91,16 @@ export default {
     },
 
     area_clicked(){
-
+      // Nothing
     },
     area_mouseDown(event){
 
       const {offsetX: x, offsetY: y} = event
 
-      if(!this.polygons) {
-        this.$emit('create_polygons_array')
-      }
+      // Get the parent to crete the polygons array if it does not exist
+      if(!this.polygons) this.$emit('create_polygons_array')
 
       // Using NextTick because polygon array creation is done in parent
-
       this.$nextTick(() => {
         if(this.mode === 'polygon') {
           let polygon = this.polygons[this.selected_polygon_index]
@@ -126,11 +119,6 @@ export default {
           rectangle.points.push({x: x+10,y})
         }
       })
-
-
-
-
-
 
     },
 
@@ -160,6 +148,7 @@ export default {
 
     },
     midpoint_clicked(event, polygon_index, point_index){
+      // Create a new point at the midpoint of an edge
       const {offsetX: x, offsetY: y} = event
       this.select_polygon(polygon_index)
       const polygon = this.polygons[this.selected_polygon_index]
@@ -168,6 +157,8 @@ export default {
     },
 
     area_mouseMove(event){
+
+      // Move grabbed points or create rectangle
 
       if(!this.polygons) return
 
@@ -197,27 +188,22 @@ export default {
     },
 
     polygon_svg_points(points){
+      // Creates the svg attribute for point positions
       return `${points.reduce( (output,point) => output + ` ${point.x},${point.y}`, '' )}`
     },
 
     point_mouseup(){
-      this.release_grabbed_point()
-    },
-
-    release_grabbed_point(){
+      // Release grabbed point
       this.grabbed_point_index = -1
     },
 
+
     create_polygon(){
 
-      const new_polygon = {
+      this.polygons.push({
         points: [],
         constructing: true,
-      }
-
-      this.polygons.push(new_polygon)
-
-
+      })
 
       this.select_polygon(this.polygons.length -1)
       this.selected_point_index = -1
@@ -230,11 +216,12 @@ export default {
     },
 
     select_polygon(index){
+      // Sync with parent
       this.$emit('update:selected_polygon_index', index)
     },
 
     delete_selected_item(){
-      // Do nothing if no polygon selected
+      // iF a point is selected, delete the point
       if(this.selected_point_index !== -1) {
         const polygon = this.polygons[this.selected_polygon_index]
         if(polygon){
@@ -242,6 +229,7 @@ export default {
           this.selected_point_index = -1
         }
       }
+      // If no point is selected, delete the polygon
       else if(this.selected_polygon_index !== -1){
         this.polygons.splice(this.selected_polygon_index,1)
         this.select_polygon(-1)
@@ -254,6 +242,7 @@ export default {
     finish_current_polygon(){
       const polygon = this.polygons[this.selected_polygon_index]
       if(!polygon) return
+
       //delete polygon.constructing
       polygon.constructing = false
 

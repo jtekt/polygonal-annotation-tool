@@ -10,9 +10,9 @@
         @click="drawer = !drawer" />
 
 
-      <v-app-bar-title>
+      <v-toolbar-title>
         Annotation tool
-      </v-app-bar-title>
+      </v-toolbar-title>
 
     </v-app-bar>
 
