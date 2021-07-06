@@ -93,8 +93,13 @@
         </div>
       </v-tooltip>
 
+      <v-spacer />
 
-      <v-spacer></v-spacer>
+
+
+
+
+
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
           <v-btn
@@ -134,6 +139,9 @@
           </div>
         </div>
       </v-tooltip>
+
+      <v-divider vertical/>
+      <KeyboardShortcuts />
 
 
 
@@ -274,12 +282,14 @@
 
 import PolygonEditor from '@/components/PolygonEditor.vue'
 
+import KeyboardShortcuts from '@/components/KeyboardShortcuts.vue'
 
 
 export default {
   name: 'Annotate',
   components: {
     PolygonEditor,
+    KeyboardShortcuts,
 
   },
   data(){
@@ -309,6 +319,7 @@ export default {
         show: false,
         text: '',
       },
+
 
     }
   },
@@ -456,7 +467,7 @@ export default {
         e.preventDefault()
         this.save_item()
       }
-      if (e.key === 'a' && e.ctrlKey) {
+      else if (e.key === 'a' && e.ctrlKey) {
         e.preventDefault()
         this.annotate_ok()
       }

@@ -81,6 +81,10 @@ export default {
         e.preventDefault()
         this.finish_current_polygon()
       }
+      else if (e.key === 'z' && e.ctrlKey) {
+        e.preventDefault()
+        this.undo_last_point()
+      }
     },
 
     midpoint(p1,p2){
@@ -235,6 +239,14 @@ export default {
         this.select_polygon(-1)
       }
 
+    },
+
+    undo_last_point(){
+      // Delete last point when in constructing mode
+      const polygon = this.polygons[this.selected_polygon_index]
+      if(!polygon) return
+      if(!polygon.constructing) return
+      polygon.points.pop()
     },
 
 
