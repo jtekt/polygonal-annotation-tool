@@ -36,25 +36,7 @@
 
       <v-divider vertical/>
 
-      <v-tooltip bottom>
-        <template v-slot:activator="{ on, attrs }">
-          <v-btn
-            icon
-            v-bind="attrs"
-            v-on="on"
-            @click="save_item()">
-            <v-icon>mdi-content-save</v-icon>
-          </v-btn>
-        </template>
-        <div class="text-center">
-          <div class="">
-            Save
-          </div>
-          <div class="">
-            (Ctrl + S)
-          </div>
-        </div>
-      </v-tooltip>
+
 
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
@@ -93,12 +75,35 @@
         </div>
       </v-tooltip>
 
+
+      <v-divider vertical/>
+
       <v-spacer />
 
 
+      <v-divider vertical/>
 
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            icon
+            v-bind="attrs"
+            v-on="on"
+            @click="save_item()">
+            <v-icon>mdi-content-save</v-icon>
+          </v-btn>
+        </template>
+        <div class="text-center">
+          <div class="">
+            Save
+          </div>
+          <div class="">
+            (Ctrl + S)
+          </div>
+        </div>
+      </v-tooltip>
 
-
+      <v-divider vertical/>
 
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
