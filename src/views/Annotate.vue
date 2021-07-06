@@ -70,6 +70,9 @@
           <div class="">
             Mark as OK
           </div>
+          <div class="">
+            (Ctrl + A)
+          </div>
         </div>
       </v-tooltip>
 
@@ -170,7 +173,6 @@
             v-if="loading"
             class="text-center text-h5 mt-5">
             <v-progress-circular
-
               indeterminate/>
           </div>
 
@@ -450,9 +452,13 @@ export default {
       // Keyboard events
 
       // CTRL S
-      if (e.keyCode === 83 && e.ctrlKey) {
+      if (e.key === 's' && e.ctrlKey) {
         e.preventDefault()
         this.save_item()
+      }
+      if (e.key === 'a' && e.ctrlKey) {
+        e.preventDefault()
+        this.annotate_ok()
       }
       // Left arrow key: previous item
       else if (e.keyCode === 37) {
