@@ -1,56 +1,54 @@
 <template>
-  <div class="home">
-    <h1>Collections</h1>
+  <v-card>
+    <v-card-title>Collections</v-card-title>
 
-    <div class="error" v-if="collections.error">
-      Error loading collections
-    </div>
+    <v-card-text>
+      <v-progress-circular
+        v-if="loading"
+        indeterminate>
+      </v-progress-circular>
 
-    <div
-      class="loader_container"
-      v-else-if="collections.loading">
-      <Loader />
-    </div>
-
-    <template v-else-if="collections.length > 0">
-      <div class="collections_wrapper">
-        <router-link
-          v-for="collection in filtered_collections"
-          :key="collection"
-          class="collection"
-          :to="{ name: 'collection', params: {collection} }">
-
-          <span>{{collection}}</span>
-
-        </router-link>
+      <div v-else-if="error" class="red--text">
+        {{error}}
       </div>
 
-    </template>
+      <div v-else-if="collections.length === 0">
+        No collections available
+      </div>
 
-    <div class="" v-else-if="collections.length < 1">
-      No collections available
-    </div>
+      <v-list
+        v-else
+        dense>
+        <v-list-item
+          exact
+          v-for="(collection, i) in collections"
+          :key="i"
+          :to="{name: 'collection', params: {collection}}">
+          <v-list-item-content>
+            <v-list-item-title v-text="collection" />
+          </v-list-item-content>
+        </v-list-item>
+      </v-list>
+    </v-card-text>
 
 
-  </div>
+
+  </v-card>
 </template>
 
 <script>
 // @ is an alias to /src
-import Loader from '@moreillon/vue_loader'
-
-
 
 export default {
   name: 'Home',
   components: {
-    Loader,
-
   },
   data(){
     return {
       search: '',
+      error: null,
       collections: [],
+      loading: false,
     }
   },
   mounted(){
@@ -58,7 +56,7 @@ export default {
   },
   methods: {
     get_collections() {
-      this.$set(this.collections,'loading',true)
+      this.loading = true
       this.axios.get(`${process.env.VUE_APP_STORAGE_SERVICE_API_URL}/collections`)
       .then(response => {
         this.collections = []
@@ -67,11 +65,11 @@ export default {
         });
       })
       .catch(error =>{
-        this.$set(this.collections,'error',true)
+        this.error = error
         if(error.response) console.log(error.response.data)
         else console.log(error)
       })
-      .finally(()=>{this.$set(this.collections,'loading',false)})
+      .finally(()=>{this.loading = false})
     }
   },
   computed: {
