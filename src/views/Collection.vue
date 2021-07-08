@@ -84,7 +84,9 @@ export default {
     return {
       items: [],
       item_count: 0,
-      options: {},
+      options: {
+        sortBy: ['time']
+      },
       loading: false,
       headers: [
         {text: 'Image', value: "image"},
