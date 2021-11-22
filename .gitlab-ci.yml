@@ -1,43 +1,14 @@
-stages:
-  - containerization
-  # - containerization-aarch64
-  - deployment
 
 variables:
   APPLICATION_NAME: annotation-tool-polygon
   CONTAINER_IMAGE: ${CONTAINER_REGISTRY}/${APPLICATION_NAME}
   SERVICE_PORT: 31226
 
-containerization:
-  stage: containerization
+build:
+  stage: build
   tags:
     - x86
   script:
     - docker build -t ${CONTAINER_IMAGE} .
     - docker push ${CONTAINER_IMAGE}
     - docker image rm ${CONTAINER_IMAGE}
-
-# containerization-aarch64:
-#   stage: containerization-aarch64
-#   tags:
-#     - aarch64
-#   script:
-#     - >
-#       docker build
-#       --build-arg HTTP_PROXY=http://10.115.1.14:5000
-#       --build-arg HTTPS_PROXY=http://10.115.1.14:5000
-#       -t ${CONTAINER_IMAGE}-aarch64 .
-#     - docker push ${CONTAINER_IMAGE}-aarch64
-
-deployment:
-  stage: deployment
-  tags:
-    - kubectl
-  script:
-    # create/update the deployment
-    - envsubst < kubernetes_manifest.yml | kubectl apply -f -
-    - kubectl rollout restart deployment ${APPLICATION_NAME}
-  environment:
-    name: production
-    kubernetes:
-      namespace: edge-ai
