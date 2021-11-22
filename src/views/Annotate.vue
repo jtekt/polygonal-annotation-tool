@@ -103,6 +103,10 @@
         </div>
       </v-tooltip>
 
+
+
+
+
       <v-divider vertical/>
 
       <v-tooltip bottom>
@@ -301,11 +305,14 @@ export default {
     return {
       loading: false,
 
-      // probably don"t need both item and annotation since annotation is in item
+      // probably don't need both item and annotation since annotation is in item
+      // annotation becomes an array
       item: {
         annotation: null,
       },
 
+      // used to keep track of unsaved changes
+      unmodified_item_copy: null,
 
       headers: [
         {text: 'ID', value: 'index'},
@@ -367,6 +374,7 @@ export default {
       this.axios.get(url)
       .then(({data}) => {
         this.item = data
+        this.save_item_copy()
         // For reactivity (needed?)
         //if(data.annotation) this.$set(this.item, 'annotation', data.annotation)
        })
@@ -381,6 +389,7 @@ export default {
     get_items_with_options(options){
       // This function simply navigates to the next item
       // The item itself is obtained with get_item_by_id
+      if(this.item_has_unsaved_modifications && !confirm('Item has modifications, discard?')) return
       if(this.loading) return
       this.loading = true
       const url = `${this.api_url}/collections/${this.collection_name}/images/`
@@ -442,6 +451,14 @@ export default {
       if(!this.item.annotation) this.$set(this.item, 'annotation', [])
     },
 
+    get_copy_of_item(object){
+      return JSON.parse(JSON.stringify(object))
+    },
+
+    save_item_copy(){
+      this.unmodified_item_copy = this.get_copy_of_item(this.item)
+    },
+
     save_item(){
       this.snackbar.show = true
       this.snackbar.text = 'Saving...'
@@ -456,6 +473,7 @@ export default {
       .then(() => {
         this.snackbar.show = true
         this.snackbar.text = 'Save successful'
+        this.save_item_copy()
       })
       .catch(error =>{
         this.error = true
@@ -492,6 +510,9 @@ export default {
       this.item.annotation.splice(index,1)
       this.selected_annotation = -1
     },
+    object_equals( x, y ) {
+      return JSON.stringify(x) !== JSON.stringify(y)
+    }
   },
   computed: {
     collection_name(){
@@ -505,7 +526,15 @@ export default {
     },
     labels(){
       return process.env.VUE_APP_LABELS.split(',')
-    }
+    },
+    item_has_unsaved_modifications(){
+      if(!this.item) return 'No item'
+      if(!this.unmodified_item_copy) return 'No copy'
+      return this.object_equals(this.item,this.unmodified_item_copy)
+
+
+
+    },
   }
 }
 </script>
