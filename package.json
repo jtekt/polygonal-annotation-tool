@@ -9,30 +9,30 @@
   },
   "dependencies": {
     "@moreillon/vue_authentication_wall_vuetify": "^0.1.11",
-    "@moreillon/vue_loader": "^1.0.1",
-    "axios": "^0.21.1",
-    "core-js": "^3.6.5",
-    "vue": "^2.6.11",
-    "vue-axios": "^3.2.2",
-    "vue-material-design-icons": "^4.11.0",
-    "vue-router": "^3.2.0",
-    "vuetify": "^2.4.0",
-    "vuex": "^3.4.0"
+    "@moreillon/vue_loader": "^1.0.5",
+    "axios": "^0.21.4",
+    "core-js": "^3.22.1",
+    "vue": "^2.6.14",
+    "vue-axios": "^3.4.1",
+    "vue-material-design-icons": "^4.13.0",
+    "vue-router": "^3.5.3",
+    "vuetify": "^2.6.4",
+    "vuex": "^3.6.2"
   },
   "devDependencies": {
     "@mdi/font": "^5.9.55",
-    "@vue/cli-plugin-babel": "^4.5.0",
-    "@vue/cli-plugin-eslint": "^4.5.0",
-    "@vue/cli-plugin-router": "^4.5.0",
-    "@vue/cli-plugin-vuex": "^4.5.0",
-    "@vue/cli-service": "^4.5.0",
+    "@vue/cli-plugin-babel": "^4.5.17",
+    "@vue/cli-plugin-eslint": "^4.5.17",
+    "@vue/cli-plugin-router": "^4.5.17",
+    "@vue/cli-plugin-vuex": "^4.5.17",
+    "@vue/cli-service": "^4.5.17",
     "babel-eslint": "^10.1.0",
     "eslint": "^6.7.2",
     "eslint-plugin-vue": "^6.2.2",
     "sass": "~1.32.0",
-    "sass-loader": "^10.0.0",
-    "vue-cli-plugin-vuetify": "~2.4.1",
-    "vue-template-compiler": "^2.6.11",
-    "vuetify-loader": "^1.7.0"
+    "sass-loader": "^10.2.1",
+    "vue-cli-plugin-vuetify": "^2.4.8",
+    "vue-template-compiler": "^2.6.14",
+    "vuetify-loader": "^1.7.3"
   }
 }
