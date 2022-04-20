@@ -16,7 +16,9 @@ variables:
 build:
   stage: build
   tags:
-    - x86
+    - dind
+  only:
+    - master
   before_script:
     # Docker hub login
     - >
