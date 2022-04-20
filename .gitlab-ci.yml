@@ -1,14 +1,32 @@
+stages:
+  - build
+  - deploy
+
+image: moreillon/ci-dind:4bca50d7
+services:
+  - name: docker:19.03.12-dind
 
 variables:
   APPLICATION_NAME: annotation-tool-polygon
-  CONTAINER_IMAGE: ${CONTAINER_REGISTRY}/${APPLICATION_NAME}
-  SERVICE_PORT: 31226
+
+  CONTAINER_TAG: ${CI_COMMIT_SHORT_SHA}
+  CONTAINER_IMAGE: ${DOCKER_HUB_USERNAME}/${APPLICATION_NAME}
+  CONTAINER_IMAGE_TAGGED: ${CONTAINER_IMAGE}:${CONTAINER_TAG}
 
 build:
   stage: build
   tags:
     - x86
+  before_script:
+    # Docker hub login
+    - >
+      echo "${DOCKER_HUB_PASSWORD}" |
+      docker login
+      --username ${DOCKER_HUB_USERNAME}
+      --password-stdin
+
   script:
     - docker build -t ${CONTAINER_IMAGE} .
+    - docker tag ${CONTAINER_IMAGE} ${CONTAINER_IMAGE_TAGGED}
     - docker push ${CONTAINER_IMAGE}
-    - docker image rm ${CONTAINER_IMAGE}
+    - docker push ${CONTAINER_IMAGE_TAGGED}

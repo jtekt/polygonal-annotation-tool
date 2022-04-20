@@ -1,5 +1,7 @@
 <template>
-  <v-card>
+  <v-card
+    max-width="500"
+    class="mx-auto">
     <v-card-title>Collections</v-card-title>
 
     <v-card-text>

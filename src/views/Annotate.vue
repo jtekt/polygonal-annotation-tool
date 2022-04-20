@@ -528,12 +528,9 @@ export default {
       return process.env.VUE_APP_LABELS.split(',')
     },
     item_has_unsaved_modifications(){
-      if(!this.item) return 'No item'
-      if(!this.unmodified_item_copy) return 'No copy'
+      if(!this.item) return false
+      if(!this.unmodified_item_copy) return false
       return this.object_equals(this.item,this.unmodified_item_copy)
-
-
-
     },
   }
 }
