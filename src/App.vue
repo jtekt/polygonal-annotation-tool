@@ -1,26 +1,9 @@
 <template>
-  <v-app>
-    <v-app-bar
-      app
-      color="#444444"
-      dark
-      clipped-left>
 
-      <v-app-bar-nav-icon
-        @click="drawer = !drawer" />
+  <AppTemplate
+    :options="options">
 
-
-      <v-toolbar-title>
-        Annotation tool
-      </v-toolbar-title>
-
-    </v-app-bar>
-
-    <v-navigation-drawer
-      v-model="drawer"
-      app
-      clipped>
-
+    <template v-slot:nav>
       <v-list
         dense
         nav>
@@ -70,34 +53,25 @@
         </v-list-item>
 
       </v-list>
+    </template>
 
-    </v-navigation-drawer>
+  </AppTemplate>
 
-    <v-main class="grey lighten-3">
-      <AuthenticationWall
-        :options="options"
-        @user="get_user($event)">
-        <v-container fluid>
-          <router-view/>
-        </v-container>
-      </AuthenticationWall>
-
-    </v-main>
-  </v-app>
 </template>
 
 <script>
-import AuthenticationWall from '@moreillon/vue_authentication_wall_vuetify'
+import AppTemplate from '@moreillon/vue_application_template_vuetify'
 export default {
   name: 'App',
   components: {
-    AuthenticationWall
+    AppTemplate
   },
   data: () => ({
-    drawer: null,
     options: {
-      login_url: `${process.env.VUE_APP_AUTHENTICATION_API_URL}/login`,
-      identification_url: `${process.env.VUE_APP_AUTHENTICATION_API_URL}/v2/whoami`,
+      title: "Image storage service",
+      authenticate: true,
+      login_url: process.env.VUE_APP_LOGIN_URL,
+      identification_url: process.env.VUE_APP_IDENTIFICATION_URL,
     },
     collections: [],
     nav: [
