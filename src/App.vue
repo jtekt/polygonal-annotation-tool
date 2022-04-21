@@ -68,7 +68,7 @@ export default {
   },
   data: () => ({
     options: {
-      title: "Image storage service",
+      title: 'Annotation tool',
       authenticate: true,
       login_url: process.env.VUE_APP_LOGIN_URL,
       identification_url: process.env.VUE_APP_IDENTIFICATION_URL,
