@@ -466,8 +466,10 @@ export default {
       const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
       const body = {
         annotation: this.item.annotation,
-        annotator_id: this.$store.state.current_user.identity || this.$store.state.current_user._id
       }
+
+      const {current_user} = this.$store.state
+      if(current_user) body.annotator_id = current_user._id || current_user.properties._id
 
       this.axios.patch(url,body)
       .then(() => {
