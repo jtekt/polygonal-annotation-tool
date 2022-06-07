@@ -60,7 +60,7 @@ export default {
       help_dialog: false,
       shortcuts: [
         {key: 'Ctrl + S', action: 'Save'},
-        {key: 'Ctrl + A', action: 'Set OK label for current item'},
+        // {key: 'Ctrl + A', action: 'Set OK label for current item'},
         {key: 'Ctrl + Z', action: 'Remove last polygon point'},
         {key: 'Del', action: 'Delete selected point / annotation'},
         {key: '←', action: 'Previous item'},

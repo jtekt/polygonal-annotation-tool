@@ -50,10 +50,12 @@
         </template>
 
         <template v-slot:item.annotation="{ item }">
-          <span v-if="!item.annotation">-</span>
-          <span v-else-if="item.annotation.length === 0" class="green--text">OK</span>
-          <div class="" v-else>
-            <div class="red--text"
+          <!-- An item can either has not annotation field or an empty annotation array -->
+          <span v-if="!item.annotation">Not annotated yet</span>
+          <span v-else-if="item.annotation.length === 0">Empty set</span>
+
+          <div v-else>
+            <div
               v-for="(summary_item, index) in annotation_summary(item.annotation)"
               :key="`${item._id}_${index}`">
 
@@ -61,6 +63,7 @@
 
             </div>
           </div>
+
         </template>
 
       </v-data-table>
@@ -91,7 +94,7 @@ export default {
       headers: [
         {text: 'Image', value: "image"},
         {text: 'Time', value: "time"},
-        {text: 'Annotation', value: 'annotation'}
+        {text: 'Annotations', value: 'annotation'}
       ],
       api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
       dates: [],
