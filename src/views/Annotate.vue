@@ -157,6 +157,7 @@
 
           </v-data-table>
 
+          <!-- Item details -->
           <v-list class="mt-5" v-if="item">
             <v-list-item two-line>
               <v-list-item-content>

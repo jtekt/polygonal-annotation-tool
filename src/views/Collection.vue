@@ -7,12 +7,7 @@
 
         <v-tooltip bottom>
           <template v-slot:activator="{ on, attrs }">
-            <v-btn
-              icon
-              v-bind="attrs"
-              v-on="on"
-              exact
-              :to="{name: 'collections'}">
+            <v-btn icon v-bind="attrs" v-on="on" exact :to="{name: 'collections'}">
               <v-icon>mdi-arrow-left</v-icon>
             </v-btn>
           </template>
@@ -24,44 +19,35 @@
 
 
       </v-toolbar>
-      <v-divider/>
+      <v-divider />
 
 
 
 
 
-      <v-data-table
-        :loading="loading"
-        :headers="headers"
-        :items="items"
-        :options.sync="options"
+      <v-data-table :loading="loading" :headers="headers" :items="items" :options.sync="options"
         :server-items-length="item_count"
         @click:row="$router.push({name: 'annotate', params: {document_id: $event._id, collection: collection_name}})">
 
 
         <!-- Thumbnails -->
         <template v-slot:item.image="{ item }">
-          <v-img
-            contain
-            max-height="100"
-            max-width="100"
-            :src="`${api_url}/collections/${collection_name}/images/${item._id}/image`"
-            alt="item"/>
+          <v-img contain max-height="100" max-width="100"
+            :src="`${api_url}/collections/${collection_name}/images/${item._id}/image`" alt="item" />
         </template>
 
         <template v-slot:item.annotation="{ item }">
           <!-- An item can either has not annotation field or an empty annotation array -->
-          <span v-if="!item.annotation">Not annotated yet</span>
+
+          <v-icon v-if="!item.annotation" color="#c00000">mdi-tag-off</v-icon>
           <span v-else-if="item.annotation.length === 0">Empty set</span>
 
-          <div v-else>
-            <div
-              v-for="(summary_item, index) in annotation_summary(item.annotation)"
-              :key="`${item._id}_${index}`">
+          <div v-else class="classes_wrapper">
+            <v-chip v-for="(summary_item, index) in annotation_summary(item.annotation)" :key="`${item._id}_${index}`">
 
               {{summary_item.label}}: {{summary_item.count}}
 
-            </div>
+            </v-chip>
           </div>
 
         </template>
@@ -198,5 +184,9 @@ export default {
 <style>
 td, th {
   white-space: nowrap;
+}
+.classes_wrapper {
+  display: flex;
+  gap: 0.5em;
 }
 </style>

@@ -3,6 +3,10 @@
 This is an anotation tool for imaga datsets intended to be used in AI applications. 
 It allows the highlight of an image area via the drawing of polygons, directly in the web browser.
 
+<p align="center">
+  <img width="100" height="150" src="./docs/annotation_tool_polygon.gif">
+</p>
+
 
 | Variable | Description |
 | --- | --- | --- |
