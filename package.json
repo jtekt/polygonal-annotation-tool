@@ -9,15 +9,12 @@
   },
   "dependencies": {
     "@moreillon/vue_application_template_vuetify": "^1.1.7",
-    "@moreillon/vue_authentication_wall_vuetify": "^0.1.11",
-    "@moreillon/vue_loader": "^1.0.5",
     "axios": "^0.21.4",
-    "core-js": "^3.22.1",
+    "core-js": "^3.22.8",
     "vue": "^2.6.14",
     "vue-axios": "^3.4.1",
-    "vue-material-design-icons": "^4.13.0",
-    "vue-router": "^3.5.3",
-    "vuetify": "^2.6.4",
+    "vue-router": "^3.5.4",
+    "vuetify": "^2.6.6",
     "vuex": "^3.6.2"
   },
   "devDependencies": {
@@ -32,7 +29,7 @@
     "eslint-plugin-vue": "^6.2.2",
     "sass": "~1.32.0",
     "sass-loader": "^10.2.1",
-    "vue-cli-plugin-vuetify": "^2.4.8",
+    "vue-cli-plugin-vuetify": "^2.5.1",
     "vue-template-compiler": "^2.6.14",
     "vuetify-loader": "^1.7.3"
   }
