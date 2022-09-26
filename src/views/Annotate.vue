@@ -7,7 +7,7 @@
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
           <v-btn icon v-bind="attrs" v-on="on" exact
-            :to="{name: 'collection', params: {collection_name: $route.params.collection_name}}">
+            :to="{name: 'images'}">
             <v-icon>mdi-format-list-bulleted</v-icon>
           </v-btn>
         </template>
@@ -162,7 +162,7 @@
             <v-list-item two-line>
               <v-list-item-content>
                 <v-list-item-subtitle>File name</v-list-item-subtitle>
-                <v-list-item-title>{{ item.image }}</v-list-item-title>
+                <v-list-item-title>{{ item.file }}</v-list-item-title>
               </v-list-item-content>
             </v-list-item>
             <v-list-item two-line>
@@ -292,8 +292,8 @@ export default {
 
     get_item_by_id(){
       this.loading = true
-      const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
-      this.axios.get(url)
+      const route = `/images/${this.document_id}`
+      this.axios.get(route)
       .then(({data}) => {
         this.item = data
         this.save_item_copy()
@@ -312,8 +312,8 @@ export default {
       if(this.item_has_unsaved_modifications && !confirm('Item has modifications, discard?')) return
       if(this.loading) return
       this.loading = true
-      const url = `${this.api_url}/collections/${this.collection_name}/images/`
-      this.axios.get(url,options)
+      const route = `/images`
+      this.axios.get(route,options)
       .then(({data}) => {
 
         if(data.length === 0) {
@@ -383,13 +383,13 @@ export default {
 
       
 
-      const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
+      const route = `/images/${this.document_id}`
       const body = { annotation: this.item.annotation }
 
       const {current_user} = this.$store.state
       if(current_user) body.annotator_id = current_user._id || current_user.properties._id
 
-      this.axios.patch(url,body)
+      this.axios.patch(route,body)
       .then(() => {
         this.snackbar.show = true
         this.snackbar.text = 'Item saved successful'
@@ -439,14 +439,11 @@ export default {
     }
   },
   computed: {
-    collection_name(){
-      return this.$route.params.collection
-    },
     document_id(){
       return this.$route.params.document_id
     },
     image_src(){
-      return `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}/image`
+      return `${this.api_url}/images/${this.document_id}/image`
     },
     labels(){
       return process.env.VUE_APP_LABELS.split(',')
