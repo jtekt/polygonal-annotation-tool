@@ -10,7 +10,7 @@
 
         <v-list-item
           exact
-          :to="{name: 'collections'}">
+          :to="{name: 'images'}">
           <v-list-item-icon>
             <v-icon>mdi-home</v-icon>
           </v-list-item-icon>
@@ -50,11 +50,7 @@ export default {
       login_url: process.env.VUE_APP_LOGIN_URL,
       identification_url: process.env.VUE_APP_IDENTIFICATION_URL,
     },
-    nav: [
-      { title: 'Dashboard', icon: 'mdi-view-dashboard' },
-      { title: 'Photos', icon: 'mdi-image' },
-      { title: 'About', icon: 'mdi-help-box' },
-    ],
+
   }),
 
 

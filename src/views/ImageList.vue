@@ -18,7 +18,7 @@
         :items="items" 
         :options.sync="options"
         :server-items-length="item_count"
-        @click:row="$router.push({name: 'annotate', params: {document_id: $event._id, collection: collection_name}})">
+        @click:row="$router.push({name: 'annotate', params: {document_id: $event._id}})">
 
 
         <!-- Thumbnails -->
@@ -30,11 +30,11 @@
         <template v-slot:item.annotation="{ item }">
           <!-- An item can either has not annotation field or an empty annotation array -->
 
-          <v-icon v-if="!item.annotation" color="#c00000">mdi-tag-off</v-icon>
-          <span v-else-if="item.annotation.length === 0">Empty set</span>
+          <v-icon v-if="!item.data.annotation" color="#c00000">mdi-tag-off</v-icon>
+          <span v-else-if="item.data.annotation.length === 0">Empty set</span>
 
           <div v-else class="classes_wrapper">
-            <v-chip v-for="(summary_item, index) in annotation_summary(item.annotation)" :key="`${item._id}_${index}`">
+            <v-chip v-for="(summary_item, index) in annotation_summary(item.data.annotation)" :key="`${item._id}_${index}`">
 
               {{summary_item.label}}: {{summary_item.count}}
 
