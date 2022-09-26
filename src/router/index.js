@@ -1,30 +1,25 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import CollectionList from '@/views/CollectionList.vue'
+import ImageList from '@/views/ImageList.vue'
 
 Vue.use(VueRouter)
 
 const routes = [
   {
-    path: '/',
-    name: 'collections',
-    component: CollectionList,
-    alias: '/collections'
+    path: '/images',
+    alias: '/',
+    name: 'images',
+    component: ImageList,
+  },
+  {
+    path: '/images/:document_id/annotate',
+    name: 'annotate',
+    component: () => import('@/views/Annotate.vue')
   },
   {
     path: '/about',
     name: 'about',
     component: () => import('@/views/About.vue')
-  },
-  {
-    path: '/collections/:collection',
-    name: 'collection',
-    component: () => import('@/views/Collection.vue')
-  },
-  {
-    path: '/collections/:collection/images/:document_id/annotate',
-    name: 'annotate',
-    component: () => import('@/views/Annotate.vue')
   },
   {
     path: '/*',

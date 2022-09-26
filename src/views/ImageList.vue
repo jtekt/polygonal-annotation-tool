@@ -4,20 +4,7 @@
     <v-card-text>
 
       <v-toolbar flat>
-
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on, attrs }">
-            <v-btn icon v-bind="attrs" v-on="on" exact :to="{name: 'collections'}">
-              <v-icon>mdi-arrow-left</v-icon>
-            </v-btn>
-          </template>
-          <span>Return to home</span>
-        </v-tooltip>
-
-        <v-toolbar-title>{{collection_name}}</v-toolbar-title>
-
-
-
+        <v-toolbar-title>Images</v-toolbar-title>
       </v-toolbar>
       <v-divider />
 
@@ -25,25 +12,29 @@
 
 
 
-      <v-data-table :loading="loading" :headers="headers" :items="items" :options.sync="options"
+      <v-data-table 
+        :loading="loading" 
+        :headers="headers" 
+        :items="items" 
+        :options.sync="options"
         :server-items-length="item_count"
-        @click:row="$router.push({name: 'annotate', params: {document_id: $event._id, collection: collection_name}})">
+        @click:row="$router.push({name: 'annotate', params: {document_id: $event._id}})">
 
 
         <!-- Thumbnails -->
         <template v-slot:item.image="{ item }">
           <v-img contain max-height="100" max-width="100"
-            :src="`${api_url}/collections/${collection_name}/images/${item._id}/image`" alt="item" />
+            :src="`${api_url}/images/${item._id}/image`" alt="item" />
         </template>
 
         <template v-slot:item.annotation="{ item }">
           <!-- An item can either has not annotation field or an empty annotation array -->
 
-          <v-icon v-if="!item.annotation" color="#c00000">mdi-tag-off</v-icon>
-          <span v-else-if="item.annotation.length === 0">Empty set</span>
+          <v-icon v-if="!item.data.annotation" color="#c00000">mdi-tag-off</v-icon>
+          <span v-else-if="item.data.annotation.length === 0">Empty set</span>
 
           <div v-else class="classes_wrapper">
-            <v-chip v-for="(summary_item, index) in annotation_summary(item.annotation)" :key="`${item._id}_${index}`">
+            <v-chip v-for="(summary_item, index) in annotation_summary(item.data.annotation)" :key="`${item._id}_${index}`">
 
               {{summary_item.label}}: {{summary_item.count}}
 
@@ -91,7 +82,7 @@ export default {
   },
   mounted(){
 
-    this.get_item_count()
+    this.get_items()
   },
   watch: {
     options: {
@@ -100,15 +91,13 @@ export default {
       },
       deep: true,
     },
-    collection_name(){
-      this.get_item_count()
-    }
+
   },
   methods: {
     get_items(){
 
       this.loading = true
-      const url = `${this.api_url}/collections/${this.collection_name}/images`
+
       const { page, itemsPerPage, sortBy, sortDesc } = this.options
 
       const sort = sortBy.reduce((acc, item, index) => {
@@ -134,28 +123,29 @@ export default {
         params.filter[this.filter_key] = this.filter_property
       }
 
-      this.axios.get(url, {params})
-      .then(({data}) => {
-        this.items = data
+      this.axios.get('/images', {params})
+      .then(({data: {total, items}}) => {
+        this.items = items
+        this.item_count = total
       })
       .catch((error) => {console.error(error)})
       .finally(() => {this.loading = false})
     },
 
 
-    get_item_count(){
-      const url = `${this.api_url}/collections/${this.collection_name}`
-      this.items = []
-      this.axios.get(url)
-      .then(({data}) => {
-        this.item_count = data.documents
-        this.get_items()
-       })
-      .catch(error =>{
-        if(error.response) console.log(error.response.data)
-        else console.log(error)
-      })
-    },
+    // get_item_count(){
+    //   const url = `${this.api_url}/collections/${this.collection_name}`
+    //   this.items = []
+    //   this.axios.get(url)
+    //   .then(({data}) => {
+    //     this.item_count = data.documents
+    //     this.get_items()
+    //    })
+    //   .catch(error =>{
+    //     if(error.response) console.log(error.response.data)
+    //     else console.log(error)
+    //   })
+    // },
     annotation_summary(annotation){
       const summary = annotation.reduce((acc, item) => {
         let found = acc.find(x => x.label === item.label)
@@ -171,12 +161,7 @@ export default {
     },
 
   },
-  computed: {
-    collection_name(){
-      return this.$route.params.collection
-    },
 
-  }
 
 }
 </script>

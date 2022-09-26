@@ -7,11 +7,11 @@
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
           <v-btn icon v-bind="attrs" v-on="on" exact
-            :to="{name: 'collection', params: {collection_name: $route.params.collection_name}}">
+            :to="{name: 'images'}">
             <v-icon>mdi-format-list-bulleted</v-icon>
           </v-btn>
         </template>
-        <span>Return to collection</span>
+        <span>Return to image list</span>
       </v-tooltip>
 
       <v-divider vertical />
@@ -60,10 +60,6 @@
         </div>
       </v-tooltip>
 
-
-
-
-
       <v-divider vertical />
 
       <v-tooltip bottom>
@@ -101,41 +97,45 @@
       <v-divider vertical />
       <KeyboardShortcuts />
 
-
-
-
-
     </v-toolbar>
     <v-divider />
 
-    <v-container fluid>
+    <v-container fluid v-if="!loading && item">
       <v-row>
+        <!-- Left col: Image -->
         <v-col class="image_wrapper_outer">
           <!-- This wrapper gets the same size as the img -->
-          <div v-if="!loading && item" class="image_wrapper">
+          <div class="image_wrapper">
 
             <!-- The actual image -->
             <img draggable="false" :src="image_src" ref="image" alt="">
 
             <!-- The polygon editing tool -->
-            <PolygonEditor :mode="mode_lookup[mode_index]" :polygons="item.annotation"
+            <PolygonEditor 
+              :mode="mode_lookup[mode_index]" 
+              :polygons="item.data.annotation"
               :selected_polygon_index.sync="selected_annotation"
               @create_polygons_array="create_annotation_array_not_exists()"
               @polygon_created="$event.label = labels[0]" />
 
           </div>
         </v-col>
+        <!-- Right col: metadata -->
         <v-col>
 
           <div v-if="loading" class="text-center text-h5 mt-5">
             <v-progress-circular indeterminate />
           </div>
 
-          <div class="text-center text-h5 mt-5" v-else-if="!item.annotation">
+          <div class="text-center text-h5 mt-5" v-else-if="!item.data.annotation">
             Not annotated yet
           </div>
 
-          <v-data-table hide-default-footer :itemsPerPage="-1" :loading="loading" :items="item.annotation || []"
+          <v-data-table 
+            hide-default-footer 
+            :itemsPerPage="-1" 
+            :loading="loading" 
+            :items="item.data.annotation || []"
             :headers="headers">
 
             <template v-slot:item="row">
@@ -162,7 +162,7 @@
             <v-list-item two-line>
               <v-list-item-content>
                 <v-list-item-subtitle>File name</v-list-item-subtitle>
-                <v-list-item-title>{{ item.image }}</v-list-item-title>
+                <v-list-item-title>{{ item.file }}</v-list-item-title>
               </v-list-item-content>
             </v-list-item>
             <v-list-item two-line>
@@ -171,10 +171,10 @@
                 <v-list-item-title>{{ item.time }}</v-list-item-title>
               </v-list-item-content>
             </v-list-item>
-            <v-list-item v-if="item.annotation && item.annotator_id" two-line>
+            <v-list-item v-if="item.data.annotation && item.data.annotator_id" two-line>
               <v-list-item-content>
                 <v-list-item-subtitle>Annotator ID</v-list-item-subtitle>
-                <v-list-item-title>{{ item.annotator_id }}</v-list-item-title>
+                <v-list-item-title>{{ item.data.annotator_id }}</v-list-item-title>
               </v-list-item-content>
             </v-list-item>
           </v-list>
@@ -220,11 +220,7 @@ export default {
     return {
       loading: false,
 
-      // probably don't need both item and annotation since annotation is in item
-      // annotation becomes an array
-      item: {
-        annotation: null,
-      },
+      item: null,
 
       // used to keep track of unsaved changes
       unmodified_item_copy: null,
@@ -271,7 +267,7 @@ export default {
   methods: {
     unannotate(){
       // Completely remove the annotation field, marking the item as not annotated yet
-      if (!this.item.annotation) return
+      if (!this.item.data.annotation) return
       if (!confirm('Mark the item unannotated?')) return
 
       this.$set(this.item, 'annotation', null)
@@ -279,11 +275,11 @@ export default {
     },
     empty_annotations() {
       // Empty the annotation array but keep the field
-      if(this.item.annotation && this.item.annotation.length) {
+      if (this.item.data.annotation && this.item.data.annotation.length) {
         if(!confirm('ホンマ？')) return
       }
 
-      this.$set(this.item, 'annotation', [])
+      this.$set(this.item.data, 'annotation', [])
     },
     save_annotations(){
       this.create_annotation_array_not_exists()
@@ -292,16 +288,16 @@ export default {
 
     get_item_by_id(){
       this.loading = true
-      const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
-      this.axios.get(url)
+      const route = `/images/${this.document_id}`
+      this.axios.get(route)
       .then(({data}) => {
         this.item = data
         this.save_item_copy()
        })
       .catch(error =>{
         this.error = true
-        if(error.response) console.log(error.response.data)
-        else console.log(error)
+        if(error.response) console.error(error.response.data)
+        else console.error(error)
       })
       .finally(() => this.loading = false)
     },
@@ -312,38 +308,45 @@ export default {
       if(this.item_has_unsaved_modifications && !confirm('Item has modifications, discard?')) return
       if(this.loading) return
       this.loading = true
-      const url = `${this.api_url}/collections/${this.collection_name}/images/`
-      this.axios.get(url,options)
-      .then(({data}) => {
 
-        if(data.length === 0) {
+      this.axios.get(`/images`,options)
+      .then(({data: {items}}) => {
+
+        if (items.length === 0) {
           this.snackbar.show = true
           this.snackbar.text = 'No more items'
         }
 
-        const item = data[0]
+        const item = items[0]
         // Prevent reloading current route
         if(this.document_id !== item._id) {
-          this.$router.push({name: 'annotate', params: {collection: this.collection_name, document_id: item._id}})
+          this.$router.push({name: 'annotate', params: {document_id: item._id}})
         }
 
       })
       .catch(error =>{
         this.error = true
-        if(error.response) console.log(error.response.data)
-        else console.log(error)
+        if(error.response) console.error(error.response.data)
+        else console.error(error)
       })
       .finally(() => this.loading = false)
     },
 
     get_next_unannotated_item(){
-      const options = {
-        params: {
-          filter: { annotation: { $not: {$exists: true}  } },
-          limit: 1,
-        }
+
+      // TODO: Fix because it's not working
+
+      const params = {
+        filter: {
+          $or: [
+            { "data.annotation": { $not: { $exists: true } } },
+            { "data.annotation": null },
+          ]
+        },
+        limit: 1,
       }
-      this.get_items_with_options(options)
+
+      this.get_items_with_options({ params })
     },
     get_next_item_by_date(){
 
@@ -368,7 +371,8 @@ export default {
     create_annotation_array_not_exists(){
       // If the item has not been annotated yet. the annotation property must be created as an array
       // Note the usage of $set for reactivity
-      if(!this.item.annotation) this.$set(this.item, 'annotation', [])
+      if (!this.item.data) this.$set(this.item, 'data', {})
+      if (!this.item.data.annotation) this.$set(this.item.data, 'annotation', [])
     },
 
     get_copy_of_item(object){
@@ -381,15 +385,13 @@ export default {
 
     save_item(){
 
-      
-
-      const url = `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}`
-      const body = { annotation: this.item.annotation }
+      const route = `/images/${this.document_id}`
+      const body = { annotation: this.item.data.annotation }
 
       const {current_user} = this.$store.state
       if(current_user) body.annotator_id = current_user._id || current_user.properties._id
 
-      this.axios.patch(url,body)
+      this.axios.patch(route,body)
       .then(() => {
         this.snackbar.show = true
         this.snackbar.text = 'Item saved successful'
@@ -431,7 +433,7 @@ export default {
     },
     delete_single_annotation(index){
       if(!confirm(`Delete polygon ${index}?`)) return
-      this.item.annotation.splice(index,1)
+      this.item.data.annotation.splice(index,1)
       this.selected_annotation = -1
     },
     object_equals( x, y ) {
@@ -439,14 +441,11 @@ export default {
     }
   },
   computed: {
-    collection_name(){
-      return this.$route.params.collection
-    },
     document_id(){
       return this.$route.params.document_id
     },
     image_src(){
-      return `${this.api_url}/collections/${this.collection_name}/images/${this.document_id}/image`
+      return `${this.api_url}/images/${this.document_id}/image`
     },
     labels(){
       return process.env.VUE_APP_LABELS.split(',')

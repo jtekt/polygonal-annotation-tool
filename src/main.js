@@ -6,6 +6,9 @@ import axios from 'axios'
 import VueAxios from 'vue-axios'
 import vuetify from './plugins/vuetify'
 
+axios.defaults.baseURL = process.env.VUE_APP_STORAGE_SERVICE_API_URL
+
+
 Vue.use(VueAxios, axios)
 
 Vue.config.productionTip = false
