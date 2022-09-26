@@ -127,7 +127,7 @@
             <v-progress-circular indeterminate />
           </div>
 
-          <div class="text-center text-h5 mt-5" v-else-if="!item.annotation">
+          <div class="text-center text-h5 mt-5" v-else-if="!item.data.annotation">
             Not annotated yet
           </div>
 
@@ -267,7 +267,7 @@ export default {
   methods: {
     unannotate(){
       // Completely remove the annotation field, marking the item as not annotated yet
-      if (!this.item.annotation) return
+      if (!this.item.data.annotation) return
       if (!confirm('Mark the item unannotated?')) return
 
       this.$set(this.item, 'annotation', null)
@@ -275,12 +275,11 @@ export default {
     },
     empty_annotations() {
       // Empty the annotation array but keep the field
-      if(this.item.annotation && this.item.annotation.length) {
+      if (this.item.data.annotation && this.item.data.annotation.length) {
         if(!confirm('ホンマ？')) return
       }
 
-      // TODO: needs to be stored into data
-      this.$set(this.item, 'annotation', [])
+      this.$set(this.item.data, 'annotation', [])
     },
     save_annotations(){
       this.create_annotation_array_not_exists()
@@ -434,8 +433,7 @@ export default {
     },
     delete_single_annotation(index){
       if(!confirm(`Delete polygon ${index}?`)) return
-      // TODO: needs to be stored into data
-      this.item.annotation.splice(index,1)
+      this.item.data.annotation.splice(index,1)
       this.selected_annotation = -1
     },
     object_equals( x, y ) {
