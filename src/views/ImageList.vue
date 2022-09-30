@@ -26,6 +26,10 @@
           <img class="thumbnail" :src="image_src(item)" />
         </template>
 
+        <template v-slot:item.time="{ item }">
+          <span>{{format_date(item)}}</span>
+        </template>
+
 
         <template v-slot:item.annotation="{ item }">
           <!-- An item can either has not annotation field or an empty annotation array -->
@@ -83,6 +87,8 @@ export default {
   mounted(){
 
     this.get_items()
+    this.get_fields()
+
   },
   watch: {
     options: {
@@ -112,10 +118,19 @@ export default {
       .then(({data: {total, items}}) => {
         this.items = items
         this.item_count = total
-        this.build_headers()
       })
       .catch((error) => {console.error(error)})
       .finally(() => {this.loading = false})
+    },
+
+    get_fields() {
+      this.axios.get('/images/fields')
+        .then(({ data }) => {
+          this.extra_headers = data.map(f => ({ text: f, value: `data.${f}` }))
+        })
+        .catch((error) => {
+          console.error(error)
+        })
     },
 
     format_date({ time }) {
@@ -123,18 +138,6 @@ export default {
       return date.toLocaleString('Ja-JP')
     },
 
-
-    build_headers() {
-      this.items.forEach((item) => {
-        for (let key in item.data) {
-          if (key !== this.annotation_field) {
-            const header_exists = this.extra_headers.some(header => header.value === `data.${key}`)
-            if (!header_exists) this.extra_headers.push({ text: key, value: `data.${key}` })
-          }
-          
-        }
-      })
-    },
 
 
     annotation_summary(annotation){
