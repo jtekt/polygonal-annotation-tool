@@ -99,93 +99,106 @@
     <v-divider />
 
     <v-container fluid v-if="!loading && item">
+
       <v-row>
         <!-- Left col: Image -->
         <v-col class="image_wrapper_outer">
+
           <!-- This wrapper gets the same size as the img -->
           <div class="image_wrapper">
 
             <!-- The actual image -->
-            <img draggable="false" :src="image_src" ref="image" alt="">
+            <img draggable="false" :src="image_src" ref="image" @load="image_loaded($event)">
 
             <!-- The polygon editing tool -->
+            <!-- TODO: exchange data with child using v-model -->
+            <!-- @polygon_created is used to create a label for the given polygon -->
+            <!-- TODO: Find better way than emitting polygon creation -->
+            <!-- TODO: find better way than @create_polygons_array -->
             <PolygonEditor 
+              :width="image.width"
+              :height="image.height"
               :mode="mode_lookup[mode_index]" 
               :polygons="item.data[annotation_field]"
-              :selected_polygon_index.sync="selected_annotation"
               @create_polygons_array="create_annotation_array_not_exists()"
-              @polygon_created="$event.label = labels[0]" />
+              @polygon_created="$event.label = labels[0]"
+              :selected_polygon_index.sync="selected_annotation"
+            />
 
           </div>
         </v-col>
-        <!-- Right col: metadata -->
+      </v-row>
+      <v-row>
+
         <v-col>
-
-          <div v-if="loading" class="text-center text-h5 mt-5">
-            <v-progress-circular indeterminate />
-          </div>
-
-          <div class="text-center text-h5 mt-5" v-else-if="!item.data[annotation_field]">
-            Not annotated yet
-          </div>
-
-          <v-data-table 
-            hide-default-footer 
-            :itemsPerPage="-1" 
-            :loading="loading" 
-            :items="item.data[annotation_field] || []"
-            :headers="headers">
-
-            <template v-slot:item="row">
-              <tr
-                :style="{'background-color': selected_annotation === row.index ? '#c0000044' : '', cursor: 'pointer' }"
-                @click="selected_annotation = row.index">
-                <td>{{row.index}}</td>
-                <td>
-                  <v-combobox v-model="row.item.label" :items="labels" />
-                </td>
-
-                <td>
-                  <v-icon small class="mr-2" @click="delete_single_annotation(row.index)">
-                    mdi-delete
-                  </v-icon>
-                </td>
-              </tr>
-            </template>
-
-          </v-data-table>
-
-          <!-- Item details -->
-          <v-list class="mt-5" v-if="item">
-            <v-list-item two-line>
-              <v-list-item-content>
-                <v-list-item-subtitle>File name</v-list-item-subtitle>
-                <v-list-item-title>{{ item.file }}</v-list-item-title>
-              </v-list-item-content>
-            </v-list-item>
-            <v-list-item two-line>
-              <v-list-item-content>
-                <v-list-item-subtitle>Timestamp</v-list-item-subtitle>
-                <v-list-item-title>{{ item.time }}</v-list-item-title>
-              </v-list-item-content>
-            </v-list-item>
-            <template v-for="(value, key) of item.data">
+          <v-card outlined>
+            <v-card-title>
+              Image info
+            </v-card-title>
+            <v-card-text>
+              <v-list class="mt-5" v-if="item">
+                <v-list-item two-line>
+                  <v-list-item-content>
+                    <v-list-item-subtitle>File name</v-list-item-subtitle>
+                    <v-list-item-title>{{ item.file }}</v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+                <v-list-item two-line>
+                  <v-list-item-content>
+                    <v-list-item-subtitle>Timestamp</v-list-item-subtitle>
+                    <v-list-item-title>{{ item.time }}</v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
               
-              <v-list-item :key="key" v-if="key !== annotation_field" two-line>
-                <v-list-item-content>
-                  <v-list-item-subtitle>{{key}}</v-list-item-subtitle>
-                  <v-list-item-title>
-                    <pre>{{format_metadata(value)}}</pre>
-                  </v-list-item-title>
-                </v-list-item-content>
-              </v-list-item>
-            </template>
-            
+                <template v-for="(value, key) of item.data">
+                  <v-list-item :key="key" v-if="key !== annotation_field" two-line>
+                    <v-list-item-content>
+                      <v-list-item-subtitle>{{key}}</v-list-item-subtitle>
+                      <v-list-item-title>
+                        <pre>{{format_metadata(value)}}</pre>
+                      </v-list-item-title>
+                    </v-list-item-content>
+                  </v-list-item>
+                </template>
 
-          </v-list>
+              </v-list>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-
-
+        <v-col cols="12" lg="8">
+          <v-card outlined>
+            <v-card-title>Annotations</v-card-title>
+            <v-card-text>
+              <div class="text-center text-h5 mt-5" v-if="!item.data[annotation_field]">
+                Not annotated yet
+              </div>
+              
+              <v-data-table 
+                v-else
+                hide-default-footer 
+                :itemsPerPage="-1" 
+                :loading="loading" 
+                :items="item.data[annotation_field] || []"
+                :headers="headers">
+              
+                <template v-slot:item="row">
+                  <tr :style="{'background-color': selected_annotation === row.index ? '#c0000044' : '', cursor: 'pointer' }"
+                    @click="selected_annotation = row.index">
+                    <td>{{row.index}}</td>
+                    <td>
+                      <v-combobox v-model="row.item.label" :items="labels" />
+                    </td>
+                    <td>
+                      <v-icon small class="mr-2" @click="delete_single_annotation(row.index)">
+                        mdi-delete
+                      </v-icon>
+                    </td>
+                  </tr>
+                </template>
+              </v-data-table>
+            </v-card-text>
+          </v-card>
         </v-col>
       </v-row>
     </v-container>
@@ -237,6 +250,11 @@ export default {
         {text: 'Delete', value: 'actions'},
       ],
 
+      image: {
+        width: 800,
+        height: 600,
+      },
+
       selected_annotation: -1,
 
       api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
@@ -278,7 +296,7 @@ export default {
       if (!this.item.data[this.annotation_field]) return
       if (!confirm('Mark the item unannotated?')) return
 
-      this.$set(this.item, this.annotation_field, null)
+      this.$set(this.item.data, this.annotation_field, null)
       this.save_item()
     },
     empty_annotations() {
@@ -419,6 +437,15 @@ export default {
       })
     },
 
+    image_loaded(){
+      // Provide image size to editor when loaded
+      // const {width, height} = this.$refs.image
+      const { naturalWidth, naturalHeight } = this.$refs.image
+      this.image.width = naturalWidth
+      this.image.height = naturalHeight
+      console.log({ naturalWidth, naturalHeight })
+    },
+
     handle_keydown(e){
       // Keyboard events
 
@@ -475,6 +502,11 @@ export default {
       if(!this.unmodified_item_copy) return false
       return this.object_equals(this.item,this.unmodified_item_copy)
     },
+    image_scale(){
+      if (!this.$refs.image) return
+      console.log(this.$refs.image)
+      return 'image'
+    }
   }
 }
 </script>
@@ -490,6 +522,11 @@ export default {
 
 .image_wrapper {
   position: relative;
+  display: flex;
+}
+
+.image_wrapper > * {
+  max-width: 100%;
 }
 
 

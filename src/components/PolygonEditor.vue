@@ -1,5 +1,7 @@
 <template>
   <svg
+    :viewBox="`0 0 ${viewBox.width} ${viewBox.height}`"
+    ref="svg"
     @click.self="area_clicked($event)"
     @mousedown.self="area_mouseDown($event)"
     @mouseup="area_mouseUp($event)"
@@ -22,24 +24,26 @@
         :class="polygon_classes(polygon_index)"
         @click="polygon_clicked(polygon_index)"/>
 
-      <!-- mid points between vertices -->
+      <!-- midpoints between vertices -->
       <circle
         class="midpoint"
-        v-for="(point, point_index) in midpoints(polygon)"
+        v-for="(point, point_index) in denormalize_points(midpoints(polygon))"
         :key="`polygon_${polygon_index}_midpoint_${point_index}`"
         :class="midpoint_classes(polygon_index,point_index)"
         @mousedown="midpoint_clicked($event, polygon_index, point_index)"
-        :cx="point.x" :cy="point.y"/>
+        :cx="point.x" 
+        :cy="point.y"/>
 
-      <!-- The polygon vertices -->
+      <!-- polygon vertices -->
       <circle
         class="vertex"
-        v-for="(point, point_index) in polygon.points"
+        v-for="(point, point_index) in denormalize_points(polygon.points)"
         :key="`polygon_${polygon_index}_point_${point_index}`"
         @mousedown="point_mousedown(polygon_index, point_index)"
         @mouseup="point_mouseup()"
         :class="point_classes(polygon_index,point_index)"
-        :cx="point.x" :cy="point.y"/>
+        :cx="point.x" 
+        :cy="point.y"/>
 
     </template>
   </svg>
@@ -49,18 +53,31 @@
 export default {
   name: 'PolygonEditor',
   props: {
-    polygons: {type: Array},
-    mode: {type: String, default() {return 'polygon'}},
-    selected_polygon_index: {type: Number, default() {return -1}},
+
+    width: { type: Number, default: 100 },
+    height: { type: Number, default: 100 },
+
+    mode: { type: String, default: 'polygon' },
+    selected_polygon_index: { type: Number, default: -1 },
+
+    // TODO: polygons should be used with v-model
+    polygons: { type: Array },
   },
   data () {
     return {
+
+      viewBox: {
+        width: 800,
+        height: 600,
+      },
+
       selected_point_index: -1,
       grabbed_point_index: -1,
     }
   },
   mounted(){
     document.addEventListener("keydown", this.handle_keydown)
+    
   },
   beforeDestroy() {
     document.removeEventListener("keydown", this.handle_keydown)
@@ -78,7 +95,8 @@ export default {
         e.preventDefault()
         this.finish_current_polygon()
       }
-      else if (e.key === 'z' && e.ctrlKey) {
+      // Ctrl Z for undo
+      else if (e.ctrlKey && e.key === 'z' ) {
         e.preventDefault()
         this.undo_last_point()
       }
@@ -96,10 +114,17 @@ export default {
     },
     area_mouseDown(event){
 
-      // TODO: use percents?
-      const {offsetX: x, offsetY: y} = event
+
+      const {
+        offsetX: x, 
+        offsetY: y,
+      } = event
+
+      // const mousePoint = {x,y}
+      const mousePoint = this.normalize_point({ x, y })
 
       // Get the parent to create the polygons array if it does not exist
+      // TODO: use sync
       if(!this.polygons) this.$emit('create_polygons_array')
 
       // Using NextTick because polygon array creation is done in parent
@@ -108,18 +133,21 @@ export default {
         if(this.mode === 'polygon') {
           let polygon = this.polygons[this.selected_polygon_index]
           if(!polygon || !polygon.constructing) polygon = this.create_polygon()
-          polygon.points.push({x,y})
+          polygon.points.push(mousePoint)
 
         }
 
         else if(this.mode === 'rectangle') {
           const rectangle = this.create_polygon()
 
+          const margin = 10
+
           // Add other points of the rectangle
-          rectangle.points.push({x,y})
-          rectangle.points.push({x,y: y+10})
-          rectangle.points.push({x: x+10,y: y+10})
-          rectangle.points.push({x: x+10,y})
+          // Watch the order!
+          rectangle.points.push(mousePoint)
+          rectangle.points.push({ x, y: y + margin })
+          rectangle.points.push({ x: x + margin, y: y + margin })
+          rectangle.points.push({ x: x + margin, y })
         }
       })
 
@@ -164,19 +192,26 @@ export default {
       // Move grabbed points or create rectangle
 
       if(!this.polygons) return
-
-      const {offsetX: x, offsetY: y} = event
-
+      
       const polygon = this.polygons[this.selected_polygon_index]
 
+      const {
+        offsetX: x, 
+        offsetY: y,
+      } = event
+
+      // const mousePoint = {x,y}
+      const mousePoint = this.normalize_point({ x, y })
+
       // Move the selected point of the selected polygon
-      if(this.grabbed_point_index !== -1) {
-        this.$set(polygon.points,this.grabbed_point_index,{x,y})
-      }
+      if (this.grabbed_point_index !== -1) this.$set( polygon.points, this.grabbed_point_index, mousePoint)
 
       // Stuff related to rectangles
       if(this.mode === 'rectangle' && polygon && polygon.constructing) {
-        const {x:startX,y:startY} = polygon.points[0]
+
+        const rectanglePoint = polygon.points[0]
+        const { x: startX, y: startY } = rectanglePoint
+
         this.$set(polygon.points,1,{x:startX,y})
         this.$set(polygon.points,2,{x,y})
         this.$set(polygon.points,3,{x,y:startY})
@@ -192,8 +227,39 @@ export default {
 
     polygon_svg_points(points){
       // Creates the svg attribute for point positions
-      return `${points.reduce( (output,point) => output + ` ${point.x},${point.y}`, '' )}`
+            
+      // return points.reduce((output, point) => `${output} ${point.x},${point.y}`, '' )
+      return this.denormalize_points(points).reduce((output, point) => `${output} ${point.x},${point.y}`, '')
+
     },
+
+    denormalize_point(point){
+
+      return {
+        x: this.viewBox.width * point.x / this.width ,
+        y: this.viewBox.height * point.y / this.height ,
+
+      }
+    },
+
+    denormalize_points(points){
+      return points.map(this.denormalize_point)
+    },
+
+    normalize_point(point) {
+      // Convert point into original image coordinates
+      const { clientWidth, clientHeight } = this.$refs.svg
+      return {
+        x: this.width * point.x / clientWidth,
+        y: this.height * point.y / clientHeight,
+      }
+    },
+
+    normalize_points(points) {
+      return points.map(this.normalize_point)
+    },
+
+
 
     point_mouseup(){
       // Release grabbed point
@@ -203,16 +269,15 @@ export default {
 
     create_polygon(){
 
-      this.polygons.push({
-        points: [],
-        constructing: true,
-      })
+      const new_polyon = { points: [], constructing: true }
+      this.polygons.push(new_polyon)
 
       this.select_polygon(this.polygons.length -1)
       this.selected_point_index = -1
 
       const created_polygon = this.polygons[this.polygons.length -1]
 
+      // TODO: use sync and v-model on parent
       this.$emit('polygon_created', created_polygon)
 
       return created_polygon
@@ -243,8 +308,7 @@ export default {
     undo_last_point(){
       // Delete last point when in constructing mode
       const polygon = this.polygons[this.selected_polygon_index]
-      if(!polygon) return
-      if(!polygon.constructing) return
+      if (!polygon || !polygon.constructing) return
       polygon.points.pop()
     },
 
@@ -271,8 +335,10 @@ export default {
     },
 
     point_classes(polygon_index, point_index){
+
       const polygon = this.polygons[this.selected_polygon_index]
       const polygon_constructing = polygon && polygon.constructing
+
       return {
         active: polygon_index === this.selected_polygon_index,
         start: polygon_index === this.selected_polygon_index && point_index === 0 && polygon_constructing,
@@ -289,15 +355,10 @@ export default {
 
     midpoints(polygon){
       // Computes a list of midpoints for the given polygon
-
       const points_copy = polygon.points.slice()
-
       if(!polygon.constructing || this.mode === 'rectangle') points_copy.push(points_copy[0])
-
       const points_sliced = points_copy.slice(0,-1)
-
       return points_sliced.map((point, index) => this.midpoint(point, points_copy[index+1])  )
-
     },
 
 
@@ -348,6 +409,7 @@ circle {
     stroke 0.25s,
     stroke-width 0.25s;
 }
+
 .vertex {
   cursor: grab;
   fill: #444444;
