@@ -5,7 +5,8 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    current_user: null
+    current_user: null,
+    annotation_field: process.env.VUE_APP_ANNOTATION_FIELD || 'annotation',
   },
   mutations: {
     set_current_user(state, user){

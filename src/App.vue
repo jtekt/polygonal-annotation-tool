@@ -12,10 +12,10 @@
           exact
           :to="{name: 'images'}">
           <v-list-item-icon>
-            <v-icon>mdi-home</v-icon>
+            <v-icon>mdi-image-multiple</v-icon>
           </v-list-item-icon>
           <v-list-item-content>
-            <v-list-item-title>Home</v-list-item-title>
+            <v-list-item-title>Images</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
 

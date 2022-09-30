@@ -41,9 +41,6 @@
         :class="point_classes(polygon_index,point_index)"
         :cx="point.x" :cy="point.y"/>
 
-
-
-
     </template>
   </svg>
 </template>

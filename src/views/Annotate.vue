@@ -36,9 +36,7 @@
           </v-btn>
         </template>
         <div class="text-center">
-          <div class="">
-            Mark as unannotated
-          </div>
+          Mark as unannotated
         </div>
       </v-tooltip>
 
@@ -113,7 +111,7 @@
             <!-- The polygon editing tool -->
             <PolygonEditor 
               :mode="mode_lookup[mode_index]" 
-              :polygons="item.data.annotation"
+              :polygons="item.data[annotation_field]"
               :selected_polygon_index.sync="selected_annotation"
               @create_polygons_array="create_annotation_array_not_exists()"
               @polygon_created="$event.label = labels[0]" />
@@ -127,7 +125,7 @@
             <v-progress-circular indeterminate />
           </div>
 
-          <div class="text-center text-h5 mt-5" v-else-if="!item.data.annotation">
+          <div class="text-center text-h5 mt-5" v-else-if="!item.data[annotation_field]">
             Not annotated yet
           </div>
 
@@ -135,7 +133,7 @@
             hide-default-footer 
             :itemsPerPage="-1" 
             :loading="loading" 
-            :items="item.data.annotation || []"
+            :items="item.data[annotation_field] || []"
             :headers="headers">
 
             <template v-slot:item="row">
@@ -171,7 +169,7 @@
                 <v-list-item-title>{{ item.time }}</v-list-item-title>
               </v-list-item-content>
             </v-list-item>
-            <v-list-item v-if="item.data.annotation && item.data.annotator_id" two-line>
+            <v-list-item v-if="item.data[annotation_field] && item.data.annotator_id" two-line>
               <v-list-item-content>
                 <v-list-item-subtitle>Annotator ID</v-list-item-subtitle>
                 <v-list-item-title>{{ item.data.annotator_id }}</v-list-item-title>
@@ -238,6 +236,8 @@ export default {
       mode_index: 0,
       mode_lookup: ['polygon','rectangle'],
 
+      labels: process.env.VUE_APP_LABELS.split(','),
+
       snackbar: {
         show: false,
         text: '',
@@ -267,19 +267,19 @@ export default {
   methods: {
     unannotate(){
       // Completely remove the annotation field, marking the item as not annotated yet
-      if (!this.item.data.annotation) return
+      if (!this.item.data[this.annotation_field]) return
       if (!confirm('Mark the item unannotated?')) return
 
-      this.$set(this.item, 'annotation', null)
+      this.$set(this.item, this.annotation_field, null)
       this.save_item()
     },
     empty_annotations() {
       // Empty the annotation array but keep the field
-      if (this.item.data.annotation && this.item.data.annotation.length) {
+      if (this.item.data[this.annotation_field] && this.item.data[this.annotation_field].length) {
         if(!confirm('ホンマ？')) return
       }
 
-      this.$set(this.item.data, 'annotation', [])
+      this.$set(this.item.data, this.annotation_field, [])
     },
     save_annotations(){
       this.create_annotation_array_not_exists()
@@ -336,11 +336,13 @@ export default {
 
       // TODO: Fix because it's not working
 
+      const field = `data.${this.annotation_field}`
+
       const params = {
         filter: {
           $or: [
-            { "data.annotation": { $not: { $exists: true } } },
-            { "data.annotation": null },
+            { [field] : { $not: { $exists: true } } },
+            { [field] : null },
           ]
         },
         limit: 1,
@@ -372,7 +374,7 @@ export default {
       // If the item has not been annotated yet. the annotation property must be created as an array
       // Note the usage of $set for reactivity
       if (!this.item.data) this.$set(this.item, 'data', {})
-      if (!this.item.data.annotation) this.$set(this.item.data, 'annotation', [])
+      if (!this.item.data[this.annotation_field]) this.$set(this.item.data, this.annotation_field, [])
     },
 
     get_copy_of_item(object){
@@ -386,7 +388,7 @@ export default {
     save_item(){
 
       const route = `/images/${this.document_id}`
-      const body = { annotation: this.item.data.annotation }
+      const body = { [this.annotation_field]: this.item.data[this.annotation_field] }
 
       const {current_user} = this.$store.state
       if(current_user) body.annotator_id = current_user._id || current_user.properties._id
@@ -411,11 +413,12 @@ export default {
     handle_keydown(e){
       // Keyboard events
 
-      // CTRL S
+      // Ctrl S
       if (e.key === 's' && e.ctrlKey) {
         e.preventDefault()
         this.save_annotations()
       }
+      // Ctrl a
       else if (e.key === 'a' && e.ctrlKey) {
         e.preventDefault()
         this.empty_annotations()
@@ -433,7 +436,7 @@ export default {
     },
     delete_single_annotation(index){
       if(!confirm(`Delete polygon ${index}?`)) return
-      this.item.data.annotation.splice(index,1)
+      this.item.data[this.annotation_field].splice(index,1)
       this.selected_annotation = -1
     },
     object_equals( x, y ) {
@@ -441,14 +444,14 @@ export default {
     }
   },
   computed: {
+    annotation_field(){
+      return this.$store.state.annotation_field
+    },
     document_id(){
       return this.$route.params.document_id
     },
     image_src(){
       return `${this.api_url}/images/${this.document_id}/image`
-    },
-    labels(){
-      return process.env.VUE_APP_LABELS.split(',')
     },
     item_has_unsaved_modifications(){
       if(!this.item) return false
@@ -460,8 +463,6 @@ export default {
 </script>
 
 <style scoped>
-
-
 .image_wrapper_outer {
 
   display: flex;
@@ -474,6 +475,7 @@ export default {
   position: relative;
 }
 
+
 tr {
   transition: background-color 0.25s;
 }
@@ -481,5 +483,4 @@ tr {
 tr.selected {
   background-color: #c0000044;
 }
-
 </style>

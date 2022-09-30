@@ -30,11 +30,11 @@
         <template v-slot:item.annotation="{ item }">
           <!-- An item can either has not annotation field or an empty annotation array -->
 
-          <v-icon v-if="!item.data.annotation" color="#c00000">mdi-tag-off</v-icon>
-          <span v-else-if="item.data.annotation.length === 0">Empty set</span>
+          <v-icon v-if="!item.data[annotation_field]" color="#c00000">mdi-tag-off</v-icon>
+          <span v-else-if="item.data[annotation_field].length === 0">Empty set</span>
 
           <div v-else class="classes_wrapper">
-            <v-chip v-for="(summary_item, index) in annotation_summary(item.data.annotation)" :key="`${item._id}_${index}`">
+            <v-chip v-for="(summary_item, index) in annotation_summary(item.data[annotation_field])" :key="`${item._id}_${index}`">
 
               {{summary_item.label}}: {{summary_item.count}}
 
@@ -132,20 +132,6 @@ export default {
       .finally(() => {this.loading = false})
     },
 
-
-    // get_item_count(){
-    //   const url = `${this.api_url}/collections/${this.collection_name}`
-    //   this.items = []
-    //   this.axios.get(url)
-    //   .then(({data}) => {
-    //     this.item_count = data.documents
-    //     this.get_items()
-    //    })
-    //   .catch(error =>{
-    //     if(error.response) console.log(error.response.data)
-    //     else console.log(error)
-    //   })
-    // },
     annotation_summary(annotation){
       const summary = annotation.reduce((acc, item) => {
         let found = acc.find(x => x.label === item.label)
@@ -161,6 +147,11 @@ export default {
     },
 
   },
+  computed: {
+    annotation_field() {
+      return this.$store.state.annotation_field
+    },
+  }
 
 
 }

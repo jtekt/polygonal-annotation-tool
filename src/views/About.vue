@@ -3,8 +3,9 @@
     <v-card-title>Annotation tool</v-card-title>
 
     <v-card-text>
-      <p>Authors: Daiki YAMADA, Maxime MOREILLON</p>
+      <p>Authors: Maxime MOREILLON</p>
       <p>Labels: {{labels}}</p>
+      <p>Annotation field: {{$store.state.annotation_field}}</p>
       <v-data-table
         hide-default-footer
         :itemsPerPage="-1"
@@ -41,11 +42,6 @@ export default {
         {
           name: 'Image storage API',
           url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
-          version: null
-        },
-        {
-          name: 'Authentication API',
-          url: process.env.VUE_APP_AUTHENTICATION_API_URL,
           version: null
         },
       ],
