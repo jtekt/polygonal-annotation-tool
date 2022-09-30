@@ -145,9 +145,9 @@ export default {
           // Add other points of the rectangle
           // Watch the order!
           rectangle.points.push(mousePoint)
-          rectangle.points.push({ x, y: y + margin })
-          rectangle.points.push({ x: x + margin, y: y + margin })
-          rectangle.points.push({ x: x + margin, y })
+          rectangle.points.push({ x: mousePoint.x, y: mousePoint.y + margin })
+          rectangle.points.push({ x: mousePoint.x + margin, y: mousePoint.y + margin })
+          rectangle.points.push({ x: mousePoint.x + margin, y: mousePoint.y })
         }
       })
 
@@ -212,9 +212,9 @@ export default {
         const rectanglePoint = polygon.points[0]
         const { x: startX, y: startY } = rectanglePoint
 
-        this.$set(polygon.points,1,{x:startX,y})
-        this.$set(polygon.points,2,{x,y})
-        this.$set(polygon.points,3,{x,y:startY})
+        this.$set(polygon.points, 1, { x: startX, y: mousePoint.y})
+        this.$set(polygon.points, 2, mousePoint)
+        this.$set(polygon.points, 3, { x: mousePoint.x, y:startY })
       }
 
     },
