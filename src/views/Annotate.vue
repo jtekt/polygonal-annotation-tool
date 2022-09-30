@@ -40,7 +40,6 @@
         </div>
       </v-tooltip>
 
-      <v-divider vertical />
 
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
@@ -60,6 +59,9 @@
 
       <v-divider vertical />
 
+      
+
+
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
           <v-btn icon v-bind="attrs" v-on="on" @click="get_previous_item_by_date()">
@@ -75,6 +77,8 @@
           </div>
         </div>
       </v-tooltip>
+
+      
 
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
@@ -93,6 +97,21 @@
       </v-tooltip>
 
       <v-divider vertical />
+
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn icon v-bind="attrs" v-on="on" @click="fullscreen = !fullscreen">
+            <v-icon>mdi-fullscreen</v-icon>
+          </v-btn>
+        </template>
+        <div class="text-center">
+          <div class="">
+            Full screen
+          </div>
+        </div>
+      </v-tooltip>
+      
+      <v-divider vertical />
       <KeyboardShortcuts />
 
     </v-toolbar>
@@ -102,7 +121,7 @@
 
       <v-row>
         <!-- Left col: Image -->
-        <v-col class="image_wrapper_outer">
+        <v-col class="image_wrapper_outer" cols="12" :lg="fullscreen ? 12 : 8">
 
           <!-- This wrapper gets the same size as the img -->
           <div class="image_wrapper">
@@ -127,79 +146,76 @@
 
           </div>
         </v-col>
-      </v-row>
-      <v-row>
-
         <v-col>
-          <v-card outlined>
-            <v-card-title>
-              Image info
-            </v-card-title>
-            <v-card-text>
-              <v-list class="mt-5" v-if="item">
-                <v-list-item two-line>
-                  <v-list-item-content>
-                    <v-list-item-subtitle>File name</v-list-item-subtitle>
-                    <v-list-item-title>{{ item.file }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-                <v-list-item two-line>
-                  <v-list-item-content>
-                    <v-list-item-subtitle>Timestamp</v-list-item-subtitle>
-                    <v-list-item-title>{{ item.time }}</v-list-item-title>
-                  </v-list-item-content>
-                </v-list-item>
-              
-                <template v-for="(value, key) of item.data">
-                  <v-list-item :key="key" v-if="key !== annotation_field" two-line>
-                    <v-list-item-content>
-                      <v-list-item-subtitle>{{key}}</v-list-item-subtitle>
-                      <v-list-item-title>
-                        <pre>{{format_metadata(value)}}</pre>
-                      </v-list-item-title>
-                    </v-list-item-content>
-                  </v-list-item>
-                </template>
+          <v-row>
+            <v-col>
+              <v-card outlined>
+                <v-card-title>
+                  Image info
+                </v-card-title>
+                <v-card-text>
+                  <v-list class="mt-5" v-if="item">
+                    <v-list-item two-line>
+                      <v-list-item-content>
+                        <v-list-item-subtitle>File name</v-list-item-subtitle>
+                        <v-list-item-title>{{ item.file }}</v-list-item-title>
+                      </v-list-item-content>
+                    </v-list-item>
+                    <v-list-item two-line>
+                      <v-list-item-content>
+                        <v-list-item-subtitle>Timestamp</v-list-item-subtitle>
+                        <v-list-item-title>{{ item.time }}</v-list-item-title>
+                      </v-list-item-content>
+                    </v-list-item>
 
-              </v-list>
-            </v-card-text>
-          </v-card>
+                    <template v-for="(value, key) of item.data">
+                      <v-list-item :key="key" v-if="key !== annotation_field" two-line>
+                        <v-list-item-content>
+                          <v-list-item-subtitle>{{key}}</v-list-item-subtitle>
+                          <v-list-item-title>
+                            <pre>{{format_metadata(value)}}</pre>
+                          </v-list-item-title>
+                        </v-list-item-content>
+                      </v-list-item>
+                    </template>
+
+                  </v-list>
+                </v-card-text>
+              </v-card>
+            </v-col>
+            <v-col>
+                <v-card outlined>
+                  <v-card-title>Annotations</v-card-title>
+                  <v-card-text>
+                    <div class="text-center text-h5 mt-5" v-if="!item.data[annotation_field]">
+                      Not annotated yet
+                    </div>
+
+                    <v-data-table v-else hide-default-footer :itemsPerPage="-1" :loading="loading"
+                      :items="item.data[annotation_field] || []" :headers="headers">
+
+                      <template v-slot:item="row">
+                        <tr :style="{'background-color': selected_annotation === row.index ? '#c0000044' : '', cursor: 'pointer' }"
+                          @click="selected_annotation = row.index">
+                          <td>{{row.index}}</td>
+                          <td>
+                            <v-combobox v-model="row.item.label" :items="labels" />
+                          </td>
+                          <td>
+                            <v-icon small class="mr-2" @click="delete_single_annotation(row.index)">
+                              mdi-delete
+                            </v-icon>
+                          </td>
+                        </tr>
+                      </template>
+                    </v-data-table>
+                  </v-card-text>
+                </v-card>
+            </v-col>
+          </v-row>
+          
         </v-col>
 
-        <v-col cols="12" lg="8">
-          <v-card outlined>
-            <v-card-title>Annotations</v-card-title>
-            <v-card-text>
-              <div class="text-center text-h5 mt-5" v-if="!item.data[annotation_field]">
-                Not annotated yet
-              </div>
-              
-              <v-data-table 
-                v-else
-                hide-default-footer 
-                :itemsPerPage="-1" 
-                :loading="loading" 
-                :items="item.data[annotation_field] || []"
-                :headers="headers">
-              
-                <template v-slot:item="row">
-                  <tr :style="{'background-color': selected_annotation === row.index ? '#c0000044' : '', cursor: 'pointer' }"
-                    @click="selected_annotation = row.index">
-                    <td>{{row.index}}</td>
-                    <td>
-                      <v-combobox v-model="row.item.label" :items="labels" />
-                    </td>
-                    <td>
-                      <v-icon small class="mr-2" @click="delete_single_annotation(row.index)">
-                        mdi-delete
-                      </v-icon>
-                    </td>
-                  </tr>
-                </template>
-              </v-data-table>
-            </v-card-text>
-          </v-card>
-        </v-col>
       </v-row>
     </v-container>
 
@@ -239,7 +255,10 @@ export default {
     return {
       loading: false,
 
+      fullscreen: false,
+
       item: null,
+
 
       // used to keep track of unsaved changes
       unmodified_item_copy: null,
@@ -443,7 +462,6 @@ export default {
       const { naturalWidth, naturalHeight } = this.$refs.image
       this.image.width = naturalWidth
       this.image.height = naturalHeight
-      console.log({ naturalWidth, naturalHeight })
     },
 
     handle_keydown(e){
@@ -502,11 +520,7 @@ export default {
       if(!this.unmodified_item_copy) return false
       return this.object_equals(this.item,this.unmodified_item_copy)
     },
-    image_scale(){
-      if (!this.$refs.image) return
-      console.log(this.$refs.image)
-      return 'image'
-    }
+
   }
 }
 </script>
