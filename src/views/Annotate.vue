@@ -169,12 +169,17 @@
                 <v-list-item-title>{{ item.time }}</v-list-item-title>
               </v-list-item-content>
             </v-list-item>
-            <v-list-item v-if="item.data[annotation_field] && item.data.annotator_id" two-line>
+            <template v-for="(value, key) of item.data">
+              <!-- v-if="key != this.annotation_field" -->
+              <v-list-item :key="key" v-if="key !== annotation_field" two-line>
               <v-list-item-content>
-                <v-list-item-subtitle>Annotator ID</v-list-item-subtitle>
-                <v-list-item-title>{{ item.data.annotator_id }}</v-list-item-title>
+                <v-list-item-subtitle>{{key}}</v-list-item-subtitle>
+                <v-list-item-title>{{value}}</v-list-item-title>
               </v-list-item-content>
             </v-list-item>
+            </template>
+            
+
           </v-list>
 
 

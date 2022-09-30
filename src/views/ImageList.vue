@@ -69,9 +69,9 @@ export default {
       },
       loading: false,
       headers: [
-        {text: 'Image', value: "file"},
-        {text: 'Time', value: "time"},
-        {text: 'Annotations', value: 'annotation'}
+        { text: 'Image', value: 'file' },
+        { text: 'Time', value: 'time' },
+        { text: 'Annotations', value: 'annotation'}
       ],
       dates: [],
       menu: false,
