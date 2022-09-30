@@ -391,6 +391,7 @@ export default {
       const body = { [this.annotation_field]: this.item.data[this.annotation_field] }
 
       const {current_user} = this.$store.state
+      // WARNING: This uses a fixed field
       if(current_user) body.annotator_id = current_user._id || current_user.properties._id
 
       this.axios.patch(route,body)

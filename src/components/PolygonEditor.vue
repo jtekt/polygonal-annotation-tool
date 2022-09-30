@@ -96,13 +96,15 @@ export default {
     },
     area_mouseDown(event){
 
+      // TODO: use percents?
       const {offsetX: x, offsetY: y} = event
 
-      // Get the parent to crete the polygons array if it does not exist
+      // Get the parent to create the polygons array if it does not exist
       if(!this.polygons) this.$emit('create_polygons_array')
 
       // Using NextTick because polygon array creation is done in parent
       this.$nextTick(() => {
+
         if(this.mode === 'polygon') {
           let polygon = this.polygons[this.selected_polygon_index]
           if(!polygon || !polygon.constructing) polygon = this.create_polygon()
@@ -286,6 +288,8 @@ export default {
     },
 
     midpoints(polygon){
+      // Computes a list of midpoints for the given polygon
+
       const points_copy = polygon.points.slice()
 
       if(!polygon.constructing || this.mode === 'rectangle') points_copy.push(points_copy[0])

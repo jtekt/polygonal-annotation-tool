@@ -22,10 +22,10 @@
 
 
         <!-- Thumbnails -->
-        <template v-slot:item.image="{ item }">
-          <v-img contain max-height="100" max-width="100"
-            :src="`${api_url}/images/${item._id}/image`" alt="item" />
+        <template v-slot:item.file="{ item }">
+          <img class="thumbnail" :src="image_src(item)" />
         </template>
+
 
         <template v-slot:item.annotation="{ item }">
           <!-- An item can either has not annotation field or an empty annotation array -->
@@ -69,11 +69,10 @@ export default {
       },
       loading: false,
       headers: [
-        {text: 'Image', value: "image"},
+        {text: 'Image', value: "file"},
         {text: 'Time', value: "time"},
         {text: 'Annotations', value: 'annotation'}
       ],
-      api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
       dates: [],
       menu: false,
       filter_key: null,
@@ -98,30 +97,15 @@ export default {
 
       this.loading = true
 
-      const { page, itemsPerPage, sortBy, sortDesc } = this.options
-
-      const sort = sortBy.reduce((acc, item, index) => {
-        acc[item] = sortDesc[index] ? 1 : -1
-        return acc
-      }, {})
-
+      const { itemsPerPage, page, sortBy, sortDesc } = this.options
 
       const params = {
-        start_index: (page-1) * itemsPerPage,
-        limit: itemsPerPage === -1 ? 0 : itemsPerPage,
-        sort,
-        filter: {}
+        limit: itemsPerPage,
+        skip: (page - 1) * itemsPerPage,
+        sort: sortBy[0],
+        order: sortDesc[0] ? -1 : 1,
       }
 
-      if(this.dates.length > 0) {
-        params.filter.time = {}
-        if(this.dates[0]) params.filter.time['$gte'] = this.dates[0]
-        if(this.dates[1]) params.filter.time['$lt'] = this.dates[1]
-      }
-
-      if(this.filter_property && this.filter_key) {
-        params.filter[this.filter_key] = this.filter_property
-      }
 
       this.axios.get('/images', {params})
       .then(({data: {total, items}}) => {
@@ -146,6 +130,11 @@ export default {
       return summary
     },
 
+    image_src({ _id }) {
+      return `${process.env.VUE_APP_STORAGE_SERVICE_API_URL}/images/${_id}/image`
+    },
+
+
   },
   computed: {
     annotation_field() {
@@ -161,6 +150,12 @@ export default {
 td, th {
   white-space: nowrap;
 }
+
+.thumbnail {
+  height: 5em;
+  width: 5em;
+}
+
 .classes_wrapper {
   display: flex;
   gap: 0.5em;
