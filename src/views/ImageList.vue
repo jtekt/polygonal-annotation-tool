@@ -68,11 +68,12 @@ export default {
         sortBy: ['time']
       },
       loading: false,
-      headers: [
+      base_headers: [
         { text: 'Image', value: 'file' },
         { text: 'Time', value: 'time' },
-        { text: 'Annotations', value: 'annotation'}
+        { text: 'Polygonal Annotations', value: 'annotation'}
       ],
+      extra_headers: [],
       dates: [],
       menu: false,
       filter_key: null,
@@ -111,10 +112,30 @@ export default {
       .then(({data: {total, items}}) => {
         this.items = items
         this.item_count = total
+        this.build_headers()
       })
       .catch((error) => {console.error(error)})
       .finally(() => {this.loading = false})
     },
+
+    format_date({ time }) {
+      const date = new Date(time)
+      return date.toLocaleString('Ja-JP')
+    },
+
+
+    build_headers() {
+      this.items.forEach((item) => {
+        for (let key in item.data) {
+          if (key !== this.annotation_field) {
+            const header_exists = this.extra_headers.some(header => header.value === `data.${key}`)
+            if (!header_exists) this.extra_headers.push({ text: key, value: `data.${key}` })
+          }
+          
+        }
+      })
+    },
+
 
     annotation_summary(annotation){
       const summary = annotation.reduce((acc, item) => {
@@ -140,6 +161,13 @@ export default {
     annotation_field() {
       return this.$store.state.annotation_field
     },
+    headers() {
+      return [
+        ...this.base_headers,
+        ...this.extra_headers,
+      ]
+    }
+
   }
 
 
