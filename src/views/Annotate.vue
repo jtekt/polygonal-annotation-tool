@@ -170,17 +170,20 @@
               </v-list-item-content>
             </v-list-item>
             <template v-for="(value, key) of item.data">
-              <!-- v-if="key != this.annotation_field" -->
+              
               <v-list-item :key="key" v-if="key !== annotation_field" two-line>
-              <v-list-item-content>
-                <v-list-item-subtitle>{{key}}</v-list-item-subtitle>
-                <v-list-item-title>{{value}}</v-list-item-title>
-              </v-list-item-content>
-            </v-list-item>
+                <v-list-item-content>
+                  <v-list-item-subtitle>{{key}}</v-list-item-subtitle>
+                  <v-list-item-title>
+                    <pre>{{format_metadata(value)}}</pre>
+                  </v-list-item-title>
+                </v-list-item-content>
+              </v-list-item>
             </template>
             
 
           </v-list>
+
 
 
         </v-col>
@@ -447,6 +450,14 @@ export default {
     },
     object_equals( x, y ) {
       return JSON.stringify(x) !== JSON.stringify(y)
+    },
+    format_metadata(data){
+      try {
+        return JSON.stringify(data, null, 2)
+      } catch (error) {
+        console.warn(error)
+        return data
+      }
     }
   },
   computed: {
