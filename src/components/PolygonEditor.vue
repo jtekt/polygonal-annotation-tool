@@ -54,23 +54,16 @@ export default {
   name: 'PolygonEditor',
   props: {
 
-    width: { type: Number, default: 100 },
-    height: { type: Number, default: 100 },
+    // TODO: no default, make normalization optional instead
+    width: { type: Number, default: 800 },
+    height: { type: Number, default: 600 },
 
     mode: { type: String, default: 'polygon' },
     selected_polygon_index: { type: Number, default: -1 },
-
-    // TODO: polygons should be used with v-model
-    polygons: { type: Array },
+    value: { type: Array },
   },
   data () {
     return {
-
-      viewBox: {
-        width: 800,
-        height: 600,
-      },
-
       selected_point_index: -1,
       grabbed_point_index: -1,
     }
@@ -114,18 +107,12 @@ export default {
     },
     area_mouseDown(event){
 
+      // Editor clicked
 
-      const {
-        offsetX: x, 
-        offsetY: y,
-      } = event
-
-      // const mousePoint = {x,y}
+      const { offsetX: x, offsetY: y, } = event
       const mousePoint = this.normalize_point({ x, y })
 
-      // Get the parent to create the polygons array if it does not exist
-      // TODO: use sync
-      if(!this.polygons) this.$emit('create_polygons_array')
+      if(!this.polygons) this.polygons = []
 
       // Using NextTick because polygon array creation is done in parent
       this.$nextTick(() => {
@@ -227,14 +214,12 @@ export default {
 
     polygon_svg_points(points){
       // Creates the svg attribute for point positions
-            
       // return points.reduce((output, point) => `${output} ${point.x},${point.y}`, '' )
       return this.denormalize_points(points).reduce((output, point) => `${output} ${point.x},${point.y}`, '')
 
     },
 
     denormalize_point(point){
-
       return {
         x: this.viewBox.width * point.x / this.width ,
         y: this.viewBox.height * point.y / this.height ,
@@ -275,12 +260,7 @@ export default {
       this.select_polygon(this.polygons.length -1)
       this.selected_point_index = -1
 
-      const created_polygon = this.polygons[this.polygons.length -1]
-
-      // TODO: use sync and v-model on parent
-      this.$emit('polygon_created', created_polygon)
-
-      return created_polygon
+      return this.polygons[this.polygons.length -1]
     },
 
     select_polygon(index){
@@ -363,6 +343,27 @@ export default {
 
 
   },// End of methods
+  computed: {
+    viewBox(){
+      // ViewBox parameters
+      // Height is computed using aspect ratio
+      // ViewBox Width is set independently so that lines and points don't look smaller or bigger depending on image size
+      // NOTE: could use px for those, just to make things easier to work with
+      const aspectRatio = this.height / this.width
+      const width = 1000
+      const height = width * aspectRatio
+      return { width, height }
+    },
+    polygons: {
+      get(){
+        return this.value
+      },
+      set(newValue){
+        this.$emit('input', newValue)
+      }
+    }
+
+  }
 
 }
 </script>
@@ -420,7 +421,7 @@ circle {
 }
 
 .vertex.active {
-  /* i.e. part of a selected polygon */
+  /* i.e. point of a selected polygon */
   fill: #c00000;
   r: 0.5vw;
 }

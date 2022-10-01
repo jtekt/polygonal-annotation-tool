@@ -35,9 +35,7 @@
             <v-icon>mdi-tag-off</v-icon>
           </v-btn>
         </template>
-        <div class="text-center">
-          Mark as unannotated
-        </div>
+        <div class="text-center">Mark as unannotated</div>
       </v-tooltip>
 
 
@@ -48,12 +46,8 @@
           </v-btn>
         </template>
         <div class="text-center">
-          <div class="">
-            Save annotations
-          </div>
-          <div class="">
-            (Ctrl + S)
-          </div>
+          <div>Save annotations</div>
+          <div>(Ctrl + S)</div>
         </div>
       </v-tooltip>
 
@@ -69,12 +63,8 @@
           </v-btn>
         </template>
         <div class="text-center">
-          <div class="">
-            Previous item
-          </div>
-          <div class="">
-            (←)
-          </div>
+          <div>Previous item</div>
+          <div>(←)</div>
         </div>
       </v-tooltip>
 
@@ -87,12 +77,8 @@
           </v-btn>
         </template>
         <div class="text-center">
-          <div class="">
-            Next item
-          </div>
-          <div class="">
-            (→)
-          </div>
+          <div>Next item</div>
+          <div>(→)</div>
         </div>
       </v-tooltip>
 
@@ -101,14 +87,11 @@
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
           <v-btn icon v-bind="attrs" v-on="on" @click="fullscreen = !fullscreen">
-            <v-icon>mdi-fullscreen</v-icon>
+            <v-icon v-if="fullscreen">mdi-fullscreen-exit</v-icon>
+            <v-icon v-else>mdi-fullscreen</v-icon>
           </v-btn>
         </template>
-        <div class="text-center">
-          <div class="">
-            Full screen
-          </div>
-        </div>
+        <div class="text-center">Full screen</div>
       </v-tooltip>
       
       <v-divider vertical />
@@ -120,7 +103,6 @@
     <v-container fluid v-if="!loading && item">
 
       <v-row>
-        <!-- Left col: Image -->
         <v-col class="image_wrapper_outer" cols="12" :lg="fullscreen ? 12 : 8">
 
           <!-- This wrapper gets the same size as the img -->
@@ -130,17 +112,11 @@
             <img draggable="false" :src="image_src" ref="image" @load="image_loaded($event)">
 
             <!-- The polygon editing tool -->
-            <!-- TODO: exchange data with child using v-model -->
-            <!-- @polygon_created is used to create a label for the given polygon -->
-            <!-- TODO: Find better way than emitting polygon creation -->
-            <!-- TODO: find better way than @create_polygons_array -->
             <PolygonEditor 
               :width="image.width"
               :height="image.height"
               :mode="mode_lookup[mode_index]" 
-              :polygons="item.data[annotation_field]"
-              @create_polygons_array="create_annotation_array_not_exists()"
-              @polygon_created="$event.label = labels[0]"
+              v-model="item.data[annotation_field]"
               :selected_polygon_index.sync="selected_annotation"
             />
 
@@ -153,17 +129,16 @@
                 <v-card-title>
                   Image info
                 </v-card-title>
-                <v-card-text>
-                  <v-list class="mt-5" v-if="item">
+                  <v-list>
                     <v-list-item two-line>
                       <v-list-item-content>
-                        <v-list-item-subtitle>File name</v-list-item-subtitle>
+                        <v-list-item-subtitle>File</v-list-item-subtitle>
                         <v-list-item-title>{{ item.file }}</v-list-item-title>
                       </v-list-item-content>
                     </v-list-item>
                     <v-list-item two-line>
                       <v-list-item-content>
-                        <v-list-item-subtitle>Timestamp</v-list-item-subtitle>
+                        <v-list-item-subtitle>Time</v-list-item-subtitle>
                         <v-list-item-title>{{ item.time }}</v-list-item-title>
                       </v-list-item-content>
                     </v-list-item>
@@ -180,37 +155,45 @@
                     </template>
 
                   </v-list>
-                </v-card-text>
               </v-card>
             </v-col>
             <v-col>
-                <v-card outlined>
-                  <v-card-title>Annotations</v-card-title>
-                  <v-card-text>
-                    <div class="text-center text-h5 mt-5" v-if="!item.data[annotation_field]">
-                      Not annotated yet
-                    </div>
+              <v-card outlined>
+                <v-card-title>Annotations</v-card-title>
 
-                    <v-data-table v-else hide-default-footer :itemsPerPage="-1" :loading="loading"
-                      :items="item.data[annotation_field] || []" :headers="headers">
 
-                      <template v-slot:item="row">
-                        <tr :style="{'background-color': selected_annotation === row.index ? '#c0000044' : '', cursor: 'pointer' }"
-                          @click="selected_annotation = row.index">
-                          <td>{{row.index}}</td>
-                          <td>
-                            <v-combobox v-model="row.item.label" :items="labels" />
-                          </td>
-                          <td>
-                            <v-icon small class="mr-2" @click="delete_single_annotation(row.index)">
-                              mdi-delete
-                            </v-icon>
-                          </td>
-                        </tr>
-                      </template>
-                    </v-data-table>
-                  </v-card-text>
-                </v-card>
+                <v-card-text>
+                  <div class="text-center text-h5 mt-5" v-if="!item.data[annotation_field]">
+                    Not annotated yet
+                  </div>
+
+                  <v-data-table 
+                    v-else 
+                    hide-default-footer 
+                    :itemsPerPage="-1" 
+                    :loading="loading"
+                    :items="item.data[annotation_field]" 
+                    :headers="headers"
+                    disable-sort>
+
+                    <template v-slot:item="row">
+                      <tr 
+                        :style="{'background-color': selected_annotation === row.index ? '#c0000044' : '', cursor: 'pointer' }"
+                        @click="selected_annotation = row.index">
+                        <td>{{row.index}}</td>
+                        <td>
+                          <v-combobox v-model="row.item.label" :items="labels" />
+                        </td>
+                        <td>
+                          <v-icon @click="delete_single_annotation(row.index)">
+                            mdi-delete
+                          </v-icon>
+                        </td>
+                      </tr>
+                    </template>
+                  </v-data-table>
+                </v-card-text>
+              </v-card>
             </v-col>
           </v-row>
           
@@ -240,9 +223,7 @@
 <script>
 
 import PolygonEditor from '@/components/PolygonEditor.vue'
-
 import KeyboardShortcuts from '@/components/KeyboardShortcuts.vue'
-
 
 export default {
   name: 'Annotate',
@@ -253,12 +234,10 @@ export default {
   },
   data(){
     return {
+
       loading: false,
-
       fullscreen: false,
-
       item: null,
-
 
       // used to keep track of unsaved changes
       unmodified_item_copy: null,
@@ -295,7 +274,7 @@ export default {
   watch: {
     document_id () {
       this.get_item_by_id()
-    }
+    },
   },
   mounted(){
 
@@ -320,9 +299,10 @@ export default {
     },
     empty_annotations() {
       // Empty the annotation array but keep the field
-      if (this.item.data[this.annotation_field] && this.item.data[this.annotation_field].length) {
-        if(!confirm('ホンマ？')) return
-      }
+      // Might not be used
+      if (this.item.data[this.annotation_field] && 
+        this.item.data[this.annotation_field].length &&
+        !confirm('ホンマ？') ) return
 
       this.$set(this.item.data, this.annotation_field, [])
     },
@@ -398,7 +378,8 @@ export default {
     get_next_item_by_date(){
 
       const params = {
-        filter: {time: {'$lt' : this.item.time}},
+        filter: { time: {'$lt' : this.item.time} },
+        sort: { time: -1 },
         limit: 1,
       }
 
@@ -451,7 +432,7 @@ export default {
         if(error.response) console.error(error.response.data)
         else console.error(error)
         this.snackbar.show = true
-        this.snackbar.text = 'Errro, see console for details'
+        this.snackbar.text = 'Error, see console for details'
         this.snackbar.color = '#c00000'
       })
     },
@@ -520,6 +501,7 @@ export default {
       if(!this.unmodified_item_copy) return false
       return this.object_equals(this.item,this.unmodified_item_copy)
     },
+
 
   }
 }

@@ -12,9 +12,7 @@
     </template>
 
     <v-card>
-      <v-card-title>
-        Help
-      </v-card-title>
+      <v-card-title>Help</v-card-title>
 
 
       <v-card-text>
