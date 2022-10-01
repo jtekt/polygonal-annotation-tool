@@ -340,10 +340,12 @@ export default {
         if (items.length === 0) {
           this.snackbar.show = true
           this.snackbar.text = 'No more items'
+          return
         }
 
         const item = items[0]
         // Prevent reloading current route
+
         if(this.document_id !== item._id) {
           this.$router.push({name: 'annotate', params: {document_id: item._id}})
         }
@@ -376,10 +378,10 @@ export default {
       this.get_items_with_options({ params })
     },
     get_next_item_by_date(){
-
       const params = {
         filter: { time: {'$lt' : this.item.time} },
-        sort: { time: -1 },
+        sort: 'time',
+        order: -1,
         limit: 1,
       }
 
@@ -389,7 +391,8 @@ export default {
 
       const params = {
         filter: {time: {'$gt' : this.item.time}},
-        sort: {time: 1},
+        sort: 'time',
+        order: 1,
         limit: 1,
       }
 

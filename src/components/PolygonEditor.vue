@@ -1,7 +1,7 @@
 <template>
   <svg
-    :viewBox="`0 0 ${viewBox.width} ${viewBox.height}`"
     ref="svg"
+    :viewBox="`0 0 ${viewBox.width} ${viewBox.height}`"
     @click.self="area_clicked($event)"
     @mousedown.self="area_mouseDown($event)"
     @mouseup="area_mouseUp($event)"
