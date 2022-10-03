@@ -361,8 +361,6 @@ export default {
 
     get_next_unannotated_item(){
 
-      // TODO: Fix because it's not working
-
       const field = `data.${this.annotation_field}`
 
       const params = {
@@ -379,7 +377,7 @@ export default {
     },
     get_next_item_by_date(){
       const params = {
-        filter: { time: {'$lt' : this.item.time} },
+        to: this.item.time,
         sort: 'time',
         order: -1,
         limit: 1,
@@ -390,7 +388,7 @@ export default {
     get_previous_item_by_date(){
 
       const params = {
-        filter: {time: {'$gt' : this.item.time}},
+        from: this.item.time,
         sort: 'time',
         order: 1,
         limit: 1,
