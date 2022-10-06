@@ -14,3 +14,7 @@ It allows the highlight of an image area via the drawing of polygons, directly i
 | VUE_APP_LOGIN_URL | Login URL of the authentication service |
 | VUE_APP_IDENTIFICATION_URL | URL for the user identification |
 | VUE_APP_LABELS | Comma separated list of premade labels |
+
+## Container images
+
+Container images are available on the [AWS ECR Public Gallery](https://gallery.ecr.aws/u6l4m3e5/polygonal-annotation-tool)
