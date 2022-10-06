@@ -1,32 +1,35 @@
 stages:
   - build
-  - deploy
 
-image: moreillon/ci-dind:4bca50d7
+image: moreillon/tdd-dind
 services:
   - name: docker:19.03.12-dind
 
 variables:
-  APPLICATION_NAME: annotation-tool-polygon
+  APPLICATION_NAME: polygonal-annotation-tool
+  CONTAINER_IMAGE: ${AWS_ECR_PUBLIC_URL}/${APPLICATION_NAME}
+  CONTAINER_IMAGE_TAGGED: ${CONTAINER_IMAGE}:${CI_COMMIT_SHORT_SHA}
 
-  CONTAINER_TAG: ${CI_COMMIT_SHORT_SHA}
-  CONTAINER_IMAGE: ${DOCKER_HUB_USERNAME}/${APPLICATION_NAME}
-  CONTAINER_IMAGE_TAGGED: ${CONTAINER_IMAGE}:${CONTAINER_TAG}
 
 build:
   stage: build
-  tags:
-    - dind
   only:
     - master
+    - mongoose
+  tags:
+    - dind
   before_script:
+    # Registry login
+    - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${AWS_ECR_PUBLIC_URL}
+    # Create repository in ECR if it does not exist yet
     - >
-      echo "${DOCKER_HUB_PASSWORD}" |
-      docker login
-      --username ${DOCKER_HUB_USERNAME}
-      --password-stdin
+      aws ecr-public create-repository --region us-east-1 --repository-name ${APPLICATION_NAME}
+      || echo "Repository might have already existed"
   script:
+    # Building image
     - docker build -t ${CONTAINER_IMAGE} .
+    # Tagging images
     - docker tag ${CONTAINER_IMAGE} ${CONTAINER_IMAGE_TAGGED}
+    # Pushing images
     - docker push ${CONTAINER_IMAGE}
     - docker push ${CONTAINER_IMAGE_TAGGED}
