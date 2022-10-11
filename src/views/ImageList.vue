@@ -40,7 +40,7 @@
           <div v-else class="classes_wrapper">
             <v-chip v-for="(summary_item, index) in annotation_summary(item.data[annotation_field])" :key="`${item._id}_${index}`">
 
-              {{summary_item.label}}: {{summary_item.count}}
+              {{(summary_item.label &&summary_item.label !== '') ? summary_item.label : 'Unlabeled'}}: {{summary_item.count}}
 
             </v-chip>
           </div>
