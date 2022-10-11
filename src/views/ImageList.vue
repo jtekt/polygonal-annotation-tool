@@ -124,7 +124,7 @@ export default {
     },
 
     get_fields() {
-      this.axios.get('/images/fields')
+      this.axios.get('/fields')
         .then(({ data }) => {
           this.extra_headers = data.map(f => ({ text: f, value: `data.${f}` }))
         })
