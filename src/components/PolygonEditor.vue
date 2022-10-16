@@ -167,10 +167,11 @@ export default {
     },
     midpoint_clicked(event, polygon_index, point_index){
       // Create a new point at the midpoint of an edge
-      const {offsetX: x, offsetY: y} = event
       this.select_polygon(polygon_index)
+      const {offsetX: x, offsetY: y} = event
+      const mousePoint = this.normalize_point({ x, y })
       const polygon = this.polygons[this.selected_polygon_index]
-      polygon.points.splice(point_index+1, 0, {x,y})
+      polygon.points.splice(point_index + 1, 0, mousePoint)
       this.grab_point(polygon_index, point_index+1)
     },
 
@@ -182,12 +183,7 @@ export default {
       
       const polygon = this.polygons[this.selected_polygon_index]
 
-      const {
-        offsetX: x, 
-        offsetY: y,
-      } = event
-
-      // const mousePoint = {x,y}
+      const { offsetX: x,  offsetY: y } = event
       const mousePoint = this.normalize_point({ x, y })
 
       // Move the selected point of the selected polygon
