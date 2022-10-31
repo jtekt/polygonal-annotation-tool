@@ -124,44 +124,10 @@
         </v-col>
         <v-col>
           <v-row>
-            <v-col>
-              <v-card outlined>
-                <v-card-title>
-                  Image info
-                </v-card-title>
-                  <v-list>
-                    <v-list-item two-line>
-                      <v-list-item-content>
-                        <v-list-item-subtitle>File</v-list-item-subtitle>
-                        <v-list-item-title>{{ item.file }}</v-list-item-title>
-                      </v-list-item-content>
-                    </v-list-item>
-                    <v-list-item two-line>
-                      <v-list-item-content>
-                        <v-list-item-subtitle>Time</v-list-item-subtitle>
-                        <v-list-item-title>{{ item.time }}</v-list-item-title>
-                      </v-list-item-content>
-                    </v-list-item>
-
-                    <template v-for="(value, key) of item.data">
-                      <v-list-item :key="key" v-if="key !== annotation_field" two-line>
-                        <v-list-item-content>
-                          <v-list-item-subtitle>{{key}}</v-list-item-subtitle>
-                          <v-list-item-title>
-                            <pre>{{format_metadata(value)}}</pre>
-                          </v-list-item-title>
-                        </v-list-item-content>
-                      </v-list-item>
-                    </template>
-
-                  </v-list>
-              </v-card>
-            </v-col>
+            
             <v-col>
               <v-card outlined>
                 <v-card-title>Annotations</v-card-title>
-
-
                 <v-card-text>
                   <div class="text-center text-h5 mt-5" v-if="!item.data[annotation_field]">
                     Not annotated yet
@@ -193,6 +159,40 @@
                     </template>
                   </v-data-table>
                 </v-card-text>
+              </v-card>
+            </v-col>
+
+            <v-col>
+              <v-card outlined>
+                <v-card-title>
+                  Image metadata
+                </v-card-title>
+                <v-list>
+                  <v-list-item two-line>
+                    <v-list-item-content>
+                      <v-list-item-subtitle>File</v-list-item-subtitle>
+                      <v-list-item-title>{{ item.file }}</v-list-item-title>
+                    </v-list-item-content>
+                  </v-list-item>
+                  <v-list-item two-line>
+                    <v-list-item-content>
+                      <v-list-item-subtitle>Time</v-list-item-subtitle>
+                      <v-list-item-title>{{ item.time }}</v-list-item-title>
+                    </v-list-item-content>
+                  </v-list-item>
+            
+                  <template v-for="(value, key) of item.data">
+                    <v-list-item :key="key" v-if="key !== annotation_field" two-line>
+                      <v-list-item-content>
+                        <v-list-item-subtitle>{{key}}</v-list-item-subtitle>
+                        <v-list-item-title>
+                          <pre>{{format_metadata(value)}}</pre>
+                        </v-list-item-title>
+                      </v-list-item-content>
+                    </v-list-item>
+                  </template>
+            
+                </v-list>
               </v-card>
             </v-col>
           </v-row>
