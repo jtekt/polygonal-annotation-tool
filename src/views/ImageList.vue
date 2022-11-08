@@ -68,9 +68,6 @@ export default {
     return {
       items: [],
       item_count: 0,
-      options: {
-        sortBy: ['time']
-      },
       loading: false,
       base_headers: [
         { text: 'Image', value: 'file' },
@@ -91,7 +88,7 @@ export default {
 
   },
   watch: {
-    tableOptions: {
+    query: {
       handler () {
         this.get_items()
       },
