@@ -16,7 +16,7 @@
         :loading="loading" 
         :headers="headers" 
         :items="items" 
-        :options.sync="options"
+        :options.sync="tableOptions"
         :server-items-length="item_count"
         @click:row="$router.push({name: 'annotate', params: {document_id: $event._id}})">
 
@@ -91,7 +91,7 @@ export default {
 
   },
   watch: {
-    options: {
+    tableOptions: {
       handler () {
         this.get_items()
       },
@@ -104,14 +104,7 @@ export default {
 
       this.loading = true
 
-      const { itemsPerPage, page, sortBy, sortDesc } = this.options
-
-      const params = {
-        limit: itemsPerPage,
-        skip: (page - 1) * itemsPerPage,
-        sort: sortBy[0],
-        order: sortDesc[0] ? -1 : 1,
-      }
+      const params = this.query
 
 
       this.axios.get('/images', {params})
@@ -169,7 +162,43 @@ export default {
         ...this.base_headers,
         ...this.extra_headers,
       ]
-    }
+    },
+    query() {
+      return this.$route.query
+    },
+    tableOptions: {
+      get() {
+
+        const {
+          limit = 10,
+          sort = 'time',
+          order = -1,
+          skip = 0,
+        } = this.$route.query
+
+        return {
+          itemsPerPage: Number(limit),
+          sortBy: [sort],
+          sortDesc: [order === '-1'],
+          page: (skip / limit) + 1
+        }
+      },
+      set(newVal) {
+
+        const { itemsPerPage, page, sortBy, sortDesc } = newVal
+        const params = {
+          limit: String(itemsPerPage),
+          skip: String((page - 1) * itemsPerPage),
+          order: String(sortDesc[0] ? -1 : 1),
+          sort: sortBy[0],
+        }
+        const query = { ...this.$route.query, ...params }
+
+        // Preventing route duplicates
+        if (JSON.stringify(this.$route.query) !== JSON.stringify(query)) this.$router.push({ query })
+      }
+    },
+
 
   }
 
