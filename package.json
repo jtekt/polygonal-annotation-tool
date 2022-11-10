@@ -10,7 +10,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "@moreillon/vue_application_template_vuetify": "^1.1.7",
+    "@moreillon/vue_application_template_vuetify": "^1.2.1",
     "axios": "^0.21.4",
     "core-js": "^3.22.8",
     "vue": "^2.6.14",
