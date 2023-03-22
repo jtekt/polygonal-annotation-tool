@@ -1,41 +1,43 @@
 <template>
-  <v-list-group
-    :value="true"
-    no-action
-    v-if="field_name"
-    prepend-icon="mdi-folder-multiple-image"
-  >
-    <template v-slot:activator>
-      <v-list-item-content>
-        <v-list-item-title>{{ field_name }}</v-list-item-title>
-      </v-list-item-content>
-    </template>
-
-    <v-list-item
-      v-for="(fieldValue, i) in fieldValues"
-      :key="i"
-      link
-      exact
-      :to="{
-        name: 'images',
-        query: {
-          [field_name]: fieldValue,
-          limit: 10,
-          skip: 0,
-          order: -1,
-          sort: 'time',
-        },
-      }"
+  <div>
+    <v-list-group
+      v-if="field_name"
+      :value="true"
+      no-action
+      prepend-icon="mdi-folder-multiple-image"
     >
-      <v-list-item-icon>
-        <v-icon>mdi-image-multiple</v-icon>
-      </v-list-item-icon>
+      <template v-slot:activator>
+        <v-list-item-content>
+          <v-list-item-title>{{ field_name }}</v-list-item-title>
+        </v-list-item-content>
+      </template>
 
-      <v-list-item-content>
-        <v-list-item-title>{{ fieldValue }}</v-list-item-title>
-      </v-list-item-content>
-    </v-list-item>
-  </v-list-group>
+      <v-list-item
+        v-for="(fieldValue, i) in fieldValues"
+        :key="i"
+        link
+        exact
+        :to="{
+          name: 'images',
+          query: {
+            [field_name]: fieldValue,
+            limit: 10,
+            skip: 0,
+            order: -1,
+            sort: 'time',
+          },
+        }"
+      >
+        <v-list-item-icon>
+          <v-icon>mdi-image-multiple</v-icon>
+        </v-list-item-icon>
+
+        <v-list-item-content>
+          <v-list-item-title>{{ fieldValue }}</v-list-item-title>
+        </v-list-item-content>
+      </v-list-item>
+    </v-list-group>
+  </div>
 </template>
 
 <script>
