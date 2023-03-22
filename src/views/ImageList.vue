@@ -1,11 +1,10 @@
 <template>
   <v-card>
+    <v-toolbar flat>
+      <v-toolbar-title>Images</v-toolbar-title>
+    </v-toolbar>
+    <v-divider />
     <v-card-text>
-      <v-toolbar flat>
-        <v-toolbar-title>Images</v-toolbar-title>
-      </v-toolbar>
-      <v-divider />
-
       <v-container fluid>
         <QuerySettings :fields="fields" />
       </v-container>
@@ -64,6 +63,8 @@
 
 <script>
 import QuerySettings from "../components/QuerySettings.vue"
+
+// const { VUE_APP_SUBCATEGORIZER } = process.env
 
 export default {
   name: "Images",
