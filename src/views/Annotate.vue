@@ -203,20 +203,18 @@
                     </v-list-item-content>
                   </v-list-item>
 
-                  <template v-for="(value, key) of item.data">
-                    <v-list-item
-                      :key="key"
-                      v-if="key !== annotation_field"
-                      two-line
-                    >
-                      <v-list-item-content>
-                        <v-list-item-subtitle>{{ key }}</v-list-item-subtitle>
-                        <v-list-item-title>
-                          <pre>{{ format_metadata(value) }}</pre>
-                        </v-list-item-title>
-                      </v-list-item-content>
-                    </v-list-item>
-                  </template>
+                  <v-list-item
+                    v-for="(key, index) of displayed_fields"
+                    :key="index"
+                    two-line
+                  >
+                    <v-list-item-content>
+                      <v-list-item-subtitle>{{ key }}</v-list-item-subtitle>
+                      <v-list-item-title>
+                        <pre>{{ item.data[key] }}</pre>
+                      </v-list-item-title>
+                    </v-list-item-content>
+                  </v-list-item>
                 </v-list>
               </v-card>
             </v-col>
@@ -240,6 +238,9 @@
 <script>
 import PolygonEditor from "@/components/PolygonEditor.vue"
 import KeyboardShortcuts from "@/components/KeyboardShortcuts.vue"
+
+const { VUE_APP_DISPLAYED_FIELDS, VUE_APP_STORAGE_SERVICE_API_URL } =
+  process.env
 
 export default {
   name: "Annotate",
@@ -268,8 +269,6 @@ export default {
       },
 
       selected_annotation: -1,
-
-      api_url: process.env.VUE_APP_STORAGE_SERVICE_API_URL,
 
       mode_index: 0,
       mode_lookup: ["polygon", "rectangle"],
@@ -503,7 +502,7 @@ export default {
       return this.$route.params.document_id
     },
     image_src() {
-      return `${this.api_url}/images/${this.document_id}/image`
+      return `${VUE_APP_STORAGE_SERVICE_API_URL}/images/${this.document_id}/image`
     },
     item_has_unsaved_modifications() {
       if (!this.item) return false
@@ -512,6 +511,10 @@ export default {
     },
     query() {
       return this.$route.query
+    },
+    displayed_fields() {
+      if (VUE_APP_DISPLAYED_FIELDS) return VUE_APP_DISPLAYED_FIELDS.split(",")
+      return Object.keys(this.item.data)
     },
   },
 }
