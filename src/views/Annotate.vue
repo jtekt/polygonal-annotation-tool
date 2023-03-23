@@ -132,6 +132,8 @@
               v-model="item.data[annotation_field]"
               :selected_polygon_index.sync="selected_annotation"
             />
+
+            <div class="helper_rectangle" :style="helper_rectangle_style" />
           </div>
         </v-col>
         <v-col>
@@ -239,8 +241,11 @@
 import PolygonEditor from "@/components/PolygonEditor.vue"
 import KeyboardShortcuts from "@/components/KeyboardShortcuts.vue"
 
-const { VUE_APP_DISPLAYED_FIELDS, VUE_APP_STORAGE_SERVICE_API_URL } =
-  process.env
+const {
+  VUE_APP_DISPLAYED_FIELDS,
+  VUE_APP_STORAGE_SERVICE_API_URL,
+  VUE_APP_HELPER_RECTANGLE,
+} = process.env
 
 export default {
   name: "Annotate",
@@ -516,6 +521,16 @@ export default {
       if (VUE_APP_DISPLAYED_FIELDS) return VUE_APP_DISPLAYED_FIELDS.split(",")
       return Object.keys(this.item.data)
     },
+    helper_rectangle_style() {
+      if (!VUE_APP_HELPER_RECTANGLE) return { display: "none" }
+      const [left, top, width, height] = VUE_APP_HELPER_RECTANGLE.split(",")
+      return {
+        top,
+        left,
+        width,
+        height,
+      }
+    },
   },
 }
 </script>
@@ -542,5 +557,10 @@ tr {
 
 tr.selected {
   background-color: #c0000044;
+}
+
+.helper_rectangle {
+  position: absolute;
+  border: 1px dashed green;
 }
 </style>
