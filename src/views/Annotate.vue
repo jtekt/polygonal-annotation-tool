@@ -523,12 +523,12 @@ export default {
     },
     helper_rectangle_style() {
       if (!VUE_APP_HELPER_RECTANGLE) return { display: "none" }
-      const [left, top, width, height] = VUE_APP_HELPER_RECTANGLE.split(",")
+      const [x, y, w, h] = VUE_APP_HELPER_RECTANGLE.split(",")
       return {
-        top,
-        left,
-        width,
-        height,
+        left: `${(100 * x) / this.image.width}%`,
+        top: `${(100 * y) / this.image.height}%`,
+        width: `${(100 * w) / this.image.width}%`,
+        height: `${(100 * h) / this.image.height}%`,
       }
     },
   },
