@@ -124,6 +124,7 @@
               @load="image_loaded($event)"
             />
 
+            <div class="helper_rectangle" :style="helper_rectangle_style" />
             <!-- The polygon editing tool -->
             <PolygonEditor
               :width="image.width"
@@ -132,8 +133,6 @@
               v-model="item.data[annotation_field]"
               :selected_polygon_index.sync="selected_annotation"
             />
-
-            <div class="helper_rectangle" :style="helper_rectangle_style" />
           </div>
         </v-col>
         <v-col>
