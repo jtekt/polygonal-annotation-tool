@@ -1,24 +1,13 @@
 <template>
-  <v-card :loading="loading">
-    <v-toolbar flat>
-      <v-tooltip bottom>
-        <template v-slot:activator="{ on, attrs }">
-          <v-btn icon v-bind="attrs" v-on="on" exact :to="{ name: 'images' }">
-            <v-icon>mdi-format-list-bulleted</v-icon>
-          </v-btn>
-        </template>
-        <span>Return to image list</span>
-      </v-tooltip>
-
-      <v-divider vertical />
-
+  <div>
+    <v-toolbar>
       <!-- Polygon editor controls -->
       <v-btn-toggle v-model="mode_index" borderless group>
         <v-btn icon>
           <v-icon>mdi-vector-polygon</v-icon>
         </v-btn>
 
-        <v-btn text>
+        <v-btn icon>
           <v-icon>mdi-vector-rectangle</v-icon>
         </v-btn>
       </v-btn-toggle>
@@ -111,154 +100,157 @@
     </v-toolbar>
     <v-divider />
 
-    <v-container fluid v-if="!loading && item">
-      <v-row>
-        <v-col class="image_wrapper_outer" cols="12" :lg="fullscreen ? 12 : 6">
-          <!-- This wrapper gets the same size as the img -->
-          <div class="image_wrapper">
-            <!-- The actual image -->
-            <img
-              draggable="false"
-              :src="image_src"
-              ref="image"
-              @load="image_loaded($event)"
-            />
+    <v-row v-if="loading" justify="center">
+      <v-col class="mt-10" cols="auto">
+        <v-progress-circular indeterminate size="46" />
+      </v-col>
+    </v-row>
 
-            <div class="helper_rectangle" :style="helper_rectangle_style" />
-            <!-- The polygon editing tool -->
-            <PolygonEditor
-              :width="image.width"
-              :height="image.height"
-              :mode="mode_lookup[mode_index]"
-              v-model="item.data[annotation_field]"
-              :selected_polygon_index.sync="selected_annotation"
-            />
-          </div>
-        </v-col>
-        <v-col>
-          <v-row>
-            <v-col>
-              <v-card outlined>
-                <v-card-title>{{ $t("Annotations") }}</v-card-title>
-                <v-card-text>
-                  <div
-                    class="text-center my-5"
-                    style="color: #c00000"
-                    v-if="!item.data[annotation_field]"
-                  >
-                    <v-icon left color="#c00000">mdi-tag-off</v-icon>
-                    <span>{{ $t("Not annotated yet") }}</span>
-                  </div>
+    <v-row v-else-if="!item" justify="center">
+      <v-col class="mt-10" cols="auto" style="color: #c00000">
+        Image not found
+      </v-col>
+    </v-row>
 
-                  <v-data-table
-                    v-else
-                    hide-default-footer
-                    :itemsPerPage="-1"
-                    :loading="loading"
-                    :items="item.data[annotation_field]"
-                    :headers="headers"
-                    disable-sort
-                  >
-                    <template v-slot:item="row">
-                      <tr
-                        :style="{
-                          'background-color':
-                            selected_annotation === row.index
-                              ? '#c0000044'
-                              : '',
-                          cursor: 'pointer',
-                        }"
-                        @click="selected_annotation = row.index"
+    <v-row v-else class="mt-2">
+      <v-col cols="12" :lg="fullscreen ? 12 : 6" class="image_wrapper_outer">
+        <!-- This wrapper gets the same size as the img -->
+        <div class="image_wrapper">
+          <!-- The actual image -->
+          <img
+            draggable="false"
+            :src="image_src"
+            ref="image"
+            @load="image_loaded($event)"
+          />
+
+          <div class="helper_rectangle" :style="helper_rectangle_style" />
+          <!-- The polygon editing tool -->
+          <PolygonEditor
+            v-model="item.data[annotation_field]"
+            :width="image.width"
+            :height="image.height"
+            :mode="mode_lookup[mode_index]"
+            :selected_polygon_index.sync="selected_annotation"
+          />
+        </div>
+      </v-col>
+      <v-col>
+        <v-row>
+          <v-col>
+            <v-card>
+              <v-card-title>{{ $t("Annotations") }}</v-card-title>
+              <v-card-text>
+                <div
+                  class="text-center my-5"
+                  style="color: #c00000"
+                  v-if="!item.data[annotation_field]"
+                >
+                  <v-icon left color="#c00000">mdi-tag-off</v-icon>
+                  <span>{{ $t("Not annotated yet") }}</span>
+                </div>
+
+                <v-data-table
+                  v-else
+                  hide-default-footer
+                  :itemsPerPage="-1"
+                  :loading="loading"
+                  :items="item.data[annotation_field]"
+                  :headers="headers"
+                  disable-sort
+                >
+                  <template v-slot:item="row">
+                    <tr
+                      :style="{
+                        'background-color':
+                          selected_annotation === row.index ? '#c0000044' : '',
+                        cursor: 'pointer',
+                      }"
+                      @click="selected_annotation = row.index"
+                    >
+                      <td>{{ row.index }}</td>
+                      <td>
+                        <v-combobox v-model="row.item.label" :items="labels" />
+                      </td>
+                      <td>
+                        <v-icon @click="delete_single_annotation(row.index)">
+                          mdi-delete
+                        </v-icon>
+                      </td>
+                    </tr>
+                  </template>
+                </v-data-table>
+              </v-card-text>
+            </v-card>
+          </v-col>
+
+          <v-col>
+            <v-card>
+              <v-card-title> {{ $t("Image metadata") }} </v-card-title>
+
+              <v-list>
+                <v-list-item two-line>
+                  <v-list-item-content>
+                    <v-list-item-subtitle>{{
+                      $t("File")
+                    }}</v-list-item-subtitle>
+                    <v-list-item-title>{{ item.file }}</v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+                <v-list-item two-line>
+                  <v-list-item-content>
+                    <v-list-item-subtitle>{{
+                      $t("Time")
+                    }}</v-list-item-subtitle>
+                    <v-list-item-title>{{ item.time }}</v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+
+                <v-list-item
+                  v-for="(key, index) of displayed_fields"
+                  :key="index"
+                  two-line
+                >
+                  <v-list-item-content>
+                    <v-list-item-subtitle>{{ key }}</v-list-item-subtitle>
+                    <v-list-item-title>
+                      <pre>{{ item.data[key] }}</pre>
+                    </v-list-item-title>
+                  </v-list-item-content>
+                </v-list-item>
+              </v-list>
+
+              <v-expansion-panels flat v-if="hidden_fields.length">
+                <v-expansion-panel>
+                  <v-expansion-panel-header>
+                    <span>
+                      <v-icon left>mdi-dots-horizontal</v-icon>
+                      <span>See more</span>
+                    </span>
+                  </v-expansion-panel-header>
+                  <v-expansion-panel-content>
+                    <v-list>
+                      <v-list-item
+                        v-for="(key, index) of hidden_fields"
+                        :key="index"
+                        two-line
                       >
-                        <td>{{ row.index }}</td>
-                        <td>
-                          <v-combobox
-                            v-model="row.item.label"
-                            :items="labels"
-                          />
-                        </td>
-                        <td>
-                          <v-icon @click="delete_single_annotation(row.index)">
-                            mdi-delete
-                          </v-icon>
-                        </td>
-                      </tr>
-                    </template>
-                  </v-data-table>
-                </v-card-text>
-              </v-card>
-            </v-col>
-
-            <v-col>
-              <v-card outlined>
-                <v-card-title> {{ $t("Image metadata") }} </v-card-title>
-
-                <v-list>
-                  <v-list-item two-line>
-                    <v-list-item-content>
-                      <v-list-item-subtitle>{{
-                        $t("File")
-                      }}</v-list-item-subtitle>
-                      <v-list-item-title>{{ item.file }}</v-list-item-title>
-                    </v-list-item-content>
-                  </v-list-item>
-                  <v-list-item two-line>
-                    <v-list-item-content>
-                      <v-list-item-subtitle>{{
-                        $t("Time")
-                      }}</v-list-item-subtitle>
-                      <v-list-item-title>{{ item.time }}</v-list-item-title>
-                    </v-list-item-content>
-                  </v-list-item>
-
-                  <v-list-item
-                    v-for="(key, index) of displayed_fields"
-                    :key="index"
-                    two-line
-                  >
-                    <v-list-item-content>
-                      <v-list-item-subtitle>{{ key }}</v-list-item-subtitle>
-                      <v-list-item-title>
-                        <pre>{{ item.data[key] }}</pre>
-                      </v-list-item-title>
-                    </v-list-item-content>
-                  </v-list-item>
-                </v-list>
-
-                <v-expansion-panels flat v-if="hidden_fields.length">
-                  <v-expansion-panel>
-                    <v-expansion-panel-header>
-                      <span>
-                        <v-icon left>mdi-dots-horizontal</v-icon>
-                        <span>See more</span>
-                      </span>
-                    </v-expansion-panel-header>
-                    <v-expansion-panel-content>
-                      <v-list>
-                        <v-list-item
-                          v-for="(key, index) of hidden_fields"
-                          :key="index"
-                          two-line
-                        >
-                          <v-list-item-content>
-                            <v-list-item-subtitle>{{
-                              key
-                            }}</v-list-item-subtitle>
-                            <v-list-item-title>
-                              <pre>{{ item.data[key] }}</pre>
-                            </v-list-item-title>
-                          </v-list-item-content>
-                        </v-list-item>
-                      </v-list>
-                    </v-expansion-panel-content>
-                  </v-expansion-panel>
-                </v-expansion-panels>
-              </v-card>
-            </v-col>
-          </v-row>
-        </v-col>
-      </v-row>
-    </v-container>
+                        <v-list-item-content>
+                          <v-list-item-subtitle>{{ key }}</v-list-item-subtitle>
+                          <v-list-item-title>
+                            <pre>{{ item.data[key] }}</pre>
+                          </v-list-item-title>
+                        </v-list-item-content>
+                      </v-list-item>
+                    </v-list>
+                  </v-expansion-panel-content>
+                </v-expansion-panel>
+              </v-expansion-panels>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-col>
+    </v-row>
 
     <v-snackbar :color="snackbar.color" v-model="snackbar.show">
       {{ snackbar.text }}
@@ -269,7 +261,7 @@
         </v-btn>
       </template>
     </v-snackbar>
-  </v-card>
+  </div>
 </template>
 
 <script>

@@ -37,7 +37,7 @@
           <v-icon v-if="!item.data[annotation_field]" color="#c00000"
             >mdi-tag-off</v-icon
           >
-          <span v-else-if="item.data[annotation_field].length === 0">{{
+          <span v-else-if="!item.data[annotation_field].length">{{
             $t("Empty set")
           }}</span>
 
