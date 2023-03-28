@@ -1,20 +1,21 @@
-import Vue from 'vue'
-import Vuex from 'vuex'
+import Vue from "vue"
+import Vuex from "vuex"
 
 Vue.use(Vuex)
+
+// FIXME: does not default to "annotation" when env var is not set
+const { VUE_APP_ANNOTATION_FIELD = "annotation" } = process.env
 
 export default new Vuex.Store({
   state: {
     current_user: null,
-    annotation_field: process.env.VUE_APP_ANNOTATION_FIELD || 'annotation',
+    annotation_field: VUE_APP_ANNOTATION_FIELD,
   },
   mutations: {
-    set_current_user(state, user){
+    set_current_user(state, user) {
       state.current_user = user
-    }
+    },
   },
-  actions: {
-  },
-  modules: {
-  }
+  actions: {},
+  modules: {},
 })
