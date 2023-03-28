@@ -196,13 +196,17 @@
                 <v-list>
                   <v-list-item two-line>
                     <v-list-item-content>
-                      <v-list-item-subtitle>File</v-list-item-subtitle>
+                      <v-list-item-subtitle>{{
+                        $t("File")
+                      }}</v-list-item-subtitle>
                       <v-list-item-title>{{ item.file }}</v-list-item-title>
                     </v-list-item-content>
                   </v-list-item>
                   <v-list-item two-line>
                     <v-list-item-content>
-                      <v-list-item-subtitle>Time</v-list-item-subtitle>
+                      <v-list-item-subtitle>{{
+                        $t("Time")
+                      }}</v-list-item-subtitle>
                       <v-list-item-title>{{ item.time }}</v-list-item-title>
                     </v-list-item-content>
                   </v-list-item>
@@ -221,7 +225,7 @@
                   </v-list-item>
                 </v-list>
 
-                <v-expansion-panels flat>
+                <v-expansion-panels flat v-if="hidden_fields.length">
                   <v-expansion-panel>
                     <v-expansion-panel-header>
                       <span>

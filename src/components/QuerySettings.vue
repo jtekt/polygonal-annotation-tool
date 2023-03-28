@@ -7,7 +7,7 @@
             <v-expansion-panel-header>
               <span>
                 <v-icon>mdi-magnify</v-icon>
-                <span>Query settings</span>
+                <span>{{ $t("Query settings") }}</span>
               </span>
             </v-expansion-panel-header>
             <v-expansion-panel-content>

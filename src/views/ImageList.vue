@@ -37,9 +37,9 @@
           <v-icon v-if="!item.data[annotation_field]" color="#c00000"
             >mdi-tag-off</v-icon
           >
-          <span v-else-if="item.data[annotation_field].length === 0"
-            >Empty set</span
-          >
+          <span v-else-if="item.data[annotation_field].length === 0">{{
+            $t("Empty set")
+          }}</span>
 
           <div v-else class="classes_wrapper">
             <v-chip
@@ -64,6 +64,8 @@
 <script>
 import QuerySettings from "../components/QuerySettings.vue"
 
+const { VUE_APP_STORAGE_SERVICE_API_URL, VUE_APP_DISPLAYED_FIELDS } =
+  process.env
 export default {
   name: "Images",
 
@@ -75,16 +77,7 @@ export default {
       items: [],
       item_count: 0,
       loading: false,
-      base_headers: [
-        { text: "Image", value: "file" },
-        { text: "Time", value: "time" },
-        { text: "Polygonal Annotations", value: "annotation" },
-      ],
-      dates: [],
       menu: false,
-      filter_key: null,
-      filter_property: null,
-
       fields: [],
       field: null,
     }
@@ -104,7 +97,7 @@ export default {
   methods: {
     get_items_and_fields() {
       this.get_items()
-      this.get_fields()
+      if (!VUE_APP_DISPLAYED_FIELDS) this.get_fields()
     },
 
     get_items() {
@@ -157,17 +150,28 @@ export default {
     },
 
     image_src({ _id }) {
-      return `${process.env.VUE_APP_STORAGE_SERVICE_API_URL}/images/${_id}/image`
+      return `${VUE_APP_STORAGE_SERVICE_API_URL}/images/${_id}/image`
     },
   },
   computed: {
     annotation_field() {
       return this.$store.state.annotation_field
     },
+    base_headers() {
+      return [
+        { value: "file" },
+        { text: this.$t("Time"), value: "time" },
+        { text: this.$t("Annotations"), value: "annotation" },
+      ]
+    },
+    displayed_fields() {
+      if (VUE_APP_DISPLAYED_FIELDS) return VUE_APP_DISPLAYED_FIELDS.split(",")
+      return this.fields
+    },
     headers() {
       return [
         ...this.base_headers,
-        ...this.fields.map((f) => ({ text: f, value: `data.${f}` })),
+        ...this.displayed_fields.map((f) => ({ text: f, value: `data.${f}` })),
       ]
     },
     query() {

@@ -4,5 +4,9 @@
   "Annotations": "アノテーション",
   "Image metadata": "画像について",
   "Images": "画像",
-  "About": "アプリについて"
+  "About": "アプリについて",
+  "File": "ファイル名",
+  "Time": "日付・時間",
+  "Empty set": "空",
+  "Query settings": "検索設定"
 }
