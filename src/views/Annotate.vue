@@ -142,7 +142,7 @@
                 <v-card-title>{{ $t("Annotations") }}</v-card-title>
                 <v-card-text>
                   <div
-                    class="text-center text-h6 my-5"
+                    class="text-center my-5"
                     style="color: #c00000"
                     v-if="!item.data[annotation_field]"
                   >
