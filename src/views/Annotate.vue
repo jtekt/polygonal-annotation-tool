@@ -143,6 +143,7 @@
                 <v-card-text>
                   <div
                     class="text-center text-h5 mt-5"
+                    style="color: #c00000"
                     v-if="!item.data[annotation_field]"
                   >
                     Not annotated yet
