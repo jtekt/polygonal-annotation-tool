@@ -113,7 +113,7 @@
 
     <v-container fluid v-if="!loading && item">
       <v-row>
-        <v-col class="image_wrapper_outer" cols="12" :lg="fullscreen ? 12 : 8">
+        <v-col class="image_wrapper_outer" cols="12" :lg="fullscreen ? 12 : 6">
           <!-- This wrapper gets the same size as the img -->
           <div class="image_wrapper">
             <!-- The actual image -->
@@ -139,14 +139,15 @@
           <v-row>
             <v-col>
               <v-card outlined>
-                <v-card-title>Annotations</v-card-title>
+                <v-card-title>{{ $t("Annotations") }}</v-card-title>
                 <v-card-text>
                   <div
-                    class="text-center text-h5 mt-5"
+                    class="text-center text-h6 my-5"
                     style="color: #c00000"
                     v-if="!item.data[annotation_field]"
                   >
-                    Not annotated yet
+                    <v-icon left color="#c00000">mdi-tag-off</v-icon>
+                    <span>{{ $t("Not annotated yet") }}</span>
                   </div>
 
                   <v-data-table
@@ -190,7 +191,8 @@
 
             <v-col>
               <v-card outlined>
-                <v-card-title> Image metadata </v-card-title>
+                <v-card-title> {{ $t("Image metadata") }} </v-card-title>
+
                 <v-list>
                   <v-list-item two-line>
                     <v-list-item-content>
@@ -218,6 +220,35 @@
                     </v-list-item-content>
                   </v-list-item>
                 </v-list>
+
+                <v-expansion-panels flat>
+                  <v-expansion-panel>
+                    <v-expansion-panel-header>
+                      <span>
+                        <v-icon left>mdi-dots-horizontal</v-icon>
+                        <span>See more</span>
+                      </span>
+                    </v-expansion-panel-header>
+                    <v-expansion-panel-content>
+                      <v-list>
+                        <v-list-item
+                          v-for="(key, index) of hidden_fields"
+                          :key="index"
+                          two-line
+                        >
+                          <v-list-item-content>
+                            <v-list-item-subtitle>{{
+                              key
+                            }}</v-list-item-subtitle>
+                            <v-list-item-title>
+                              <pre>{{ item.data[key] }}</pre>
+                            </v-list-item-title>
+                          </v-list-item-content>
+                        </v-list-item>
+                      </v-list>
+                    </v-expansion-panel-content>
+                  </v-expansion-panel>
+                </v-expansion-panels>
               </v-card>
             </v-col>
           </v-row>
@@ -520,6 +551,11 @@ export default {
     displayed_fields() {
       if (VUE_APP_DISPLAYED_FIELDS) return VUE_APP_DISPLAYED_FIELDS.split(",")
       return Object.keys(this.item.data)
+    },
+    hidden_fields() {
+      return Object.keys(this.item.data).filter(
+        (field) => !this.displayed_fields.includes(field)
+      )
     },
     helper_rectangle_style() {
       if (!VUE_APP_HELPER_RECTANGLE) return { display: "none" }

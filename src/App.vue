@@ -2,12 +2,17 @@
   <AppTemplate :options="options">
     <template v-slot:nav>
       <v-list dense nav>
+        <v-list-item>
+          <LocaleSelector />
+        </v-list-item>
+        <v-divider />
+
         <v-list-item exact :to="{ name: 'images' }">
           <v-list-item-icon>
             <v-icon>mdi-image-multiple</v-icon>
           </v-list-item-icon>
           <v-list-item-content>
-            <v-list-item-title>Images</v-list-item-title>
+            <v-list-item-title>{{ $t("Images") }}</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
 
@@ -16,7 +21,7 @@
             <v-icon>mdi-information-outline</v-icon>
           </v-list-item-icon>
           <v-list-item-content>
-            <v-list-item-title>About</v-list-item-title>
+            <v-list-item-title>{{ $t("About") }}</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
 
@@ -27,6 +32,7 @@
 </template>
 
 <script>
+import LocaleSelector from "./components/LocaleSelector.vue"
 import AppTemplate from "@moreillon/vue_application_template_vuetify"
 import NavCategories from "./components/NavCategories.vue"
 const { VUE_APP_IDENTIFICATION_URL, VUE_APP_LOGIN_URL } = process.env
@@ -36,6 +42,7 @@ export default {
   components: {
     AppTemplate,
     NavCategories,
+    LocaleSelector,
   },
   data: () => ({
     options: {
