@@ -26,7 +26,7 @@
             <v-icon>mdi-tag-off</v-icon>
           </v-btn>
         </template>
-        <div class="text-center">Mark as unannotated</div>
+        <div class="text-center">{{ $t("Mark as unannotated") }}</div>
       </v-tooltip>
 
       <v-tooltip bottom>
@@ -42,7 +42,7 @@
           </v-btn>
         </template>
         <div class="text-center">
-          <div>Save annotations</div>
+          <div>{{ $t("Save annotations") }}</div>
           <div>(Ctrl + S)</div>
         </div>
       </v-tooltip>

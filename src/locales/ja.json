@@ -8,5 +8,7 @@
   "File": "ファイル名",
   "Time": "日付・時間",
   "Empty set": "空",
-  "Query settings": "検索設定"
+  "Query settings": "検索設定",
+  "Save annotations": "アノテーション保存",
+  "Mark as unannotated": "アノテーションされてない状態にする"
 }
