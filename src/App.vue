@@ -32,10 +32,14 @@
 </template>
 
 <script>
-import LocaleSelector from "./components/LocaleSelector.vue"
 import AppTemplate from "@moreillon/vue_application_template_vuetify"
+import LocaleSelector from "./components/LocaleSelector.vue"
 import NavCategories from "./components/NavCategories.vue"
-const { VUE_APP_IDENTIFICATION_URL, VUE_APP_LOGIN_URL } = process.env
+const {
+  VUE_APP_IDENTIFICATION_URL,
+  VUE_APP_LOGIN_URL,
+  VUE_APP_SKIP_GREETINGS,
+} = process.env
 
 export default {
   name: "App",
@@ -49,6 +53,7 @@ export default {
       title: "Polygonal annotation tool",
       login_url: VUE_APP_LOGIN_URL,
       identification_url: VUE_APP_IDENTIFICATION_URL,
+      skip_greetings: VUE_APP_SKIP_GREETINGS,
       header_logo: require("@/assets/jtekt_logo_negative.jpg"),
       authentication_logo: require("@/assets/jtekt_logo.jpg"),
       colors: { app_bar: "#000" },
