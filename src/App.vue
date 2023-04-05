@@ -54,6 +54,9 @@ export default {
       login_url: VUE_APP_LOGIN_URL,
       identification_url: VUE_APP_IDENTIFICATION_URL,
       skip_greetings: VUE_APP_SKIP_GREETINGS,
+      login_hint: VUE_APP_LOGIN_HINT,
+      homepage_url: VUE_APP_HOMEPAGE_URL,
+
       header_logo: require("@/assets/jtekt_logo_negative.jpg"),
       authentication_logo: require("@/assets/jtekt_logo.jpg"),
       colors: { app_bar: "#000" },
