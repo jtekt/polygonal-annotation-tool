@@ -39,6 +39,8 @@ const {
   VUE_APP_IDENTIFICATION_URL,
   VUE_APP_LOGIN_URL,
   VUE_APP_SKIP_GREETINGS,
+  VUE_APP_HOMEPAGE_URL,
+  VUE_APP_LOGIN_HINT,
 } = process.env
 
 export default {
