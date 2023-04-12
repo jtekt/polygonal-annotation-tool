@@ -5,16 +5,16 @@
     @click.self="area_clicked($event)"
     @mousedown.self="area_mouseDown($event)"
     @mouseup="area_mouseUp($event)"
-    @mousemove="area_mouseMove($event)">
-
+    @mousemove="area_mouseMove($event)"
+  >
     <!-- template to wrap v-for -->
     <template v-for="(polygon, polygon_index) in polygons">
-
       <!-- Polyline during construction -->
       <polyline
         v-if="mode === 'polygon' && polygon.constructing"
         :points="polygon_svg_points(polygon.points)"
-        :key="`polyline_${polygon_index}`"/>
+        :key="`polyline_${polygon_index}`"
+      />
 
       <!-- polygon when construction finished -->
       <polygon
@@ -22,17 +22,19 @@
         :points="polygon_svg_points(polygon.points)"
         :key="`polygon_${polygon_index}`"
         :class="polygon_classes(polygon_index)"
-        @click="polygon_clicked(polygon_index)"/>
+        @click="polygon_clicked(polygon_index)"
+      />
 
       <!-- midpoints between vertices -->
       <circle
         class="midpoint"
         v-for="(point, point_index) in denormalize_points(midpoints(polygon))"
         :key="`polygon_${polygon_index}_midpoint_${point_index}`"
-        :class="midpoint_classes(polygon_index,point_index)"
+        :class="midpoint_classes(polygon_index, point_index)"
         @mousedown="midpoint_clicked($event, polygon_index, point_index)"
-        :cx="point.x" 
-        :cy="point.y"/>
+        :cx="point.x"
+        :cy="point.y"
+      />
 
       <!-- polygon vertices -->
       <circle
@@ -41,43 +43,40 @@
         :key="`polygon_${polygon_index}_point_${point_index}`"
         @mousedown="point_mousedown(polygon_index, point_index)"
         @mouseup="point_mouseup()"
-        :class="point_classes(polygon_index,point_index)"
-        :cx="point.x" 
-        :cy="point.y"/>
-
+        :class="point_classes(polygon_index, point_index)"
+        :cx="point.x"
+        :cy="point.y"
+      />
     </template>
   </svg>
 </template>
 
 <script>
 export default {
-  name: 'PolygonEditor',
+  name: "PolygonEditor",
   props: {
-
     // TODO: no default, make normalization optional instead
     width: { type: Number, default: 800 },
     height: { type: Number, default: 600 },
 
-    mode: { type: String, default: 'polygon' },
+    mode: { type: String, default: "polygon" },
     selected_polygon_index: { type: Number, default: -1 },
     value: { type: Array },
   },
-  data () {
+  data() {
     return {
       selected_point_index: -1,
       grabbed_point_index: -1,
     }
   },
-  mounted(){
+  mounted() {
     document.addEventListener("keydown", this.handle_keydown)
-    
   },
   beforeDestroy() {
     document.removeEventListener("keydown", this.handle_keydown)
   },
   methods: {
-
-    handle_keydown(e){
+    handle_keydown(e) {
       // Delete
       if (e.keyCode === 46) {
         e.preventDefault()
@@ -89,42 +88,37 @@ export default {
         this.finish_current_polygon()
       }
       // Ctrl Z for undo
-      else if (e.ctrlKey && e.key === 'z' ) {
+      else if (e.ctrlKey && e.key === "z") {
         e.preventDefault()
         this.undo_last_point()
       }
     },
 
-    midpoint(p1,p2){
+    midpoint(p1, p2) {
       return {
-        x: p1.x + 0.5 * (p2.x -p1.x),
-        y: p1.y + 0.5 * (p2.y -p1.y),
+        x: p1.x + 0.5 * (p2.x - p1.x),
+        y: p1.y + 0.5 * (p2.y - p1.y),
       }
     },
 
-    area_clicked(){
+    area_clicked() {
       // Nothing
     },
-    area_mouseDown(event){
-
+    area_mouseDown(event) {
       // Editor clicked
 
-      const { offsetX: x, offsetY: y, } = event
+      const { offsetX: x, offsetY: y } = event
       const mousePoint = this.normalize_point({ x, y })
 
-      if(!this.polygons) this.polygons = []
+      if (!this.polygons) this.polygons = []
 
       // Using NextTick because polygon array creation is done in parent
       this.$nextTick(() => {
-
-        if(this.mode === 'polygon') {
+        if (this.mode === "polygon") {
           let polygon = this.polygons[this.selected_polygon_index]
-          if(!polygon || !polygon.constructing) polygon = this.create_polygon()
+          if (!polygon || !polygon.constructing) polygon = this.create_polygon()
           polygon.points.push(mousePoint)
-
-        }
-
-        else if(this.mode === 'rectangle') {
+        } else if (this.mode === "rectangle") {
           const rectangle = this.create_polygon()
 
           const margin = 10
@@ -133,97 +127,96 @@ export default {
           // Watch the order!
           rectangle.points.push(mousePoint)
           rectangle.points.push({ x: mousePoint.x, y: mousePoint.y + margin })
-          rectangle.points.push({ x: mousePoint.x + margin, y: mousePoint.y + margin })
+          rectangle.points.push({
+            x: mousePoint.x + margin,
+            y: mousePoint.y + margin,
+          })
           rectangle.points.push({ x: mousePoint.x + margin, y: mousePoint.y })
         }
       })
-
     },
 
-    area_mouseUp(){
-
+    area_mouseUp() {
       // Finish creation of rtectangle if this is what the user was doing
       const polygon = this.polygons[this.selected_polygon_index]
-      if(this.mode === 'rectangle' && polygon && polygon.constructing) {
+      if (this.mode === "rectangle" && polygon && polygon.constructing) {
         this.finish_current_polygon()
       }
-
     },
-    grab_point(polygon_index,point_index){
+    grab_point(polygon_index, point_index) {
       this.select_polygon(polygon_index)
       this.selected_point_index = point_index
       this.grabbed_point_index = point_index
     },
-    point_mousedown(polygon_index, point_index){
+    point_mousedown(polygon_index, point_index) {
       /*
       Two potential actions
         1) while constructing, if first point clicked then construction mode off
         2) IF not constructing, then start grabbing the point to move it
       */
       const polygon = this.polygons[this.selected_polygon_index]
-      if(polygon.constructing && point_index === 0) this.finish_current_polygon()
-      else this.grab_point(polygon_index,point_index)
-
+      if (polygon.constructing && point_index === 0)
+        this.finish_current_polygon()
+      else this.grab_point(polygon_index, point_index)
     },
-    midpoint_clicked(event, polygon_index, point_index){
+    midpoint_clicked(event, polygon_index, point_index) {
       // Create a new point at the midpoint of an edge
       this.select_polygon(polygon_index)
-      const {offsetX: x, offsetY: y} = event
+      const { offsetX: x, offsetY: y } = event
       const mousePoint = this.normalize_point({ x, y })
       const polygon = this.polygons[this.selected_polygon_index]
       polygon.points.splice(point_index + 1, 0, mousePoint)
-      this.grab_point(polygon_index, point_index+1)
+      this.grab_point(polygon_index, point_index + 1)
     },
 
-    area_mouseMove(event){
-
+    area_mouseMove(event) {
       // Move grabbed points or create rectangle
 
-      if(!this.polygons) return
-      
+      if (!this.polygons) return
+
       const polygon = this.polygons[this.selected_polygon_index]
 
-      const { offsetX: x,  offsetY: y } = event
+      const { offsetX: x, offsetY: y } = event
       const mousePoint = this.normalize_point({ x, y })
 
       // Move the selected point of the selected polygon
-      if (this.grabbed_point_index !== -1) this.$set( polygon.points, this.grabbed_point_index, mousePoint)
+      if (this.grabbed_point_index !== -1)
+        this.$set(polygon.points, this.grabbed_point_index, mousePoint)
 
       // Stuff related to rectangles
-      if(this.mode === 'rectangle' && polygon && polygon.constructing) {
-
+      if (this.mode === "rectangle" && polygon && polygon.constructing) {
         const rectanglePoint = polygon.points[0]
         const { x: startX, y: startY } = rectanglePoint
 
-        this.$set(polygon.points, 1, { x: startX, y: mousePoint.y})
+        this.$set(polygon.points, 1, { x: startX, y: mousePoint.y })
         this.$set(polygon.points, 2, mousePoint)
-        this.$set(polygon.points, 3, { x: mousePoint.x, y:startY })
+        this.$set(polygon.points, 3, { x: mousePoint.x, y: startY })
       }
-
     },
 
-    polygon_clicked(polygon_index){
+    polygon_clicked(polygon_index) {
       this.finish_current_polygon()
       this.select_polygon(polygon_index)
       this.selected_point_index = -1
     },
 
-    polygon_svg_points(points){
+    polygon_svg_points(points) {
       // Creates the svg attribute for point positions
       // return points.reduce((output, point) => `${output} ${point.x},${point.y}`, '' )
-      return this.denormalize_points(points).reduce((output, point) => `${output} ${point.x},${point.y}`, '')
-
+      return this.denormalize_points(points).reduce(
+        (output, point) => `${output} ${point.x},${point.y}`,
+        ""
+      )
     },
 
-    denormalize_point(point){
+    denormalize_point(point) {
       return {
-        x: this.viewBox.width * point.x / this.width ,
-        y: this.viewBox.height * point.y / this.height ,
-
+        x: (this.viewBox.width * point.x) / this.width,
+        y: (this.viewBox.height * point.y) / this.height,
       }
     },
 
-    denormalize_points(points){
+    denormalize_points(points) {
       return points.map(this.denormalize_point)
     },
 
@@ -231,8 +224,8 @@ export default {
       // Convert point into original image coordinates
       const { clientWidth, clientHeight } = this.$refs.svg
       return {
-        x: this.width * point.x / clientWidth,
-        y: this.height * point.y / clientHeight,
+        x: (this.width * point.x) / clientWidth,
+        y: (this.height * point.y) / clientHeight,
       }
     },
 
@@ -240,107 +233,108 @@ export default {
       return points.map(this.normalize_point)
     },
 
-
-
-    point_mouseup(){
+    point_mouseup() {
       // Release grabbed point
       this.grabbed_point_index = -1
     },
 
-
-    create_polygon(){
-
+    create_polygon() {
       const new_polyon = { points: [], constructing: true }
       this.polygons.push(new_polyon)
+      this.$emit("polygonCreated")
 
-      this.select_polygon(this.polygons.length -1)
+      this.select_polygon(this.polygons.length - 1)
       this.selected_point_index = -1
 
-      return this.polygons[this.polygons.length -1]
+      return this.polygons[this.polygons.length - 1]
     },
 
-    select_polygon(index){
+    select_polygon(index) {
       // Sync with parent
-      this.$emit('update:selected_polygon_index', index)
+      this.$emit("update:selected_polygon_index", index)
     },
 
-    delete_selected_item(){
+    delete_selected_item() {
       // iF a point is selected, delete the point
-      if(this.selected_point_index !== -1) {
+      if (this.selected_point_index !== -1) {
         const polygon = this.polygons[this.selected_polygon_index]
-        if(polygon){
-          polygon.points.splice(this.selected_point_index,1)
+        if (polygon) {
+          polygon.points.splice(this.selected_point_index, 1)
           this.selected_point_index = -1
         }
       }
       // If no point is selected, delete the polygon
-      else if(this.selected_polygon_index !== -1){
-        this.polygons.splice(this.selected_polygon_index,1)
+      else if (this.selected_polygon_index !== -1) {
+        this.polygons.splice(this.selected_polygon_index, 1)
         this.select_polygon(-1)
       }
-
     },
 
-    undo_last_point(){
+    undo_last_point() {
       // Delete last point when in constructing mode
       const polygon = this.polygons[this.selected_polygon_index]
       if (!polygon || !polygon.constructing) return
       polygon.points.pop()
     },
 
-
-
-    finish_current_polygon(){
+    finish_current_polygon() {
       const polygon = this.polygons[this.selected_polygon_index]
-      if(!polygon) return
+      if (!polygon) return
 
       //delete polygon.constructing
       polygon.constructing = false
 
       // Deleting polygon if it has less than 3 vertices
-      if(polygon.points.length < 3) {
-        this.polygons.splice(this.selected_polygon_index,1)
+      if (polygon.points.length < 3) {
+        this.polygons.splice(this.selected_polygon_index, 1)
         this.select_polygon(-1)
       }
     },
 
-    polygon_classes(polygon_index){
+    polygon_classes(polygon_index) {
       return {
-        selected: polygon_index === this.selected_polygon_index
+        selected: polygon_index === this.selected_polygon_index,
       }
     },
 
-    point_classes(polygon_index, point_index){
-
+    point_classes(polygon_index, point_index) {
       const polygon = this.polygons[this.selected_polygon_index]
       const polygon_constructing = polygon && polygon.constructing
 
       return {
         active: polygon_index === this.selected_polygon_index,
-        start: polygon_index === this.selected_polygon_index && point_index === 0 && polygon_constructing,
-        selected: polygon_index === this.selected_polygon_index && point_index === this.selected_point_index,
-        grabbed: polygon_index === this.selected_polygon_index && point_index === this.grabbed_point_index,
+        start:
+          polygon_index === this.selected_polygon_index &&
+          point_index === 0 &&
+          polygon_constructing,
+        selected:
+          polygon_index === this.selected_polygon_index &&
+          point_index === this.selected_point_index,
+        grabbed:
+          polygon_index === this.selected_polygon_index &&
+          point_index === this.grabbed_point_index,
       }
     },
 
-    midpoint_classes(polygon_index){
+    midpoint_classes(polygon_index) {
       return {
         active: polygon_index === this.selected_polygon_index,
       }
     },
 
-    midpoints(polygon){
+    midpoints(polygon) {
       // Computes a list of midpoints for the given polygon
       const points_copy = polygon.points.slice()
-      if(!polygon.constructing || this.mode === 'rectangle') points_copy.push(points_copy[0])
-      const points_sliced = points_copy.slice(0,-1)
-      return points_sliced.map((point, index) => this.midpoint(point, points_copy[index+1])  )
+      if (!polygon.constructing || this.mode === "rectangle")
+        points_copy.push(points_copy[0])
+      const points_sliced = points_copy.slice(0, -1)
+      return points_sliced.map((point, index) =>
+        this.midpoint(point, points_copy[index + 1])
+      )
     },
-
-
-  },// End of methods
+  }, // End of methods
   computed: {
-    viewBox(){
+    viewBox() {
       // ViewBox parameters
       // Height is computed using aspect ratio
       // ViewBox Width is set independently so that lines and points don't look smaller or bigger depending on image size
@@ -351,22 +345,18 @@ export default {
       return { width, height }
     },
     polygons: {
-      get(){
+      get() {
         return this.value
       },
-      set(newValue){
-        this.$emit('input', newValue)
-      }
-    }
-
-  }
-
+      set(newValue) {
+        this.$emit("input", newValue)
+      },
+    },
+  },
 }
 </script>
 
 <style>
-
-
 svg {
   position: absolute;
   top: 0;
@@ -398,22 +388,15 @@ polygon.selected {
   stroke: #c00000;
 }
 
-
 circle {
-  transition:
-    r 0.25s,
-    fill 0.25s,
-    stroke 0.25s,
-    stroke-width 0.25s;
+  transition: r 0.25s, fill 0.25s, stroke 0.25s, stroke-width 0.25s;
 }
 
 .vertex {
   cursor: grab;
   fill: #444444;
   r: 0; /* Invisible by default */
-  stroke-width:0;
-
-
+  stroke-width: 0;
 }
 
 .vertex.active {
@@ -454,5 +437,4 @@ circle {
 button.active {
   background-color: #c00000;
 }
-
 </style>

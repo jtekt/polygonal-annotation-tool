@@ -127,6 +127,7 @@
           <div class="helper_rectangle" :style="helper_rectangle_style" />
           <!-- The polygon editing tool -->
           <PolygonEditor
+            @polygonCreated="polygonCreated()"
             v-model="item.data[annotation_field]"
             :width="image.width"
             :height="image.height"
@@ -191,17 +192,17 @@
               <v-list>
                 <v-list-item two-line>
                   <v-list-item-content>
-                    <v-list-item-subtitle>{{
-                      $t("File")
-                    }}</v-list-item-subtitle>
+                    <v-list-item-subtitle>
+                      {{ $t("File") }}
+                    </v-list-item-subtitle>
                     <v-list-item-title>{{ item.file }}</v-list-item-title>
                   </v-list-item-content>
                 </v-list-item>
                 <v-list-item two-line>
                   <v-list-item-content>
-                    <v-list-item-subtitle>{{
-                      $t("Time")
-                    }}</v-list-item-subtitle>
+                    <v-list-item-subtitle>
+                      {{ $t("Time") }}
+                    </v-list-item-subtitle>
                     <v-list-item-title>{{ item.time }}</v-list-item-title>
                   </v-list-item-content>
                 </v-list-item>
@@ -272,6 +273,7 @@ const {
   VUE_APP_DISPLAYED_FIELDS,
   VUE_APP_STORAGE_SERVICE_API_URL,
   VUE_APP_HELPER_RECTANGLE,
+  VUE_APP_DEFAULT_LABEL,
 } = process.env
 
 export default {
@@ -524,6 +526,14 @@ export default {
         console.warn(error)
         return data
       }
+    },
+    polygonCreated() {
+      // Assign default label
+      const lastItem =
+        this.item.data[this.annotation_field][
+          this.item.data[this.annotation_field].length - 1
+        ]
+      lastItem.label = VUE_APP_DEFAULT_LABEL
     },
   },
   computed: {
