@@ -38,7 +38,6 @@ import NavCategories from "./components/NavCategories.vue"
 const {
   VUE_APP_IDENTIFICATION_URL,
   VUE_APP_LOGIN_URL,
-  VUE_APP_SKIP_GREETINGS,
   VUE_APP_HOMEPAGE_URL,
   VUE_APP_LOGIN_HINT,
 } = process.env
@@ -55,14 +54,13 @@ export default {
       title: "Polygonal annotation tool",
       login_url: VUE_APP_LOGIN_URL,
       identification_url: VUE_APP_IDENTIFICATION_URL,
-      skip_greetings: VUE_APP_SKIP_GREETINGS,
       login_hint: VUE_APP_LOGIN_HINT,
       homepage_url: VUE_APP_HOMEPAGE_URL,
 
       header_logo: require("@/assets/jtekt_logo_negative.jpg"),
       authentication_logo: require("@/assets/jtekt_logo.jpg"),
       colors: { app_bar: "#000" },
-      author: "JTEKT Corporation",
+      author: "Maxime Moreillon - JTEKT Corporation",
     },
   }),
 }
