@@ -1,5 +1,8 @@
 <template>
-  <AppTemplate :options="options">
+  <AppTemplate
+    :options="options"
+    @user="$store.commit('set_current_user', $event)"
+  >
     <template v-slot:nav>
       <v-list dense nav>
         <v-list-item>
@@ -63,6 +66,7 @@ export default {
       author: "Maxime Moreillon - JTEKT Corporation",
     },
   }),
+  methods: {},
 }
 </script>
 
