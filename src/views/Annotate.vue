@@ -2,13 +2,17 @@
   <div>
     <v-toolbar>
       <!-- Polygon editor controls -->
-      <v-btn-toggle v-model="mode_index" borderless group>
+      <v-btn-toggle v-model="mode_index" borderless group mandatory>
         <v-btn icon>
           <v-icon>mdi-vector-polygon</v-icon>
         </v-btn>
 
         <v-btn icon>
           <v-icon>mdi-vector-rectangle</v-icon>
+        </v-btn>
+
+        <v-btn icon>
+          <v-icon>mdi-vector-polyline</v-icon>
         </v-btn>
       </v-btn-toggle>
 
@@ -169,10 +173,10 @@
                       }"
                       @click="selected_annotation = row.index"
                     >
-                      <td>{{ row.index }}</td>
                       <td>
                         <v-combobox v-model="row.item.label" :items="labels" />
                       </td>
+
                       <td>
                         <v-icon @click="delete_single_annotation(row.index)">
                           mdi-delete
@@ -292,7 +296,7 @@ export default {
       unmodified_item_copy: null,
 
       headers: [
-        { text: "ID", value: "index" },
+        // { text: "ID", value: "index" },
         { text: "Label / Class", value: "label" },
         { text: "Delete", value: "actions" },
       ],
@@ -305,7 +309,7 @@ export default {
       selected_annotation: -1,
 
       mode_index: 0,
-      mode_lookup: ["polygon", "rectangle"],
+      mode_lookup: ["polygon", "rectangle", "polyline"],
 
       labels: process.env.VUE_APP_LABELS.split(","),
 
