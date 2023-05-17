@@ -91,10 +91,7 @@ export default {
 
         if (this.mode === "polygon") this.close_polygon()
         this.cleanupInvalidPolygons()
-        // nextTick because cleanup will remove the newly created polygon otherwise
-        this.$nextTick(() => {
-          this.create_polygon()
-        })
+        this.$emit("update:selected_polygon_index", -1)
       } else if (e.keyCode === 40) {
         // Down
         e.preventDefault()
@@ -287,7 +284,7 @@ export default {
     create_polygon() {
       const new_polyon = {
         points: [],
-        open: true,
+        open: this.mode !== "rectangle",
       }
       this.polygons.push(new_polyon)
       // TODO: check what this emit does
