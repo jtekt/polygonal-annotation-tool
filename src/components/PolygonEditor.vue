@@ -2,21 +2,22 @@
   <svg
     ref="svg"
     :viewBox="`0 0 ${viewBox.width} ${viewBox.height}`"
-    @click.self="area_clicked($event)"
     @mousedown.self="area_mouseDown($event)"
     @mouseup="area_mouseUp($event)"
     @mousemove="area_mouseMove($event)"
   >
     <!-- template to wrap v-for -->
     <template v-for="(polygon, polygon_index) in polygons">
-      <!-- Polyline during construction -->
+      <!-- Polyline when polygon is not closed -->
       <polyline
-        v-if="mode === 'polygon' && polygon.constructing"
+        v-if="mode === 'polygon' && polygon.open"
         :points="polygon_svg_points(polygon.points)"
         :key="`polyline_${polygon_index}`"
+        :class="polyline_class(polygon_index)"
+        @click="polyline_clicked(polygon_index)"
       />
 
-      <!-- polygon when construction finished -->
+      <!-- polygon when polygon is closed -->
       <polygon
         v-else
         :points="polygon_svg_points(polygon.points)"
@@ -36,7 +37,7 @@
         :cy="point.y"
       />
 
-      <!-- polygon vertices -->
+      <!-- polygon vertices (points) -->
       <circle
         class="vertex"
         v-for="(point, point_index) in denormalize_points(polygon.points)"
@@ -67,6 +68,7 @@ export default {
     return {
       selected_point_index: -1,
       grabbed_point_index: -1,
+      rectanglePending: false,
     }
   },
   mounted() {
@@ -77,20 +79,46 @@ export default {
   },
   methods: {
     handle_keydown(e) {
-      // Delete
+      // Could think of using arrow keys to navigate between polygons
       if (e.keyCode === 46) {
+        // Delete
         e.preventDefault()
         this.delete_selected_item()
-      }
-      // Enter key
-      else if (e.keyCode === 13) {
+      } else if (e.keyCode === 13) {
+        // Enter key: Create a new polygon
         e.preventDefault()
-        this.finish_current_polygon()
-      }
-      // Ctrl Z for undo
-      else if (e.ctrlKey && e.key === "z") {
+        this.cleanupInvalidPolygons()
+        // nextTick because cleanup will remove the newly created polygon otherwise
+        this.$nextTick(() => {
+          this.create_polygon()
+        })
+      } else if (e.keyCode === 40) {
+        // Down
         e.preventDefault()
-        this.undo_last_point()
+        const lastIndex = this.polygons.length - 1
+        if (this.selected_polygon_index < lastIndex)
+          this.$emit(
+            "update:selected_polygon_index",
+            this.selected_polygon_index + 1
+          )
+      } else if (e.keyCode === 38) {
+        // Up
+        e.preventDefault()
+        if (this.selected_polygon_index > 0)
+          this.$emit(
+            "update:selected_polygon_index",
+            this.selected_polygon_index - 1
+          )
+      } else if (e.key === " ") {
+        // SpaceBar: Opening closing polygon
+        e.preventDefault()
+        this.toggle_current_polygon_open()
+      } else if (e.ctrlKey) {
+        // Ctrl Z for undo
+        if (e.key === "z") {
+          e.preventDefault()
+          this.undo_last_point()
+        }
       }
     },
 
@@ -99,10 +127,6 @@ export default {
         x: p1.x + 0.5 * (p2.x - p1.x),
         y: p1.y + 0.5 * (p2.y - p1.y),
       }
-    },
-
-    area_clicked() {
-      // Nothing
     },
     area_mouseDown(event) {
       // Editor clicked
@@ -113,12 +137,17 @@ export default {
       if (!this.polygons) this.polygons = []
 
       // Using NextTick because polygon array creation is done in parent
+      // FIXME: REALLY?
+      // TODO: would be better without needing this
       this.$nextTick(() => {
         if (this.mode === "polygon") {
           let polygon = this.polygons[this.selected_polygon_index]
-          if (!polygon || !polygon.constructing) polygon = this.create_polygon()
+          // FIXME: if polygon is closed, should not allow to add points
+          // TODO: consider not creating polygon if not open
+          if (!polygon || !polygon.open) polygon = this.create_polygon()
           polygon.points.push(mousePoint)
         } else if (this.mode === "rectangle") {
+          this.rectanglePending = true
           const rectangle = this.create_polygon()
 
           const margin = 10
@@ -137,10 +166,13 @@ export default {
     },
 
     area_mouseUp() {
-      // Finish creation of rtectangle if this is what the user was doing
-      const polygon = this.polygons[this.selected_polygon_index]
-      if (this.mode === "rectangle" && polygon && polygon.constructing) {
-        this.finish_current_polygon()
+      // Finish creation of rectangle if this is what the user was doing
+
+      if (this.mode === "rectangle" && this.rectanglePending) {
+        this.rectanglePending = false
+        const polygon = this.polygons[this.selected_polygon_index]
+        if (!polygon) return
+        polygon.open = false
       }
     },
     grab_point(polygon_index, point_index) {
@@ -150,14 +182,15 @@ export default {
     },
     point_mousedown(polygon_index, point_index) {
       /*
-      Two potential actions
-        1) while constructing, if first point clicked then construction mode off
-        2) IF not constructing, then start grabbing the point to move it
+      Grabbing points
       */
+      this.select_polygon(polygon_index)
       const polygon = this.polygons[this.selected_polygon_index]
-      if (polygon.constructing && point_index === 0)
-        this.finish_current_polygon()
-      else this.grab_point(polygon_index, point_index)
+      if (!polygon) return
+
+      // TODO: consider having optional polygon closing logic when first point is clicked here
+
+      this.grab_point(polygon_index, point_index)
     },
     midpoint_clicked(event, polygon_index, point_index) {
       // Create a new point at the midpoint of an edge
@@ -184,7 +217,7 @@ export default {
         this.$set(polygon.points, this.grabbed_point_index, mousePoint)
 
       // Stuff related to rectangles
-      if (this.mode === "rectangle" && polygon && polygon.constructing) {
+      if (this.mode === "rectangle" && polygon && this.rectanglePending) {
         const rectanglePoint = polygon.points[0]
         const { x: startX, y: startY } = rectanglePoint
 
@@ -195,7 +228,11 @@ export default {
     },
 
     polygon_clicked(polygon_index) {
-      this.finish_current_polygon()
+      this.select_polygon(polygon_index)
+      this.selected_point_index = -1
+    },
+
+    polyline_clicked(polygon_index) {
       this.select_polygon(polygon_index)
       this.selected_point_index = -1
     },
@@ -239,8 +276,12 @@ export default {
     },
 
     create_polygon() {
-      const new_polyon = { points: [], constructing: true }
+      const new_polyon = {
+        points: [],
+        open: true,
+      }
       this.polygons.push(new_polyon)
+      // TODO: check what this emit does
       this.$emit("polygonCreated")
 
       this.select_polygon(this.polygons.length - 1)
@@ -271,24 +312,33 @@ export default {
     },
 
     undo_last_point() {
-      // Delete last point when in constructing mode
       const polygon = this.polygons[this.selected_polygon_index]
-      if (!polygon || !polygon.constructing) return
+      if (!polygon || !polygon.open) return
       polygon.points.pop()
     },
 
-    finish_current_polygon() {
+    close_current_polygon() {
       const polygon = this.polygons[this.selected_polygon_index]
       if (!polygon) return
+      polygon.open = false
+    },
 
-      //delete polygon.constructing
-      polygon.constructing = false
+    open_current_polygon() {
+      const polygon = this.polygons[this.selected_polygon_index]
+      if (!polygon) return
+      polygon.open = false
+    },
 
-      // Deleting polygon if it has less than 3 vertices
-      if (polygon.points.length < 3) {
-        this.polygons.splice(this.selected_polygon_index, 1)
-        this.select_polygon(-1)
-      }
+    toggle_current_polygon_open() {
+      const polygon = this.polygons[this.selected_polygon_index]
+      if (!polygon) return
+      polygon.open = !polygon.open
+    },
+
+    cleanupInvalidPolygons() {
+      this.polygons = this.polygons.filter(
+        (polygon) => polygon.points.length > 1
+      )
     },
 
     polygon_classes(polygon_index) {
@@ -297,22 +347,37 @@ export default {
       }
     },
 
+    polyline_class(polygon_index) {
+      return {
+        selected: polygon_index === this.selected_polygon_index,
+      }
+    },
+
     point_classes(polygon_index, point_index) {
-      const polygon = this.polygons[this.selected_polygon_index]
-      const polygon_constructing = polygon && polygon.constructing
+      const selectedPolygon = this.polygons[this.selected_polygon_index]
+      const lastPointIndex = selectedPolygon
+        ? selectedPolygon.points.length - 1
+        : -1
+
+      // const polygon_constructing = selectedPolygon && selectedPolygon.constructing
+      const polygonOpen = selectedPolygon && selectedPolygon.open
 
       return {
         active: polygon_index === this.selected_polygon_index,
-        start:
-          polygon_index === this.selected_polygon_index &&
-          point_index === 0 &&
-          polygon_constructing,
+        // start:
+        //   polygon_index === this.selected_polygon_index &&
+        //   point_index === 0
+        //   && polygon_constructing,
         selected:
           polygon_index === this.selected_polygon_index &&
           point_index === this.selected_point_index,
         grabbed:
           polygon_index === this.selected_polygon_index &&
           point_index === this.grabbed_point_index,
+        last:
+          polygon_index === this.selected_polygon_index &&
+          point_index === lastPointIndex &&
+          polygonOpen,
       }
     },
 
@@ -325,7 +390,7 @@ export default {
     midpoints(polygon) {
       // Computes a list of midpoints for the given polygon
       const points_copy = polygon.points.slice()
-      if (!polygon.constructing || this.mode === "rectangle")
+      if (!polygon.open || this.mode === "rectangle")
         points_copy.push(points_copy[0])
       const points_sliced = points_copy.slice(0, -1)
       return points_sliced.map((point, index) =>
@@ -369,15 +434,22 @@ svg {
   user-select: none;
 }
 
+polygon,
 polyline {
-  stroke: #c00000;
+  stroke: #c0000066;
+}
+polyline {
   fill: none;
   stroke-width: 0.2vw;
+  cursor: pointer;
+}
+
+polyline.selected {
+  stroke: #c00000;
 }
 
 polygon {
-  fill: #44444444;
-  stroke: #444444;
+  fill: #c0000022;
   cursor: pointer;
   stroke-width: 0.2vw;
   transition: stroke 0.25s, fill 0.25s;
@@ -394,8 +466,8 @@ circle {
 
 .vertex {
   cursor: grab;
-  fill: #444444;
-  r: 0; /* Invisible by default */
+  fill: #c0000044;
+  r: 0.25vw; /* Small by default */
   stroke-width: 0;
 }
 
@@ -410,6 +482,11 @@ circle {
   stroke: #c00000;
   stroke-width: 0.2vw;
   fill: transparent;
+}
+
+.vertex.last {
+  r: 0.5vw;
+  fill: white;
 }
 
 .vertex.selected {

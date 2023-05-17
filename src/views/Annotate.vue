@@ -169,10 +169,19 @@
                       }"
                       @click="selected_annotation = row.index"
                     >
-                      <td>{{ row.index }}</td>
+                      <!-- <td>{{ row.index }}</td> -->
                       <td>
                         <v-combobox v-model="row.item.label" :items="labels" />
                       </td>
+                      <td>
+                        <v-btn @click="row.item.open = !row.item.open" icon>
+                          <v-icon v-if="row.item.open"
+                            >mdi-vector-square-open</v-icon
+                          >
+                          <v-icon v-else>mdi-vector-square</v-icon>
+                        </v-btn>
+                      </td>
+
                       <td>
                         <v-icon @click="delete_single_annotation(row.index)">
                           mdi-delete
@@ -292,8 +301,9 @@ export default {
       unmodified_item_copy: null,
 
       headers: [
-        { text: "ID", value: "index" },
+        // { text: "ID", value: "index" },
         { text: "Label / Class", value: "label" },
+        { text: "Open", value: "open" },
         { text: "Delete", value: "actions" },
       ],
 
