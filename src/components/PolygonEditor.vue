@@ -9,8 +9,9 @@
     <!-- template to wrap v-for -->
     <template v-for="(polygon, polygon_index) in polygons">
       <!-- Polyline when polygon is not closed -->
+      <!-- TODO: polyline too -->
       <polyline
-        v-if="mode === 'polygon' && polygon.open"
+        v-if="polygon.open"
         :points="polygon_svg_points(polygon.points)"
         :key="`polyline_${polygon_index}`"
         :class="polyline_class(polygon_index)"
@@ -87,6 +88,8 @@ export default {
       } else if (e.keyCode === 13) {
         // Enter key: Create a new polygon
         e.preventDefault()
+
+        if (this.mode === "polygon") this.close_polygon()
         this.cleanupInvalidPolygons()
         // nextTick because cleanup will remove the newly created polygon otherwise
         this.$nextTick(() => {
@@ -140,13 +143,7 @@ export default {
       // FIXME: REALLY?
       // TODO: would be better without needing this
       this.$nextTick(() => {
-        if (this.mode === "polygon") {
-          let polygon = this.polygons[this.selected_polygon_index]
-          // FIXME: if polygon is closed, should not allow to add points
-          // TODO: consider not creating polygon if not open
-          if (!polygon || !polygon.open) polygon = this.create_polygon()
-          polygon.points.push(mousePoint)
-        } else if (this.mode === "rectangle") {
+        if (this.mode === "rectangle") {
           this.rectanglePending = true
           const rectangle = this.create_polygon()
 
@@ -161,6 +158,12 @@ export default {
             y: mousePoint.y + margin,
           })
           rectangle.points.push({ x: mousePoint.x + margin, y: mousePoint.y })
+        } else {
+          let polygon = this.polygons[this.selected_polygon_index]
+          // FIXME: if polygon is closed, should not allow to add points
+          // TODO: consider not creating polygon if not open
+          if (!polygon || !polygon.open) polygon = this.create_polygon()
+          polygon.points.push(mousePoint)
         }
       })
     },
@@ -182,15 +185,21 @@ export default {
     },
     point_mousedown(polygon_index, point_index) {
       /*
-      Grabbing points
+      Grabbing points or closing polygon if polygon mode
       */
       this.select_polygon(polygon_index)
+
+      if (point_index === 0 && this.mode === "polygon") {
+        this.close_polygon()
+      } else this.grab_point(polygon_index, point_index)
+    },
+
+    close_polygon() {
       const polygon = this.polygons[this.selected_polygon_index]
       if (!polygon) return
-
-      // TODO: consider having optional polygon closing logic when first point is clicked here
-
-      this.grab_point(polygon_index, point_index)
+      if (polygon.open) {
+        polygon.open = false
+      }
     },
     midpoint_clicked(event, polygon_index, point_index) {
       // Create a new point at the midpoint of an edge
