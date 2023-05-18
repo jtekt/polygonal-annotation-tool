@@ -487,6 +487,8 @@ export default {
       },
     },
     selectedPolygon() {
+      if (!this.polygons) return null
+      if (this.selected_polygon_index < 0) return null
       return this.polygons[this.selected_polygon_index]
     },
     ghost_polyline_points() {
