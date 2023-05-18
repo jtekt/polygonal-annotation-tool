@@ -14,7 +14,18 @@
         <v-btn icon>
           <v-icon>mdi-vector-polyline</v-icon>
         </v-btn>
+
+        <v-btn icon>
+          <v-icon>mdi-brush</v-icon>
+        </v-btn>
       </v-btn-toggle>
+
+      <v-slider
+        class="mt-6"
+        v-if="mode_index === 3"
+        v-model="brushThickness"
+        step="0"
+      />
 
       <v-spacer />
 
@@ -137,6 +148,7 @@
             :height="image.height"
             :mode="mode_lookup[mode_index]"
             :selected_polygon_index.sync="selected_annotation"
+            :brushThickness="brushThickness"
           />
         </div>
       </v-col>
@@ -178,6 +190,7 @@
                       </td>
 
                       <td>
+                        {{ row.item.points.length }}
                         <v-icon @click="delete_single_annotation(row.index)">
                           mdi-delete
                         </v-icon>
@@ -294,6 +307,7 @@ export default {
 
       // used to keep track of unsaved changes
       unmodified_item_copy: null,
+      brushThickness: 5,
 
       headers: [
         // { text: "ID", value: "index" },
@@ -309,7 +323,7 @@ export default {
       selected_annotation: -1,
 
       mode_index: 0,
-      mode_lookup: ["polygon", "rectangle", "polyline"],
+      mode_lookup: ["polygon", "rectangle", "polyline", "brush"],
 
       labels: process.env.VUE_APP_LABELS.split(","),
 

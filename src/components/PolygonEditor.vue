@@ -64,6 +64,7 @@ export default {
     mode: { type: String, default: "polygon" },
     selected_polygon_index: { type: Number, default: -1 },
     value: { type: Array },
+    brushThickness: { type: Number, default: 5 },
   },
   data() {
     return {
@@ -139,6 +140,7 @@ export default {
       // Using NextTick because polygon array creation is done in parent
       // FIXME: REALLY?
       // TODO: would be better without needing this
+      // Is this really needed?
       this.$nextTick(() => {
         if (this.mode === "rectangle") {
           this.rectanglePending = true
@@ -156,10 +158,35 @@ export default {
           })
           rectangle.points.push({ x: mousePoint.x + margin, y: mousePoint.y })
         } else {
+          // TODO: Is this useful?
           let polygon = this.polygons[this.selected_polygon_index]
           // FIXME: if polygon is closed, should not allow to add points
           // TODO: consider not creating polygon if not open
-          if (!polygon || !polygon.open) polygon = this.create_polygon()
+          if (!polygon || (!polygon.open && this.mode !== "brush"))
+            polygon = this.create_polygon()
+
+          if (this.mode === "brush" && polygon.points.length >= 2) {
+            polygon.open = false
+            // const prevPointIndex = Math.ceil(0.5 * polygon.points.length) - 1
+            const prevPointIndex = polygon.points.length - 1
+            console.log(prevPointIndex)
+            const prevPoint = polygon.points[prevPointIndex]
+
+            const normal = this.normal_vector(mousePoint, prevPoint)
+
+            const lower = this.vectorAdd(
+              prevPoint,
+              this.vectorScalarMul(this.brushThickness, normal)
+            )
+            const upper = this.vectorAdd(
+              prevPoint,
+              this.vectorScalarMul(-this.brushThickness, normal)
+            )
+
+            polygon.points.splice(prevPointIndex, 1, upper)
+            polygon.points.unshift(lower)
+          }
+
           polygon.points.push(mousePoint)
         }
       })
@@ -279,6 +306,24 @@ export default {
     point_mouseup() {
       // Release grabbed point
       this.grabbed_point_index = -1
+    },
+
+    normal_vector(a, b) {
+      const n = { x: -(b.y - a.y), y: b.x - a.x }
+      const dn = this.distance(n, { x: 0, y: 0 })
+      return this.vectorScalarMul(1 / dn, n)
+    },
+
+    vectorAdd(a, b) {
+      return { x: a.x + b.x, y: a.y + b.y }
+    },
+
+    distance(a, b) {
+      return Math.sqrt((b.y - a.y) * (b.y - a.y) + (b.x - a.x) * (b.x - a.x))
+    },
+
+    vectorScalarMul(c, a) {
+      return { x: a.x * c, y: a.y * c }
     },
 
     create_polygon() {
