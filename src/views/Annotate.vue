@@ -190,7 +190,6 @@
                       </td>
 
                       <td>
-                        {{ row.item.points.length }}
                         <v-icon @click="delete_single_annotation(row.index)">
                           mdi-delete
                         </v-icon>
