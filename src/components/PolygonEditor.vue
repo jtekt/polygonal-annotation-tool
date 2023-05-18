@@ -50,6 +50,9 @@
         :cy="point.y"
       />
     </template>
+
+    <!-- Ghost -->
+    <polyline :points="ghost_polyline_points" class="ghost" />
   </svg>
 </template>
 
@@ -71,6 +74,10 @@ export default {
       selected_point_index: -1,
       grabbed_point_index: -1,
       rectanglePending: false,
+      mousePosition: {
+        x: 0,
+        y: 0,
+      },
     }
   },
   mounted() {
@@ -135,6 +142,7 @@ export default {
       const { offsetX: x, offsetY: y } = event
       const mousePoint = this.normalize_point({ x, y })
 
+      // Create polygon array if it does not exist
       if (!this.polygons) this.polygons = []
 
       // Using NextTick because polygon array creation is done in parent
@@ -167,22 +175,9 @@ export default {
 
           if (this.mode === "brush" && polygon.points.length >= 2) {
             polygon.open = false
-            // const prevPointIndex = Math.ceil(0.5 * polygon.points.length) - 1
-            const prevPointIndex = polygon.points.length - 1
-            console.log(prevPointIndex)
-            const prevPoint = polygon.points[prevPointIndex]
+            const { lower, upper } = this.computeBrushPoints()
 
-            const normal = this.normal_vector(mousePoint, prevPoint)
-
-            const lower = this.vectorAdd(
-              prevPoint,
-              this.vectorScalarMul(this.brushThickness, normal)
-            )
-            const upper = this.vectorAdd(
-              prevPoint,
-              this.vectorScalarMul(-this.brushThickness, normal)
-            )
-
+            const prevPointIndex = this.selectedPolygon.points.length - 1
             polygon.points.splice(prevPointIndex, 1, upper)
             polygon.points.unshift(lower)
           }
@@ -190,6 +185,21 @@ export default {
           polygon.points.push(mousePoint)
         }
       })
+    },
+
+    computeBrushPoints() {
+      const prevPointIndex = this.selectedPolygon.points.length - 1
+      const prevPoint = this.selectedPolygon.points[prevPointIndex]
+      const normal = this.normal_vector(this.mousePosition, prevPoint)
+      const lower = this.vectorAdd(
+        prevPoint,
+        this.vectorScalarMul(this.brushThickness, normal)
+      )
+      const upper = this.vectorAdd(
+        prevPoint,
+        this.vectorScalarMul(-this.brushThickness, normal)
+      )
+      return { upper, lower }
     },
 
     area_mouseUp() {
@@ -213,7 +223,11 @@ export default {
       */
       this.select_polygon(polygon_index)
 
-      if (point_index === 0 && this.mode === "polygon") {
+      if (
+        point_index === 0 &&
+        this.mode === "polygon" &&
+        this.selectedPolygon.open
+      ) {
         this.close_polygon()
       } else this.grab_point(polygon_index, point_index)
     },
@@ -243,7 +257,10 @@ export default {
       const polygon = this.polygons[this.selected_polygon_index]
 
       const { offsetX: x, offsetY: y } = event
+
+      //  In the future, get rid of mousePoint and use only mousePosition
       const mousePoint = this.normalize_point({ x, y })
+      this.mousePosition = this.normalize_point({ x, y })
 
       // Move the selected point of the selected polygon
       if (this.grabbed_point_index !== -1)
@@ -415,10 +432,11 @@ export default {
 
       return {
         active: polygon_index === this.selected_polygon_index,
-        // start:
-        //   polygon_index === this.selected_polygon_index &&
-        //   point_index === 0
-        //   && polygon_constructing,
+        start:
+          polygon_index === this.selected_polygon_index &&
+          point_index === 0 &&
+          polygonOpen &&
+          this.mode === "polygon",
         selected:
           polygon_index === this.selected_polygon_index &&
           point_index === this.selected_point_index,
@@ -467,6 +485,50 @@ export default {
       set(newValue) {
         this.$emit("input", newValue)
       },
+    },
+    selectedPolygon() {
+      return this.polygons[this.selected_polygon_index]
+    },
+    ghost_polyline_points() {
+      const points = [this.mousePosition]
+
+      if (this.mode === "polygon" && this.selectedPolygon?.open) {
+        const lastPoint =
+          this.selectedPolygon.points[this.selectedPolygon.points.length - 1]
+        if (lastPoint) points.push(lastPoint)
+      } else if (
+        this.mode === "polyline" &&
+        this.selectedPolygon?.points.length >= 1
+      ) {
+        const lastPoint =
+          this.selectedPolygon.points[this.selectedPolygon.points.length - 1]
+        if (lastPoint) points.push(lastPoint)
+      } else if (this.mode === "brush") {
+        if (this.selectedPolygon?.points.length === 1) {
+          points.push(
+            this.selectedPolygon.points[this.selectedPolygon.points.length - 1]
+          )
+        } else if (this.selectedPolygon?.points.length > 1) {
+          const { upper, lower } = this.computeBrushPoints()
+          if (
+            !isNaN(upper.x) &&
+            !isNaN(upper.y) &&
+            !isNaN(lower.x) &&
+            !isNaN(lower.y)
+          ) {
+            points.push(upper)
+            points.push(
+              this.selectedPolygon.points[
+                this.selectedPolygon.points.length - 2
+              ]
+            )
+            points.unshift(lower)
+            points.unshift(this.selectedPolygon.points[0])
+          }
+        }
+      }
+
+      return this.polygon_svg_points(points)
     },
   },
 }
@@ -548,6 +610,11 @@ circle {
   cursor: grabbing;
 }
 
+.vertex.ghost {
+  r: 0.8vw;
+  fill: green;
+}
+
 .midpoint {
   visibility: hidden;
   cursor: grab;
@@ -564,5 +631,9 @@ circle {
 
 button.active {
   background-color: #c00000;
+}
+
+.ghost {
+  pointer-events: none;
 }
 </style>
