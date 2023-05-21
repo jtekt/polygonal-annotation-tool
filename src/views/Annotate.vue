@@ -11,11 +11,11 @@
           <v-icon>mdi-vector-rectangle</v-icon>
         </v-btn>
 
-        <v-btn icon>
+        <v-btn icon v-if="polylineEnabled">
           <v-icon>mdi-vector-polyline</v-icon>
         </v-btn>
 
-        <v-btn icon>
+        <v-btn icon v-if="brushEnabled">
           <v-icon>mdi-brush</v-icon>
         </v-btn>
       </v-btn-toggle>
@@ -290,6 +290,8 @@ const {
   VUE_APP_STORAGE_SERVICE_API_URL,
   VUE_APP_HELPER_RECTANGLE,
   VUE_APP_DEFAULT_LABEL,
+  VUE_APP_ENABLE_BRUSH,
+  VUE_APP_ENABLE_POLYLINE,
 } = process.env
 
 export default {
@@ -306,6 +308,9 @@ export default {
 
       // used to keep track of unsaved changes
       unmodified_item_copy: null,
+
+      polylineEnabled: !!VUE_APP_ENABLE_POLYLINE,
+      brushEnabled: !!VUE_APP_ENABLE_BRUSH,
       brushThickness: 5,
 
       headers: [
@@ -322,7 +327,7 @@ export default {
       selected_annotation: -1,
 
       mode_index: 0,
-      mode_lookup: ["polygon", "rectangle", "polyline", "brush"],
+      mode_lookup: ["polygon", "rectangle"],
 
       labels: process.env.VUE_APP_LABELS.split(","),
 
@@ -340,6 +345,8 @@ export default {
   },
   mounted() {
     this.get_item_by_id()
+    if (this.polylineEnabled) this.mode_lookup.push("polyline")
+    if (this.brushEnabled) this.mode_lookup.push("brush")
 
     // Listen to keyboard events for key shortcuts
     document.addEventListener("keydown", this.handle_keydown)

@@ -57,6 +57,12 @@
 </template>
 
 <script>
+import {
+  normal_vector,
+  vectorAdd,
+  vectorScalarMul,
+  midpoint,
+} from "@/vectorUtils.js"
 export default {
   name: "PolygonEditor",
   props: {
@@ -67,6 +73,8 @@ export default {
     mode: { type: String, default: "polygon" },
     selected_polygon_index: { type: Number, default: -1 },
     value: { type: Array },
+
+    // Only used for brush mode
     brushThickness: { type: Number, default: 5 },
   },
   data() {
@@ -130,12 +138,6 @@ export default {
       }
     },
 
-    midpoint(p1, p2) {
-      return {
-        x: p1.x + 0.5 * (p2.x - p1.x),
-        y: p1.y + 0.5 * (p2.y - p1.y),
-      }
-    },
     area_mouseDown(event) {
       // Editor clicked
 
@@ -146,9 +148,6 @@ export default {
       if (!this.polygons) this.polygons = []
 
       // Using NextTick because polygon array creation is done in parent
-      // FIXME: REALLY?
-      // TODO: would be better without needing this
-      // Is this really needed?
       this.$nextTick(() => {
         if (this.mode === "rectangle") {
           this.rectanglePending = true
@@ -167,19 +166,24 @@ export default {
           rectangle.points.push({ x: mousePoint.x + margin, y: mousePoint.y })
         } else {
           // TODO: Is this useful?
+          // TODO: use computed instead
           let polygon = this.polygons[this.selected_polygon_index]
-          // FIXME: if polygon is closed, should not allow to add points
-          // TODO: consider not creating polygon if not open
+
           if (!polygon || (!polygon.open && this.mode !== "brush"))
             polygon = this.create_polygon()
 
-          if (this.mode === "brush" && polygon.points.length >= 2) {
+          if (this.mode === "brush" && polygon.points.length) {
             polygon.open = false
             const { lower, upper } = this.computeBrushPoints()
 
             const prevPointIndex = this.selectedPolygon.points.length - 1
-            polygon.points.splice(prevPointIndex, 1, upper)
-            polygon.points.unshift(lower)
+            if (polygon.points.length === 1) {
+              polygon.points.push(upper)
+              polygon.points.unshift(lower)
+            } else {
+              polygon.points.splice(prevPointIndex, 1, upper)
+              polygon.points.unshift(lower)
+            }
           }
 
           polygon.points.push(mousePoint)
@@ -190,25 +194,26 @@ export default {
     computeBrushPoints() {
       const prevPointIndex = this.selectedPolygon.points.length - 1
       const prevPoint = this.selectedPolygon.points[prevPointIndex]
-      const normal = this.normal_vector(this.mousePosition, prevPoint)
-      const lower = this.vectorAdd(
-        prevPoint,
-        this.vectorScalarMul(this.brushThickness, normal)
+      const midpoint = midpoint(this.mousePosition, prevPoint)
+      const normal = normal_vector(this.mousePosition, midpoint)
+      const lower = vectorAdd(
+        midpoint,
+        vectorScalarMul(this.brushThickness, normal)
       )
-      const upper = this.vectorAdd(
-        prevPoint,
-        this.vectorScalarMul(-this.brushThickness, normal)
+      const upper = vectorAdd(
+        midpoint,
+        vectorScalarMul(-this.brushThickness, normal)
       )
       return { upper, lower }
     },
 
     area_mouseUp() {
       // Finish creation of rectangle if this is what the user was doing
-
       if (this.mode === "rectangle" && this.rectanglePending) {
         this.rectanglePending = false
         const polygon = this.polygons[this.selected_polygon_index]
         if (!polygon) return
+        // Probably not necessary
         polygon.open = false
       }
     },
@@ -258,22 +263,20 @@ export default {
 
       const { offsetX: x, offsetY: y } = event
 
-      //  In the future, get rid of mousePoint and use only mousePosition
-      const mousePoint = this.normalize_point({ x, y })
       this.mousePosition = this.normalize_point({ x, y })
 
       // Move the selected point of the selected polygon
       if (this.grabbed_point_index !== -1)
-        this.$set(polygon.points, this.grabbed_point_index, mousePoint)
+        this.$set(polygon.points, this.grabbed_point_index, this.mousePosition)
 
       // Stuff related to rectangles
       if (this.mode === "rectangle" && polygon && this.rectanglePending) {
         const rectanglePoint = polygon.points[0]
         const { x: startX, y: startY } = rectanglePoint
 
-        this.$set(polygon.points, 1, { x: startX, y: mousePoint.y })
-        this.$set(polygon.points, 2, mousePoint)
-        this.$set(polygon.points, 3, { x: mousePoint.x, y: startY })
+        this.$set(polygon.points, 1, { x: startX, y: this.mousePosition.y })
+        this.$set(polygon.points, 2, this.mousePosition)
+        this.$set(polygon.points, 3, { x: this.mousePosition.x, y: startY })
       }
     },
 
@@ -289,7 +292,6 @@ export default {
 
     polygon_svg_points(points) {
       // Creates the svg attribute for point positions
-      // return points.reduce((output, point) => `${output} ${point.x},${point.y}`, '' )
       return this.denormalize_points(points).reduce(
         (output, point) => `${output} ${point.x},${point.y}`,
         ""
@@ -325,33 +327,13 @@ export default {
       this.grabbed_point_index = -1
     },
 
-    normal_vector(a, b) {
-      const n = { x: -(b.y - a.y), y: b.x - a.x }
-      const dn = this.distance(n, { x: 0, y: 0 })
-      return this.vectorScalarMul(1 / dn, n)
-    },
-
-    vectorAdd(a, b) {
-      return { x: a.x + b.x, y: a.y + b.y }
-    },
-
-    distance(a, b) {
-      return Math.sqrt((b.y - a.y) * (b.y - a.y) + (b.x - a.x) * (b.x - a.x))
-    },
-
-    vectorScalarMul(c, a) {
-      return { x: a.x * c, y: a.y * c }
-    },
-
     create_polygon() {
       const new_polyon = {
         points: [],
         open: this.mode !== "rectangle",
       }
       this.polygons.push(new_polyon)
-      // TODO: check what this emit does
       this.$emit("polygonCreated")
-
       this.select_polygon(this.polygons.length - 1)
       this.selected_point_index = -1
 
@@ -366,9 +348,8 @@ export default {
     delete_selected_item() {
       // iF a point is selected, delete the point
       if (this.selected_point_index !== -1) {
-        const polygon = this.polygons[this.selected_polygon_index]
-        if (polygon) {
-          polygon.points.splice(this.selected_point_index, 1)
+        if (this.selectedPolygon) {
+          this.selectedPolygon.points.splice(this.selected_point_index, 1)
           this.selected_point_index = -1
         }
       }
@@ -380,27 +361,23 @@ export default {
     },
 
     undo_last_point() {
-      const polygon = this.polygons[this.selected_polygon_index]
-      if (!polygon || !polygon.open) return
-      polygon.points.pop()
+      if (!this.selectedPolygon || !this.selectedPolygon.open) return
+      this.selectedPolygon.points.pop()
     },
 
     close_current_polygon() {
-      const polygon = this.polygons[this.selected_polygon_index]
-      if (!polygon) return
-      polygon.open = false
+      if (!this.selectedPolygon) return
+      this.selectedPolygon.open = false
     },
 
     open_current_polygon() {
-      const polygon = this.polygons[this.selected_polygon_index]
-      if (!polygon) return
-      polygon.open = false
+      if (!this.selectedPolygon) return
+      this.selectedPolygon.open = false
     },
 
     toggle_current_polygon_open() {
-      const polygon = this.polygons[this.selected_polygon_index]
-      if (!polygon) return
-      polygon.open = !polygon.open
+      if (!this.selectedPolygon) return
+      this.selectedPolygon.open = !this.selectedPolygon.open
     },
 
     cleanupInvalidPolygons() {
@@ -463,7 +440,7 @@ export default {
         points_copy.push(points_copy[0])
       const points_sliced = points_copy.slice(0, -1)
       return points_sliced.map((point, index) =>
-        this.midpoint(point, points_copy[index + 1])
+        midpoint(point, points_copy[index + 1])
       )
     },
   }, // End of methods
@@ -505,19 +482,22 @@ export default {
         const lastPoint =
           this.selectedPolygon.points[this.selectedPolygon.points.length - 1]
         if (lastPoint) points.push(lastPoint)
-      } else if (this.mode === "brush") {
-        if (this.selectedPolygon?.points.length === 1) {
-          points.push(
-            this.selectedPolygon.points[this.selectedPolygon.points.length - 1]
-          )
-        } else if (this.selectedPolygon?.points.length > 1) {
-          const { upper, lower } = this.computeBrushPoints()
-          if (
-            !isNaN(upper.x) &&
-            !isNaN(upper.y) &&
-            !isNaN(lower.x) &&
-            !isNaN(lower.y)
-          ) {
+      } else if (this.mode === "brush" && this.selectedPolygon?.points.length) {
+        const { upper, lower } = this.computeBrushPoints()
+        const lastPoint =
+          this.selectedPolygon.points[this.selectedPolygon.points.length - 1]
+
+        if (
+          !isNaN(upper.x) &&
+          !isNaN(upper.y) &&
+          !isNaN(lower.x) &&
+          !isNaN(lower.y)
+        ) {
+          if (this.selectedPolygon?.points.length === 1) {
+            points.push(upper)
+            points.unshift(lower)
+            points.push(lastPoint)
+          } else if (this.selectedPolygon?.points.length >= 1) {
             points.push(upper)
             points.push(
               this.selectedPolygon.points[
