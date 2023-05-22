@@ -22,7 +22,7 @@
 
       <v-slider
         class="mt-6"
-        v-if="mode_index === 3"
+        v-if="mode_index === mode_lookup.length - 1"
         v-model="brushThickness"
         step="0"
       />
