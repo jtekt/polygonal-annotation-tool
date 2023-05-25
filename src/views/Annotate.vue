@@ -24,7 +24,9 @@
         class="mt-6"
         v-if="mode_index === mode_lookup.length - 1"
         v-model="brushThickness"
-        step="0"
+        step="1"
+        :thumb-label="true"
+        thumb-size="24"
       />
 
       <v-spacer />
