@@ -97,14 +97,14 @@ export default {
         ...this.$route.query,
         [this.newFilterField]: this.newFilterValue,
       }
-      this.$router.push({ query })
+      this.$router.replace({ query })
       this.newFilterField = null
       this.newFilterValue = null
     },
     removeFilter(key) {
       const query = { ...this.$route.query }
       delete query[key]
-      this.$router.push({ query })
+      this.$router.replace({ query })
     },
   },
   computed: {
@@ -115,7 +115,7 @@ export default {
       set(newVal) {
         const query = { ...this.$route.query, to: newVal }
         if (!newVal) delete query.to
-        this.$router.push({ query })
+        this.$router.replace({ query })
       },
     },
     from: {
@@ -125,7 +125,7 @@ export default {
       set(newVal) {
         const query = { ...this.$route.query, from: newVal }
         if (!newVal) delete query.from
-        this.$router.push({ query })
+        this.$router.replace({ query })
       },
     },
     regex: {
@@ -135,7 +135,7 @@ export default {
       set(newVal) {
         const query = { ...this.$route.query, regex: newVal }
         if (!newVal) delete query.regex
-        this.$router.push({ query })
+        this.$router.replace({ query })
       },
     },
     filters: {
@@ -147,7 +147,7 @@ export default {
       },
       set(newVal) {
         const query = { ...this.$route.query, ...newVal }
-        this.$router.push({ query })
+        this.$router.replace({ query })
       },
     },
 
