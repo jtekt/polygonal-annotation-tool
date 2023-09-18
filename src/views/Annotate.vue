@@ -144,7 +144,7 @@
                         ref="image"
                         draggable="false"
                         :src="image_src"
-                        @load="handleImageLoaded()"
+                        @load="getImageSize()"
                     />
 
                     <div
@@ -368,8 +368,6 @@ export default {
             image: {
                 naturalWidth: 800,
                 naturalHeight: 600,
-                clientWidth: 800,
-                clientHeight: 600,
             },
 
             selected_annotation: -1,
@@ -384,8 +382,6 @@ export default {
                 text: '',
                 color: 'green',
             },
-
-            resizeObserver: new ResizeObserver(this.getImageSize),
         }
     },
     watch: {
@@ -403,13 +399,8 @@ export default {
     },
     beforeDestroy() {
         document.removeEventListener('keydown', this.handle_keydown)
-        this.resizeObserver.disconnect()
     },
     methods: {
-        handleImageLoaded() {
-            this.resizeObserver.observe(this.$refs.image)
-            this.getImageSize()
-        },
         unannotate() {
             // Completely remove the annotation field, marking the item as not annotated yet
             if (!this.item.data[this.annotation_field]) return
