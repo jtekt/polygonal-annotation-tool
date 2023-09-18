@@ -144,7 +144,7 @@
                         ref="image"
                         draggable="false"
                         :src="image_src"
-                        @load="image_loaded($event)"
+                        @load="handleImageLoaded()"
                     />
 
                     <div
@@ -155,8 +155,8 @@
                     <PolygonEditor
                         @polygonCreated="polygonCreated()"
                         v-model="item.data[annotation_field]"
-                        :width="image.width"
-                        :height="image.height"
+                        :width="image.naturalWidth"
+                        :height="image.naturalHeight"
                         :mode="mode_lookup[mode_index]"
                         :selected_polygon_index.sync="selected_annotation"
                         :brushThickness="brushThickness"
@@ -366,8 +366,10 @@ export default {
             ],
 
             image: {
-                width: 800,
-                height: 600,
+                naturalWidth: 800,
+                naturalHeight: 600,
+                clientWidth: 800,
+                clientHeight: 600,
             },
 
             selected_annotation: -1,
@@ -382,6 +384,8 @@ export default {
                 text: '',
                 color: 'green',
             },
+
+            resizeObserver: new ResizeObserver(this.getImageSize),
         }
     },
     watch: {
@@ -399,8 +403,13 @@ export default {
     },
     beforeDestroy() {
         document.removeEventListener('keydown', this.handle_keydown)
+        this.resizeObserver.disconnect()
     },
     methods: {
+        handleImageLoaded() {
+            this.resizeObserver.observe(this.$refs.image)
+            this.getImageSize()
+        },
         unannotate() {
             // Completely remove the annotation field, marking the item as not annotated yet
             if (!this.item.data[this.annotation_field]) return
@@ -550,12 +559,13 @@ export default {
                 })
         },
 
-        image_loaded() {
+        getImageSize() {
             // Provide image size to editor when loaded
             // const {width, height} = this.$refs.image
+            if (!this.$refs.image) return
             const { naturalWidth, naturalHeight } = this.$refs.image
-            this.image.width = naturalWidth
-            this.image.height = naturalHeight
+            this.image.naturalWidth = naturalWidth
+            this.image.naturalHeight = naturalHeight
         },
 
         handle_keydown(e) {
@@ -639,10 +649,10 @@ export default {
             if (!VUE_APP_HELPER_RECTANGLE) return { display: 'none' }
             const [x, y, w, h] = VUE_APP_HELPER_RECTANGLE.split(',')
             return {
-                left: `${(100 * x) / this.image.width}%`,
-                top: `${(100 * y) / this.image.height}%`,
-                width: `${(100 * w) / this.image.width}%`,
-                height: `${(100 * h) / this.image.height}%`,
+                left: `${(100 * x) / this.image.naturalWidth}%`,
+                top: `${(100 * y) / this.image.naturalWidth}%`,
+                width: `${(100 * w) / this.image.naturalHeight}%`,
+                height: `${(100 * h) / this.image.naturalHeight}%`,
             }
         },
     },
