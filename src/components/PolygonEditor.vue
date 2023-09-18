@@ -68,7 +68,6 @@ import {
 export default {
     name: 'PolygonEditor',
     props: {
-        // TODO: no default, make normalization optional instead
         width: { type: Number, default: 800 },
         height: { type: Number, default: 600 },
 
@@ -263,11 +262,10 @@ export default {
 
         area_mouseMove(event) {
             // Move grabbed points or create rectangle
-
-            // Save mouse Position for Ghost
-            this.mousePosition = this.getNormalizedMousePos(event)
-
             // FIXME: Something here is slow
+
+            // Save mouse Position for ghost
+            this.mousePosition = this.getNormalizedMousePos(event)
 
             if (!this.selectedPolygon) return
 
@@ -428,7 +426,6 @@ export default {
                 ? selectedPolygon.points.length - 1
                 : -1
 
-            // const polygon_constructing = selectedPolygon && selectedPolygon.constructing
             const polygonOpen = selectedPolygon && selectedPolygon.open
 
             return {
@@ -467,7 +464,7 @@ export default {
                 midpoint(point, points_copy[index + 1])
             )
         },
-    }, // End of methods
+    },
     computed: {
         polygons: {
             get() {
