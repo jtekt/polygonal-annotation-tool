@@ -136,18 +136,14 @@
         </v-row>
 
         <v-row v-else class="mt-2">
-            <v-col
-                cols="12"
-                :lg="fullscreen ? 12 : 6"
-                class="image_wrapper_outer"
-            >
-                <!-- This wrapper gets the same size as the img -->
-                <div class="image_wrapper">
+            <v-col cols="12" :lg="fullscreen ? 12 : 6">
+                <v-card class="image_wrapper">
+                    <!-- This wrapper gets the same size as the img -->
                     <!-- The actual image -->
                     <img
+                        ref="image"
                         draggable="false"
                         :src="image_src"
-                        ref="image"
                         @load="image_loaded($event)"
                     />
 
@@ -165,7 +161,7 @@
                         :selected_polygon_index.sync="selected_annotation"
                         :brushThickness="brushThickness"
                     />
-                </div>
+                </v-card>
             </v-col>
             <v-col>
                 <v-row>
@@ -654,19 +650,13 @@ export default {
 </script>
 
 <style scoped>
-.image_wrapper_outer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
 .image_wrapper {
     position: relative;
     display: flex;
 }
 
-.image_wrapper > * {
-    max-width: 100%;
+.image_wrapper img {
+    width: 100%;
 }
 
 tr {
