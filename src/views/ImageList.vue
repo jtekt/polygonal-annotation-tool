@@ -6,7 +6,7 @@
         <v-divider />
         <v-card-text>
             <v-container fluid>
-                <QuerySettings :fields="fields" />
+                <QuerySettings :fields="displayed_fields" />
             </v-container>
 
             <v-data-table
