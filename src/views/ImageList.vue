@@ -2,6 +2,32 @@
     <v-card>
         <v-toolbar flat>
             <v-toolbar-title>Images</v-toolbar-title>
+            <v-spacer></v-spacer>
+            <v-menu :close-on-click="true" :offset-y="offset">
+                <template v-slot:activator="{ on, attrs }">
+                    <v-btn icon v-bind="attrs" v-on="on">
+                        <v-icon>mdi-dots-vertical</v-icon>
+                    </v-btn>
+                </template>
+
+                <v-list>
+                    <v-list-item
+                        v-for="(menu, index) in menuItems"
+                        :key="index"
+                        link
+                        @click="handleMenuItemClick(index)"
+                    >
+                        <v-list-item-icon>
+                            <v-icon dense :color="menu.color">{{
+                                menu.icon
+                            }}</v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-title>{{
+                            $t(menu.title)
+                        }}</v-list-item-title>
+                    </v-list-item>
+                </v-list>
+            </v-menu>
         </v-toolbar>
         <v-divider />
         <v-card-text>
@@ -75,6 +101,19 @@ export default {
     },
     data() {
         return {
+            menuItems: [
+                {
+                    title: 'Mark as unannotated',
+                    icon: 'mdi-tag-off',
+                    color: 'red',
+                },
+                {
+                    title: 'Save annotations',
+                    icon: 'mdi-tag-check',
+                    color: 'green',
+                },
+            ],
+            offset: true,
             items: [],
             item_count: 0,
             loading: false,
@@ -153,6 +192,36 @@ export default {
 
         image_src({ _id }) {
             return `${VUE_APP_STORAGE_SERVICE_API_URL}/images/${_id}/image`
+        },
+        handleMenuItemClick(index) {
+            switch (index) {
+                case 0:
+                    this.unannotate_multitple_items()
+                    break
+                case 1:
+                    this.annotate_multitple_items()
+                    break
+                // Add more cases for additional menu items
+            }
+        },
+        annotate_multitple_items() {
+            this.save_bulk_annotation()
+        },
+        unannotate_multitple_items() {
+            this.save_bulk_annotation()
+        },
+        save_bulk_annotation() {
+            // this.loading = true
+            // this.axios
+            //     .patch(`/images/?${new URLSearchParams(this.query).toString()}`)
+            //     .then(({ data }) => {
+            //     })
+            //     .catch((error) => {
+            //         this.error = true
+            //         if (error.response) console.error(error.response.data)
+            //         else console.error(error)
+            //     })
+            //     .finally(() => (this.loading = false))
         },
     },
     computed: {
