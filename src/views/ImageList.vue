@@ -100,6 +100,7 @@
 
 <script>
 import QuerySettings from '../components/QuerySettings.vue'
+import { ANNOTATION_FIELD } from '@/config'
 
 const { VUE_APP_STORAGE_SERVICE_API_URL, VUE_APP_DISPLAYED_FIELDS } =
     process.env
@@ -262,19 +263,27 @@ export default {
     },
     computed: {
         annotation_field() {
-            return this.$store.state.annotation_field
+            return ANNOTATION_FIELD
         },
         base_headers() {
+            const annotationFieldText = `${this.$t('Annotations')} (${
+                this.annotation_field
+            })`
             return [
                 { value: 'file' },
                 { text: this.$t('Time'), value: 'time' },
-                { text: this.$t('Annotations'), value: 'annotation' },
+                {
+                    text: annotationFieldText,
+                    value: 'annotation',
+                },
             ]
         },
         displayed_fields() {
-            if (VUE_APP_DISPLAYED_FIELDS)
-                return VUE_APP_DISPLAYED_FIELDS.split(',')
-            return this.fields
+            const fields = VUE_APP_DISPLAYED_FIELDS
+                ? VUE_APP_DISPLAYED_FIELDS.split(',')
+                : this.fields
+
+            return fields.filter((f) => f !== this.annotation_field)
         },
         headers() {
             return [

@@ -167,7 +167,11 @@
                 <v-row>
                     <v-col>
                         <v-card>
-                            <v-card-title>{{ $t('Annotations') }}</v-card-title>
+                            <v-card-title
+                                >{{ $t('Annotations') }} ({{
+                                    annotation_field
+                                }})</v-card-title
+                            >
                             <v-card-text>
                                 <div
                                     class="text-center my-5"
@@ -330,7 +334,7 @@
 <script>
 import PolygonEditor from '@/components/PolygonEditor.vue'
 import KeyboardShortcuts from '@/components/KeyboardShortcuts.vue'
-
+import { ANNOTATION_FIELD } from '../config'
 const {
     VUE_APP_DISPLAYED_FIELDS,
     VUE_APP_STORAGE_SERVICE_API_URL,
@@ -610,7 +614,7 @@ export default {
     },
     computed: {
         annotation_field() {
-            return this.$store.state.annotation_field
+            return ANNOTATION_FIELD
         },
         document_id() {
             return this.$route.params.document_id
