@@ -234,16 +234,15 @@ export default {
             })
         },
         save_bulk_annotation(body) {
-            const route = `/images?${new URLSearchParams(
-                this.query
-            ).toString()}`
+            const params = this.query
             this.loading = true
             this.axios
-                .patch(route, body)
-                .then(({ data }) => {
+                .patch('/images', body, params)
+                .then(() => {
                     this.snackbar.show = true
-                    this.snackbar.text = 'Item saved successful'
+                    this.snackbar.text = 'Items annotation successful'
                     this.snackbar.color = 'green'
+                    this.get_items()
                 })
                 .catch((error) => {
                     this.error = true
