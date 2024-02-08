@@ -1,6 +1,6 @@
 stages:
     - build
-
+    - deploy
 image: moreillon/tdd-dind
 services:
     - name: docker:19.03.12-dind
@@ -9,6 +9,7 @@ variables:
     APPLICATION_NAME: polygonal-annotation-tool
     CONTAINER_IMAGE: ${AWS_ECR_PUBLIC_URL}/${APPLICATION_NAME}
     CONTAINER_IMAGE_TAGGED: ${CONTAINER_IMAGE}:${CI_COMMIT_TAG}
+    K8S_NAMESPACE: no-code-ai
 
 build:
     stage: build
@@ -31,3 +32,16 @@ build:
         # Pushing images
         - docker push ${CONTAINER_IMAGE}
         - docker push ${CONTAINER_IMAGE_TAGGED}
+
+deploy:
+  stage: deploy
+  only:
+    - tags
+  tags:
+    - internal
+  script:
+    - envsubst < kubernetes_manifest.yml | kubectl apply -f -
+  environment:
+    name: onpremise
+    kubernetes:
+      namespace: ${K8S_NAMESPACE}
