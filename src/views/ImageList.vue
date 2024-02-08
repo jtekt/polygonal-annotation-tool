@@ -221,44 +221,26 @@ export default {
             }
         },
         annotate_multitple_items() {
-            if (!confirm(`Annotate all ${this.items.length} items?`)) return
-
-            // If the item has not been annotated yet. the annotation property must be created as an array
-            this.items.forEach((item) => {
-                if (!item.data) this.$set(item, 'data', {})
-                if (!item.data[this.annotation_field])
-                    this.$set(item.data, this.annotation_field, [])
+            if (!confirm(`Annotate all ${this.item_count} items?`)) return
+            this.save_bulk_annotation({
+                [this.annotation_field]: [],
             })
-
-            this.save_bulk_annotation()
         },
         unannotate_multitple_items() {
-            if (!confirm(`Mark all ${this.items.length} items unannotated?`))
+            if (!confirm(`Mark all ${this.item_count} items unannotated?`))
                 return
-            this.items.forEach((item) => {
-                if (item.data[this.annotation_field]) {
-                    this.$set(item.data, this.annotation_field, null)
-                }
+            this.save_bulk_annotation({
+                [this.annotation_field]: null,
             })
-            this.save_bulk_annotation()
         },
-        save_bulk_annotation() {
-            console.log(this.annotation_field)
-            console.log(this.items)
-
+        save_bulk_annotation(body) {
             const route = `/images?${new URLSearchParams(
                 this.query
             ).toString()}`
-            const body = this.items
-            const { current_user } = this.$store.state
-            if (current_user)
-                body.annotator_id =
-                    current_user._id || current_user.properties._id
             this.loading = true
             this.axios
                 .patch(route, body)
                 .then(({ data }) => {
-                    console.log(data)
                     this.snackbar.show = true
                     this.snackbar.text = 'Item saved successful'
                     this.snackbar.color = 'green'
