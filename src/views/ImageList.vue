@@ -51,7 +51,12 @@
             >
                 <!-- Thumbnails -->
                 <template v-slot:item.file="{ item }">
-                    <img class="thumbnail" :src="image_src(item)" />
+                    <v-img
+                        height="5emc"
+                        width="5em"
+                        contain
+                        :src="image_src(item)"
+                    />
                 </template>
 
                 <template v-slot:item.time="{ item }">
@@ -336,11 +341,6 @@ export default {
 td,
 th {
     white-space: nowrap;
-}
-
-.thumbnail {
-    height: 5em;
-    width: 5em;
 }
 
 .classes_wrapper {
