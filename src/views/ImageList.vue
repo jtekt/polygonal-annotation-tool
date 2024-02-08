@@ -2,6 +2,32 @@
     <v-card>
         <v-toolbar flat>
             <v-toolbar-title>Images</v-toolbar-title>
+            <v-spacer></v-spacer>
+            <v-menu :close-on-click="true" :offset-y="offset">
+                <template v-slot:activator="{ on, attrs }">
+                    <v-btn icon v-bind="attrs" v-on="on">
+                        <v-icon>mdi-dots-vertical</v-icon>
+                    </v-btn>
+                </template>
+
+                <v-list>
+                    <v-list-item
+                        v-for="(menu, index) in menuItems"
+                        :key="index"
+                        link
+                        @click="handleMenuItemClick(index)"
+                    >
+                        <v-list-item-icon>
+                            <v-icon dense :color="menu.color">{{
+                                menu.icon
+                            }}</v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-title>{{
+                            $t(menu.title)
+                        }}</v-list-item-title>
+                    </v-list-item>
+                </v-list>
+            </v-menu>
         </v-toolbar>
         <v-divider />
         <v-card-text>
@@ -59,6 +85,16 @@
                 </template>
             </v-data-table>
         </v-card-text>
+
+        <v-snackbar :color="snackbar.color" v-model="snackbar.show">
+            {{ snackbar.text }}
+
+            <template v-slot:action="{ attrs }">
+                <v-btn dark text v-bind="attrs" @click="snackbar.show = false">
+                    Close
+                </v-btn>
+            </template>
+        </v-snackbar>
     </v-card>
 </template>
 
@@ -75,6 +111,19 @@ export default {
     },
     data() {
         return {
+            menuItems: [
+                {
+                    title: 'Mark as unannotated',
+                    icon: 'mdi-tag-off',
+                    color: 'red',
+                },
+                {
+                    title: 'Save annotations',
+                    icon: 'mdi-tag-check',
+                    color: 'green',
+                },
+            ],
+            offset: true,
             items: [],
             item_count: 0,
             loading: false,
@@ -82,6 +131,12 @@ export default {
             fields: [],
             field: null,
             footerProps: { 'items-per-page-options': [10, 50, 100, 500] },
+
+            snackbar: {
+                show: false,
+                text: '',
+                color: 'green',
+            },
         }
     },
     mounted() {
@@ -153,6 +208,51 @@ export default {
 
         image_src({ _id }) {
             return `${VUE_APP_STORAGE_SERVICE_API_URL}/images/${_id}/image`
+        },
+        handleMenuItemClick(index) {
+            switch (index) {
+                case 0:
+                    this.unannotate_multitple_items()
+                    break
+                case 1:
+                    this.annotate_multitple_items()
+                    break
+                // Add more cases for additional menu items
+            }
+        },
+        annotate_multitple_items() {
+            if (!confirm(`Annotate all ${this.item_count} items?`)) return
+            this.save_bulk_annotation({
+                [this.annotation_field]: [],
+            })
+        },
+        unannotate_multitple_items() {
+            if (!confirm(`Mark all ${this.item_count} items unannotated?`))
+                return
+            this.save_bulk_annotation({
+                [this.annotation_field]: null,
+            })
+        },
+        save_bulk_annotation(body) {
+            const params = this.query
+            this.loading = true
+            this.axios
+                .patch('/images', body, params)
+                .then(() => {
+                    this.snackbar.show = true
+                    this.snackbar.text = 'Items annotation successful'
+                    this.snackbar.color = 'green'
+                    this.get_items()
+                })
+                .catch((error) => {
+                    this.error = true
+                    if (error.response) console.error(error.response.data)
+                    else console.error(error)
+                    this.snackbar.show = true
+                    this.snackbar.text = 'Error, see console for details'
+                    this.snackbar.color = '#c00000'
+                })
+                .finally(() => (this.loading = false))
         },
     },
     computed: {
