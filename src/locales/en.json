@@ -1,14 +1,15 @@
 {
-  "message": "hello i18n !!",
-  "Not annotated yet": "Not annotated yet",
-  "Annotations": "Annotations",
-  "Image metadata": "Image metadata",
-  "Images": "Images",
-  "About": "About",
-  "File": "File",
-  "Time": "Time",
-  "Empty set": "Empty set",
-  "Query settings": "Query settings",
-  "Save annotations": "Save annotations",
-  "Mark as unannotated": "Mark as unannotated"
+    "message": "hello i18n !!",
+    "Not annotated yet": "Not annotated yet",
+    "Annotations": "Annotations",
+    "Image metadata": "Image metadata",
+    "Images": "Images",
+    "About": "About",
+    "File": "File",
+    "Time": "Time",
+    "Empty set": "Empty set",
+    "Query settings": "Query settings",
+    "Save annotations": "Save annotations",
+    "Mark as unannotated": "Mark as unannotated",
+    "Set annotations to empty set": "Set annotations to empty set"
 }

@@ -118,7 +118,7 @@ export default {
                     color: 'red',
                 },
                 {
-                    title: 'Save annotations',
+                    title: 'Set annotations to empty set',
                     icon: 'mdi-tag-check',
                     color: 'green',
                 },
@@ -221,7 +221,12 @@ export default {
             }
         },
         annotate_multitple_items() {
-            if (!confirm(`Annotate all ${this.item_count} items?`)) return
+            if (
+                !confirm(
+                    `Are you sure you want to set the annotation for all ${this.item_count} items to an empty set?`
+                )
+            )
+                return
             this.save_bulk_annotation({
                 [this.annotation_field]: [],
             })
