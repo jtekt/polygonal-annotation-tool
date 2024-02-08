@@ -85,6 +85,16 @@
                 </template>
             </v-data-table>
         </v-card-text>
+
+        <v-snackbar :color="snackbar.color" v-model="snackbar.show">
+            {{ snackbar.text }}
+
+            <template v-slot:action="{ attrs }">
+                <v-btn dark text v-bind="attrs" @click="snackbar.show = false">
+                    Close
+                </v-btn>
+            </template>
+        </v-snackbar>
     </v-card>
 </template>
 
@@ -121,6 +131,12 @@ export default {
             fields: [],
             field: null,
             footerProps: { 'items-per-page-options': [10, 50, 100, 500] },
+
+            snackbar: {
+                show: false,
+                text: '',
+                color: 'green',
+            },
         }
     },
     mounted() {
@@ -205,23 +221,57 @@ export default {
             }
         },
         annotate_multitple_items() {
+            if (!confirm(`Annotate all ${this.items.length} items?`)) return
+
+            // If the item has not been annotated yet. the annotation property must be created as an array
+            this.items.forEach((item) => {
+                if (!item.data) this.$set(item, 'data', {})
+                if (!item.data[this.annotation_field])
+                    this.$set(item.data, this.annotation_field, [])
+            })
+
             this.save_bulk_annotation()
         },
         unannotate_multitple_items() {
+            if (!confirm(`Mark all ${this.items.length} items unannotated?`))
+                return
+            this.items.forEach((item) => {
+                if (item.data[this.annotation_field]) {
+                    this.$set(item.data, this.annotation_field, null)
+                }
+            })
             this.save_bulk_annotation()
         },
         save_bulk_annotation() {
-            // this.loading = true
-            // this.axios
-            //     .patch(`/images/?${new URLSearchParams(this.query).toString()}`)
-            //     .then(({ data }) => {
-            //     })
-            //     .catch((error) => {
-            //         this.error = true
-            //         if (error.response) console.error(error.response.data)
-            //         else console.error(error)
-            //     })
-            //     .finally(() => (this.loading = false))
+            console.log(this.annotation_field)
+            console.log(this.items)
+
+            const route = `/images?${new URLSearchParams(
+                this.query
+            ).toString()}`
+            const body = this.items
+            const { current_user } = this.$store.state
+            if (current_user)
+                body.annotator_id =
+                    current_user._id || current_user.properties._id
+            this.loading = true
+            this.axios
+                .patch(route, body)
+                .then(({ data }) => {
+                    console.log(data)
+                    this.snackbar.show = true
+                    this.snackbar.text = 'Item saved successful'
+                    this.snackbar.color = 'green'
+                })
+                .catch((error) => {
+                    this.error = true
+                    if (error.response) console.error(error.response.data)
+                    else console.error(error)
+                    this.snackbar.show = true
+                    this.snackbar.text = 'Error, see console for details'
+                    this.snackbar.color = '#c00000'
+                })
+                .finally(() => (this.loading = false))
         },
     },
     computed: {
