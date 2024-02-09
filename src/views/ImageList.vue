@@ -2,8 +2,51 @@
     <v-card>
         <v-toolbar flat>
             <v-toolbar-title>Images</v-toolbar-title>
-            <v-spacer></v-spacer>
-            <v-menu :close-on-click="true" :offset-y="offset">
+            <v-spacer />
+
+            <template v-if="allow_select">
+                <v-tooltip bottom>
+                    <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                            color="#c00000"
+                            icon
+                            v-bind="attrs"
+                            v-on="on"
+                            :disabled="selected.length === 0"
+                            @click="unannotate_all_items()"
+                        >
+                            <v-icon>mdi-tag-off</v-icon>
+                        </v-btn>
+                    </template>
+                    <div class="text-center">
+                        Mark all selected item as unannotated
+                    </div>
+                </v-tooltip>
+
+                <v-tooltip bottom>
+                    <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                            color="green"
+                            icon
+                            v-bind="attrs"
+                            v-on="on"
+                            :disabled="selected.length === 0"
+                            @click="annotate_all_items()"
+                        >
+                            <v-icon>mdi-tag-check</v-icon>
+                        </v-btn>
+                    </template>
+                    <div class="text-center">
+                        <div>
+                            Set all selected items' annotations to an empty set
+                        </div>
+                    </div>
+                </v-tooltip>
+                <v-btn outlined color="primary" @click="reset_selection()">
+                    Cancel
+                </v-btn>
+            </template>
+            <v-menu :close-on-click="true" :offset-y="true">
                 <template v-slot:activator="{ on, attrs }">
                     <v-btn icon v-bind="attrs" v-on="on">
                         <v-icon>mdi-dots-vertical</v-icon>
@@ -12,7 +55,7 @@
 
                 <v-list>
                     <v-list-item
-                        v-for="(menu, index) in menuItems"
+                        v-for="(menu, index) in menu_items"
                         :key="index"
                         link
                         @click="handleMenuItemClick(index)"
@@ -42,6 +85,9 @@
                 :options.sync="tableOptions"
                 :server-items-length="item_count"
                 :footer-props="footerProps"
+                v-model="selected"
+                :show-select="allow_select"
+                item-key="_id"
                 @click:row="
                     $router.push({
                         name: 'annotate',
@@ -117,19 +163,22 @@ export default {
     },
     data() {
         return {
-            menuItems: [
+            selected: [],
+            allow_select: true,
+            menu_items: [
                 {
                     title: 'Mark as unannotated',
                     icon: 'mdi-tag-off',
                     color: 'red',
+                    active: true,
                 },
                 {
                     title: 'Set annotations to empty set',
                     icon: 'mdi-tag-check',
                     color: 'green',
+                    active: true,
                 },
             ],
-            offset: true,
             items: [],
             item_count: 0,
             loading: false,
@@ -218,34 +267,37 @@ export default {
         handleMenuItemClick(index) {
             switch (index) {
                 case 0:
-                    this.unannotate_multitple_items()
+                    this.unannotate_all_items()
                     break
                 case 1:
-                    this.annotate_multitple_items()
+                    this.annotate_all_items()
                     break
-                // Add more cases for additional menu items
             }
         },
-        annotate_multitple_items() {
-            if (
-                !confirm(
-                    `Are you sure you want to set the annotation for all ${this.item_count} items to an empty set?`
-                )
-            )
-                return
+        annotate_all_items() {
+            let msg = `Are you sure you want to set the annotation for all ${this.item_count} items to an empty set?`
+            if (this.allow_select)
+                msg = `Are you sure you want to set the annotation for all ${this.selected.length} selected items to an empty set?`
+
+            if (!confirm(msg)) return
             this.save_bulk_annotation({
                 [this.annotation_field]: [],
             })
         },
-        unannotate_multitple_items() {
-            if (!confirm(`Mark all ${this.item_count} items unannotated?`))
-                return
+        unannotate_all_items() {
+            let msg = `Mark all ${this.item_count} items unannotated?`
+            if (this.allow_select)
+                msg = `Mark all selected ${this.selected.length} items unannotated?`
+
+            if (!confirm(msg)) return
             this.save_bulk_annotation({
                 [this.annotation_field]: null,
             })
         },
         save_bulk_annotation(body) {
-            const params = this.query
+            let params = this.query
+            if (this.allow_select) params = { ...params, ids: this.selectedIds }
+            console.log(JSON.stringify(params))
             this.loading = true
             this.axios
                 .patch('/images', body, params)
@@ -263,7 +315,13 @@ export default {
                     this.snackbar.text = 'Error, see console for details'
                     this.snackbar.color = '#c00000'
                 })
-                .finally(() => (this.loading = false))
+                .finally(() => {
+                    this.loading = false
+                    this.reset_selection()
+                })
+        },
+        reset_selection() {
+            this.selected = []
         },
     },
     computed: {
@@ -301,6 +359,10 @@ export default {
         },
         query() {
             return this.$route.query
+        },
+        selectedIds() {
+            // Extract _id from selected items
+            return this.selected.map((item) => item._id)
         },
         tableOptions: {
             get() {
