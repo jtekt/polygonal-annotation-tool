@@ -42,7 +42,7 @@
                         </div>
                     </div>
                 </v-tooltip>
-                <v-btn outlined color="primary" @click="cancel_selection()">
+                <v-btn outlined color="primary" @click="reset_selection()">
                     Cancel
                 </v-btn>
             </template>
@@ -326,10 +326,10 @@ export default {
                 })
                 .finally(() => {
                     this.loading = false
-                    this.cancel_selection()
+                    this.reset_selection()
                 })
         },
-        cancel_selection() {
+        reset_selection() {
             this.allow_select = false
             this.selected = []
         },
