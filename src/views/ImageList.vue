@@ -164,7 +164,7 @@ export default {
     data() {
         return {
             selected: [],
-            allow_select: false,
+            allow_select: true,
             menu_items: [
                 {
                     title: 'Mark as unannotated',
@@ -176,12 +176,6 @@ export default {
                     title: 'Set annotations to empty set',
                     icon: 'mdi-tag-check',
                     color: 'green',
-                    active: true,
-                },
-                {
-                    title: 'Custom selection',
-                    icon: 'mdi-format-list-checks',
-                    color: 'yellow',
                     active: true,
                 },
             ],
@@ -278,10 +272,6 @@ export default {
                 case 1:
                     this.annotate_all_items()
                     break
-                case 2:
-                    this.allow_select = true
-                    this.selected = []
-                    break
             }
         },
         annotate_all_items() {
@@ -307,6 +297,7 @@ export default {
         save_bulk_annotation(body) {
             let params = this.query
             if (this.allow_select) params = { ...params, ids: this.selectedIds }
+            console.log(JSON.stringify(params))
             this.loading = true
             this.axios
                 .patch('/images', body, params)
@@ -330,7 +321,6 @@ export default {
                 })
         },
         reset_selection() {
-            this.allow_select = false
             this.selected = []
         },
     },
