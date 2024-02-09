@@ -4,7 +4,7 @@
             <v-toolbar-title>Images</v-toolbar-title>
             <v-spacer />
 
-            <v-template v-if="allow_select">
+            <template v-if="allow_select">
                 <v-tooltip bottom>
                     <template v-slot:activator="{ on, attrs }">
                         <v-btn
@@ -12,7 +12,8 @@
                             icon
                             v-bind="attrs"
                             v-on="on"
-                            @click="unannotate_selected_items()"
+                            :disabled="selected.length === 0"
+                            @click="unannotate_all_items()"
                         >
                             <v-icon>mdi-tag-off</v-icon>
                         </v-btn>
@@ -29,7 +30,8 @@
                             icon
                             v-bind="attrs"
                             v-on="on"
-                            @click="annotate_selected_items()"
+                            :disabled="selected.length === 0"
+                            @click="annotate_all_items()"
                         >
                             <v-icon>mdi-tag-check</v-icon>
                         </v-btn>
@@ -43,8 +45,8 @@
                 <v-btn outlined color="primary" @click="cancel_selection()">
                     Cancel
                 </v-btn>
-            </v-template>
-            <v-menu :close-on-click="true" :offset-y="offset">
+            </template>
+            <v-menu :close-on-click="true" :offset-y="true">
                 <template v-slot:activator="{ on, attrs }">
                     <v-btn icon v-bind="attrs" v-on="on">
                         <v-icon>mdi-dots-vertical</v-icon>
@@ -282,38 +284,29 @@ export default {
                     break
             }
         },
-        annotate_selected_items() {
-            if (
-                !confirm(
-                    `Are you sure you want to set the annotation for all selected items to an empty set?`
-                )
-            )
-                return
-        },
         annotate_all_items() {
-            if (
-                !confirm(
-                    `Are you sure you want to set the annotation for all selected items to an empty set?`
-                )
-            )
-                return
+            let msg = `Are you sure you want to set the annotation for all ${this.item_count} items to an empty set?`
+            if (this.allow_select)
+                msg = `Are you sure you want to set the annotation for all ${this.selected.length} selected items to an empty set?`
+
+            if (!confirm(msg)) return
             this.save_bulk_annotation({
                 [this.annotation_field]: [],
             })
         },
-        unannotate_selected_items() {
-            if (!confirm(`Mark all ${this.item_count} items unannotated?`))
-                return
-        },
         unannotate_all_items() {
-            if (!confirm(`Mark all ${this.item_count} items unannotated?`))
-                return
+            let msg = `Mark all ${this.item_count} items unannotated?`
+            if (this.allow_select)
+                msg = `Mark all selected ${this.selected.length} items unannotated?`
+
+            if (!confirm(msg)) return
             this.save_bulk_annotation({
                 [this.annotation_field]: null,
             })
         },
         save_bulk_annotation(body) {
-            const params = this.query
+            let params = this.query
+            if (this.allow_select) params = { ...params, ids: this.selectedIds }
             this.loading = true
             this.axios
                 .patch('/images', body, params)
@@ -331,7 +324,10 @@ export default {
                     this.snackbar.text = 'Error, see console for details'
                     this.snackbar.color = '#c00000'
                 })
-                .finally(() => (this.loading = false))
+                .finally(() => {
+                    this.loading = false
+                    this.cancel_selection()
+                })
         },
         cancel_selection() {
             this.allow_select = false
@@ -376,9 +372,7 @@ export default {
         },
         selectedIds() {
             // Extract _id from selected items
-            return this.selected.map((item) => {
-                return { ids: item._id }
-            })
+            return this.selected.map((item) => item._id)
         },
         tableOptions: {
             get() {
