@@ -3,7 +3,7 @@
         <v-toolbar flat>
             <v-toolbar-title>Images</v-toolbar-title>
             <v-spacer></v-spacer>
-            <v-menu :close-on-click="true" :offset-y="offset">
+            <v-menu :close-on-content-click="false" bottom offset-y>
                 <template v-slot:activator="{ on, attrs }">
                     <v-btn icon v-bind="attrs" v-on="on">
                         <v-icon>mdi-dots-vertical</v-icon>
@@ -11,21 +11,36 @@
                 </template>
 
                 <v-list>
-                    <v-list-item
-                        v-for="(menu, index) in menuItems"
+                    <v-list-group
+                        v-for="(menu, index) in menu_items"
                         :key="index"
                         link
-                        @click="handleMenuItemClick(index)"
+                        v-model="menu.active"
+                        :prepend-icon="menu.icon"
+                        :color="menu.color"
+                        no-action
                     >
-                        <v-list-item-icon>
-                            <v-icon dense :color="menu.color">{{
-                                menu.icon
-                            }}</v-icon>
-                        </v-list-item-icon>
-                        <v-list-item-title>{{
-                            $t(menu.title)
-                        }}</v-list-item-title>
-                    </v-list-item>
+                        <template v-slot:activator>
+                            <v-list-tile>
+                                <v-list-tile-content>
+                                    <v-list-tile-title>{{
+                                        menu.title
+                                    }}</v-list-tile-title>
+                                </v-list-tile-content>
+                            </v-list-tile>
+                        </template>
+
+                        <v-list-item
+                            v-for="(sub_item, sub_index) in menu.sub_menu"
+                            :key="sub_index"
+                            link
+                            @click="handleMenuItemClick(index, sub_index)"
+                        >
+                            <v-list-item-title>{{
+                                sub_item.title
+                            }}</v-list-item-title>
+                        </v-list-item>
+                    </v-list-group>
                 </v-list>
             </v-menu>
         </v-toolbar>
@@ -42,6 +57,9 @@
                 :options.sync="tableOptions"
                 :server-items-length="item_count"
                 :footer-props="footerProps"
+                v-model="selected"
+                :show-select="allow_select"
+                item-key="_id"
                 @click:row="
                     $router.push({
                         name: 'annotate',
@@ -117,19 +135,42 @@ export default {
     },
     data() {
         return {
-            menuItems: [
+            selected: [],
+            menu_items: [
                 {
                     title: 'Mark as unannotated',
                     icon: 'mdi-tag-off',
                     color: 'red',
+                    active: true,
+                    sub_menu: [
+                        {
+                            title: 'Mark all as unannotated',
+                            active: true,
+                        },
+                        {
+                            title: 'Select items to unannotate',
+                            active: true,
+                        },
+                    ],
                 },
                 {
                     title: 'Set annotations to empty set',
                     icon: 'mdi-tag-check',
                     color: 'green',
+                    active: true,
+                    sub_menu: [
+                        {
+                            title: 'Set all items as empty set',
+                            active: true,
+                        },
+                        {
+                            title: 'Select items to set as empty set',
+                            active: true,
+                        },
+                    ],
                 },
             ],
-            offset: true,
+            allow_select: false,
             items: [],
             item_count: 0,
             loading: false,
@@ -215,13 +256,21 @@ export default {
         image_src({ _id }) {
             return `${VUE_APP_STORAGE_SERVICE_API_URL}/images/${_id}/image`
         },
-        handleMenuItemClick(index) {
-            switch (index) {
+        handleMenuItemClick(menu_index, sub_menu_index) {
+            switch (menu_index) {
                 case 0:
-                    this.unannotate_multitple_items()
+                    if (sub_menu_index === 0) this.unannotate_multitple_items()
+                    else {
+                        alert('select unannotate')
+                        this.allow_select = true
+                    }
                     break
                 case 1:
-                    this.annotate_multitple_items()
+                    if (sub_menu_index === 0) this.annotate_multitple_items()
+                    else {
+                        alert('select annotate')
+                        this.allow_select = true
+                    }
                     break
                 // Add more cases for additional menu items
             }
@@ -301,6 +350,12 @@ export default {
         },
         query() {
             return this.$route.query
+        },
+        selectedIds() {
+            // Extract _id from selected items
+            return this.selected.map((item) => {
+                return { ids: item._id }
+            })
         },
         tableOptions: {
             get() {
