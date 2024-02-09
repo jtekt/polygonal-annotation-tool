@@ -2,8 +2,49 @@
     <v-card>
         <v-toolbar flat>
             <v-toolbar-title>Images</v-toolbar-title>
-            <v-spacer></v-spacer>
-            <v-menu :close-on-content-click="false" bottom offset-y>
+            <v-spacer />
+
+            <v-template v-if="allow_select">
+                <v-tooltip bottom>
+                    <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                            color="#c00000"
+                            icon
+                            v-bind="attrs"
+                            v-on="on"
+                            @click="unannotate_selected_items()"
+                        >
+                            <v-icon>mdi-tag-off</v-icon>
+                        </v-btn>
+                    </template>
+                    <div class="text-center">
+                        Mark all selected item as unannotated
+                    </div>
+                </v-tooltip>
+
+                <v-tooltip bottom>
+                    <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                            color="green"
+                            icon
+                            v-bind="attrs"
+                            v-on="on"
+                            @click="annotate_selected_items()"
+                        >
+                            <v-icon>mdi-tag-check</v-icon>
+                        </v-btn>
+                    </template>
+                    <div class="text-center">
+                        <div>
+                            Set all selected items' annotations to an empty set
+                        </div>
+                    </div>
+                </v-tooltip>
+                <v-btn outlined color="primary" @click="cancel_selection()">
+                    Cancel
+                </v-btn>
+            </v-template>
+            <v-menu :close-on-click="true" :offset-y="offset">
                 <template v-slot:activator="{ on, attrs }">
                     <v-btn icon v-bind="attrs" v-on="on">
                         <v-icon>mdi-dots-vertical</v-icon>
@@ -11,36 +52,21 @@
                 </template>
 
                 <v-list>
-                    <v-list-group
+                    <v-list-item
                         v-for="(menu, index) in menu_items"
                         :key="index"
                         link
-                        v-model="menu.active"
-                        :prepend-icon="menu.icon"
-                        :color="menu.color"
-                        no-action
+                        @click="handleMenuItemClick(index)"
                     >
-                        <template v-slot:activator>
-                            <v-list-tile>
-                                <v-list-tile-content>
-                                    <v-list-tile-title>{{
-                                        menu.title
-                                    }}</v-list-tile-title>
-                                </v-list-tile-content>
-                            </v-list-tile>
-                        </template>
-
-                        <v-list-item
-                            v-for="(sub_item, sub_index) in menu.sub_menu"
-                            :key="sub_index"
-                            link
-                            @click="handleMenuItemClick(index, sub_index)"
-                        >
-                            <v-list-item-title>{{
-                                sub_item.title
-                            }}</v-list-item-title>
-                        </v-list-item>
-                    </v-list-group>
+                        <v-list-item-icon>
+                            <v-icon dense :color="menu.color">{{
+                                menu.icon
+                            }}</v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-title>{{
+                            $t(menu.title)
+                        }}</v-list-item-title>
+                    </v-list-item>
                 </v-list>
             </v-menu>
         </v-toolbar>
@@ -136,41 +162,27 @@ export default {
     data() {
         return {
             selected: [],
+            allow_select: false,
             menu_items: [
                 {
                     title: 'Mark as unannotated',
                     icon: 'mdi-tag-off',
                     color: 'red',
                     active: true,
-                    sub_menu: [
-                        {
-                            title: 'Mark all as unannotated',
-                            active: true,
-                        },
-                        {
-                            title: 'Select items to unannotate',
-                            active: true,
-                        },
-                    ],
                 },
                 {
                     title: 'Set annotations to empty set',
                     icon: 'mdi-tag-check',
                     color: 'green',
                     active: true,
-                    sub_menu: [
-                        {
-                            title: 'Set all items as empty set',
-                            active: true,
-                        },
-                        {
-                            title: 'Select items to set as empty set',
-                            active: true,
-                        },
-                    ],
+                },
+                {
+                    title: 'Custom selection',
+                    icon: 'mdi-format-list-checks',
+                    color: 'yellow',
+                    active: true,
                 },
             ],
-            allow_select: false,
             items: [],
             item_count: 0,
             loading: false,
@@ -256,29 +268,32 @@ export default {
         image_src({ _id }) {
             return `${VUE_APP_STORAGE_SERVICE_API_URL}/images/${_id}/image`
         },
-        handleMenuItemClick(menu_index, sub_menu_index) {
-            switch (menu_index) {
+        handleMenuItemClick(index) {
+            switch (index) {
                 case 0:
-                    if (sub_menu_index === 0) this.unannotate_multitple_items()
-                    else {
-                        alert('select unannotate')
-                        this.allow_select = true
-                    }
+                    this.unannotate_all_items()
                     break
                 case 1:
-                    if (sub_menu_index === 0) this.annotate_multitple_items()
-                    else {
-                        alert('select annotate')
-                        this.allow_select = true
-                    }
+                    this.annotate_all_items()
                     break
-                // Add more cases for additional menu items
+                case 2:
+                    this.allow_select = true
+                    this.selected = []
+                    break
             }
         },
-        annotate_multitple_items() {
+        annotate_selected_items() {
             if (
                 !confirm(
-                    `Are you sure you want to set the annotation for all ${this.item_count} items to an empty set?`
+                    `Are you sure you want to set the annotation for all selected items to an empty set?`
+                )
+            )
+                return
+        },
+        annotate_all_items() {
+            if (
+                !confirm(
+                    `Are you sure you want to set the annotation for all selected items to an empty set?`
                 )
             )
                 return
@@ -286,7 +301,11 @@ export default {
                 [this.annotation_field]: [],
             })
         },
-        unannotate_multitple_items() {
+        unannotate_selected_items() {
+            if (!confirm(`Mark all ${this.item_count} items unannotated?`))
+                return
+        },
+        unannotate_all_items() {
             if (!confirm(`Mark all ${this.item_count} items unannotated?`))
                 return
             this.save_bulk_annotation({
@@ -313,6 +332,10 @@ export default {
                     this.snackbar.color = '#c00000'
                 })
                 .finally(() => (this.loading = false))
+        },
+        cancel_selection() {
+            this.allow_select = false
+            this.selected = []
         },
     },
     computed: {
