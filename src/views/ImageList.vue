@@ -120,20 +120,6 @@ export default {
         return {
             selected: [],
             allow_select: true,
-            menu_items: [
-                {
-                    title: 'Mark as unannotated',
-                    icon: 'mdi-tag-off',
-                    color: 'red',
-                    active: true,
-                },
-                {
-                    title: 'Set annotations to empty set',
-                    icon: 'mdi-tag-check',
-                    color: 'green',
-                    active: true,
-                },
-            ],
             items: [],
             item_count: 0,
             loading: false,
@@ -318,6 +304,28 @@ export default {
         selectedIds() {
             // Extract _id from selected items
             return this.selected.map((item) => item._id)
+        },
+        menu_items() {
+            return [
+                {
+                    title:
+                        this.selected.length > 0
+                            ? 'Mark selected item(s) as unannotated'
+                            : 'Mark all as unannotated',
+                    icon: 'mdi-tag-off',
+                    color: 'red',
+                    active: true,
+                },
+                {
+                    title:
+                        this.selected.length > 0
+                            ? `Set selected item(s)' annotation to an empty set`
+                            : 'Set all annotations to empty set',
+                    icon: 'mdi-tag-check',
+                    color: 'green',
+                    active: true,
+                },
+            ]
         },
         tableOptions: {
             get() {
