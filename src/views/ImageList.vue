@@ -3,49 +3,6 @@
         <v-toolbar flat>
             <v-toolbar-title>Images</v-toolbar-title>
             <v-spacer />
-
-            <template v-if="allow_select">
-                <v-tooltip bottom>
-                    <template v-slot:activator="{ on, attrs }">
-                        <v-btn
-                            color="#c00000"
-                            icon
-                            v-bind="attrs"
-                            v-on="on"
-                            :disabled="selected.length === 0"
-                            @click="unannotate_all_items()"
-                        >
-                            <v-icon>mdi-tag-off</v-icon>
-                        </v-btn>
-                    </template>
-                    <div class="text-center">
-                        Mark all selected item as unannotated
-                    </div>
-                </v-tooltip>
-
-                <v-tooltip bottom>
-                    <template v-slot:activator="{ on, attrs }">
-                        <v-btn
-                            color="green"
-                            icon
-                            v-bind="attrs"
-                            v-on="on"
-                            :disabled="selected.length === 0"
-                            @click="annotate_all_items()"
-                        >
-                            <v-icon>mdi-tag-check</v-icon>
-                        </v-btn>
-                    </template>
-                    <div class="text-center">
-                        <div>
-                            Set all selected items' annotations to an empty set
-                        </div>
-                    </div>
-                </v-tooltip>
-                <v-btn outlined color="primary" @click="reset_selection()">
-                    Cancel
-                </v-btn>
-            </template>
             <v-menu :close-on-click="true" :offset-y="true">
                 <template v-slot:activator="{ on, attrs }">
                     <v-btn icon v-bind="attrs" v-on="on">
@@ -65,9 +22,7 @@
                                 menu.icon
                             }}</v-icon>
                         </v-list-item-icon>
-                        <v-list-item-title>{{
-                            $t(menu.title)
-                        }}</v-list-item-title>
+                        <v-list-item-title>{{ menu.title }}</v-list-item-title>
                     </v-list-item>
                 </v-list>
             </v-menu>
@@ -165,20 +120,6 @@ export default {
         return {
             selected: [],
             allow_select: true,
-            menu_items: [
-                {
-                    title: 'Mark as unannotated',
-                    icon: 'mdi-tag-off',
-                    color: 'red',
-                    active: true,
-                },
-                {
-                    title: 'Set annotations to empty set',
-                    icon: 'mdi-tag-check',
-                    color: 'green',
-                    active: true,
-                },
-            ],
             items: [],
             item_count: 0,
             loading: false,
@@ -228,6 +169,7 @@ export default {
                 })
                 .finally(() => {
                     this.loading = false
+                    this.reset_selection()
                 })
         },
 
@@ -276,7 +218,7 @@ export default {
         },
         annotate_all_items() {
             let msg = `Are you sure you want to set the annotation for all ${this.item_count} items to an empty set?`
-            if (this.allow_select)
+            if (this.selected.length > 0)
                 msg = `Are you sure you want to set the annotation for all ${this.selected.length} selected items to an empty set?`
 
             if (!confirm(msg)) return
@@ -286,7 +228,7 @@ export default {
         },
         unannotate_all_items() {
             let msg = `Mark all ${this.item_count} items unannotated?`
-            if (this.allow_select)
+            if (this.selected.length > 0)
                 msg = `Mark all selected ${this.selected.length} items unannotated?`
 
             if (!confirm(msg)) return
@@ -296,8 +238,8 @@ export default {
         },
         save_bulk_annotation(body) {
             let params = this.query
-            if (this.allow_select) params = { ...params, ids: this.selectedIds }
-            console.log(JSON.stringify(params))
+            if (this.selected.length > 0)
+                params = { ...params, ids: this.selectedIds }
             this.loading = true
             this.axios
                 .patch('/images', body, params)
@@ -317,7 +259,6 @@ export default {
                 })
                 .finally(() => {
                     this.loading = false
-                    this.reset_selection()
                 })
         },
         reset_selection() {
@@ -363,6 +304,28 @@ export default {
         selectedIds() {
             // Extract _id from selected items
             return this.selected.map((item) => item._id)
+        },
+        menu_items() {
+            return [
+                {
+                    title:
+                        this.selected.length > 0
+                            ? 'Mark selected item(s) as unannotated'
+                            : 'Mark all as unannotated',
+                    icon: 'mdi-tag-off',
+                    color: 'red',
+                    active: true,
+                },
+                {
+                    title:
+                        this.selected.length > 0
+                            ? `Set selected item(s)' annotation to an empty set`
+                            : 'Set all annotations to empty set',
+                    icon: 'mdi-tag-check',
+                    color: 'green',
+                    active: true,
+                },
+            ]
         },
         tableOptions: {
             get() {
