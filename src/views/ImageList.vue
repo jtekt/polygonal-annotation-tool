@@ -242,7 +242,7 @@ export default {
                 params = { ...params, ids: this.selectedIds }
             this.loading = true
             this.axios
-                .patch('/images', body, params)
+                .patch('/images', body, { params })
                 .then(() => {
                     this.snackbar.show = true
                     this.snackbar.text = 'Items annotation successful'
