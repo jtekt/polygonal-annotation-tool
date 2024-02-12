@@ -70,9 +70,12 @@
                     <v-icon v-if="!item.data[annotation_field]" color="#c00000"
                         >mdi-tag-off</v-icon
                     >
-                    <span v-else-if="!item.data[annotation_field].length">{{
-                        $t('Empty set')
-                    }}</span>
+                    <v-icon
+                        v-else-if="!item.data[annotation_field].length"
+                        color="green"
+                    >
+                        mdi-tag-check
+                    </v-icon>
 
                     <div v-else class="classes_wrapper">
                         <v-chip
