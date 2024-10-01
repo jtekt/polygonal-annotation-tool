@@ -10,7 +10,18 @@
                 </v-list-item>
                 <v-divider />
 
-                <v-list-item exact :to="{ name: 'images' }">
+                <v-list-item
+                    :to="{
+                        name: 'images',
+                        query: {
+                            limit: '10',
+                            sort: 'time',
+                            order: '-1',
+                            skip: '0',
+                        },
+                    }"
+                    exact
+                >
                     <v-list-item-icon>
                         <v-icon>mdi-image-multiple</v-icon>
                     </v-list-item-icon>
