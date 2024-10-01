@@ -129,7 +129,7 @@ export default {
             menu: false,
             fields: [],
             field: null,
-            footerProps: { 'items-per-page-options': [10, 50, 100, 500] },
+            footerProps: { 'items-per-page-options': [10, 50, 100] },
 
             snackbar: {
                 show: false,
