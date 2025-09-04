@@ -490,13 +490,8 @@ export default {
         },
 
         get_next_item_by_date() {
-            // Get all current query parameters (the original filter/pool)
-            const baseQuery = this.$route.query
-            // Remove pagination params as we want to find position relative to current item
-            delete baseQuery.limit
-            delete baseQuery.skip
-            delete baseQuery.order
-            delete baseQuery.sort
+            // eslint-disable-next-line no-unused-vars
+            const { limit, skip, order, sort, ...baseQuery } = this.query
 
             const params = {
                 ...baseQuery,
@@ -510,13 +505,8 @@ export default {
         },
 
         get_previous_item_by_date() {
-            // Get all current query parameters (the original filter/pool)
-            const baseQuery = this.$route.query
-            // Remove pagination params as we want to find position relative to current item
-            delete baseQuery.limit
-            delete baseQuery.skip
-            delete baseQuery.order
-            delete baseQuery.sort
+            // eslint-disable-next-line no-unused-vars
+            const { limit, skip, order, sort, ...baseQuery } = this.query
 
             const params = {
                 ...baseQuery,
