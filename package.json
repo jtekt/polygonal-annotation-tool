@@ -1,6 +1,6 @@
 {
     "name": "annotation_tool_polygon",
-    "version": "1.4.3",
+    "version": "1.4.4",
     "private": true,
     "author": "Maxime Moreillon",
     "scripts": {
