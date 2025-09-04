@@ -43,12 +43,7 @@
                 v-model="selected"
                 :show-select="allow_select"
                 item-key="_id"
-                @click:row="
-                    $router.push({
-                        name: 'annotate',
-                        params: { document_id: $event._id },
-                    })
-                "
+                @click:row="handleQueryItemClick"
             >
                 <!-- Thumbnails -->
                 <template v-slot:item.file="{ item }">
@@ -218,6 +213,22 @@ export default {
                     this.annotate_all_items()
                     break
             }
+        },
+        handleQueryItemClick(event) {
+            const document_id = event._id
+            const params = this.query
+
+            // Remove pagination params to avoid confusion
+            delete params.limit
+            delete params.skip
+            delete params.order
+            delete params.sort
+
+            this.$router.push({
+                name: 'annotate',
+                params: { document_id },
+                query: params,
+            })
         },
         annotate_all_items() {
             let msg = `Are you sure you want to set the annotation for all ${this.item_count} items to an empty set?`

@@ -79,8 +79,8 @@
                     </v-btn>
                 </template>
                 <div class="text-center">
-                    <div>Previous item</div>
-                    <div>(←)</div>
+                    <div>Previous item by time</div>
+                    <div>(earlier ←)</div>
                 </div>
             </v-tooltip>
 
@@ -96,8 +96,8 @@
                     </v-btn>
                 </template>
                 <div class="text-center">
-                    <div>Next item</div>
-                    <div>(→)</div>
+                    <div>Next item by time</div>
+                    <div>(later →)</div>
                 </div>
             </v-tooltip>
 
@@ -456,55 +456,65 @@ export default {
                 return
             if (this.loading) return
             this.loading = true
-
             this.axios
                 .get(`/images`, options)
                 .then(({ data: { items } }) => {
                     if (items.length === 0) {
                         this.snackbar.show = true
                         this.snackbar.text = 'No more items'
+                        this.snackbar.color = 'orange'
                         return
                     }
-
                     const item = items[0]
                     // Prevent reloading current route
-
                     if (this.document_id !== item._id) {
                         this.$router.push({
                             name: 'annotate',
                             params: { document_id: item._id },
-                            query: this.query,
+                            query: this.$route.query, // Preserve the original query parameters
                         })
                     }
                 })
                 .catch((error) => {
                     this.error = true
-                    if (error.response) console.error(error.response.data)
-                    else console.error(error)
+                    if (error.response) {
+                        console.error(error.response.data)
+                    } else {
+                        console.error(error)
+                    }
+                    this.snackbar.show = true
+                    this.snackbar.text = 'Error loading next/previous item'
+                    this.snackbar.color = '#c00000'
                 })
                 .finally(() => (this.loading = false))
         },
 
         get_next_item_by_date() {
-            const params = {
-                ...this.query,
-                to: this.item.time,
-                sort: 'time',
-                order: -1,
-                limit: 1,
-            }
+            // eslint-disable-next-line no-unused-vars
+            const { limit, skip, order, sort, ...baseQuery } = this.query
 
-            this.get_items_with_options({ params })
-        },
-        get_previous_item_by_date() {
             const params = {
-                ...this.query,
+                ...baseQuery,
                 from: this.item.time,
                 sort: 'time',
                 order: 1,
                 limit: 1,
             }
 
+            this.get_items_with_options({ params })
+        },
+
+        get_previous_item_by_date() {
+            // eslint-disable-next-line no-unused-vars
+            const { limit, skip, order, sort, ...baseQuery } = this.query
+
+            const params = {
+                ...baseQuery,
+                to: this.item.time,
+                sort: 'time',
+                order: -1,
+                limit: 1,
+            }
             this.get_items_with_options({ params })
         },
 
