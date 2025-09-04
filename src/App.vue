@@ -14,6 +14,7 @@
                     :to="{
                         name: 'images',
                         query: {
+                            ...$route.query,
                             limit: '10',
                             sort: 'time',
                             order: '-1',
