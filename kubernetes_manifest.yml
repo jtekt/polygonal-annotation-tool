@@ -17,7 +17,7 @@ spec:
                   image: ${CONTAINER_IMAGE_TAGGED}
                   env:
                       - name: VUE_APP_STORAGE_SERVICE_API_URL
-                        value: http://172.16.98.151:30011/api
+                        value: http://172.16.98.153:30011/api
                       - name: VUE_APP_ANNOTATION_FIELD
                         value: polygonalAnnotation
                       - name: VUE_APP_LABELS
