@@ -87,9 +87,11 @@ export default {
     computed:{
          query() {
             // Remove cursor
-            delete this.$route.query.cursor
+            // eslint-disable-next-line no-unused-vars
+            const {cursor, ...rest} = this.$route.query
+            
 
-            return this.$route.query
+            return rest
         },
     }
 }
