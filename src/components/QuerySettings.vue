@@ -1,74 +1,74 @@
 <template>
-  <v-row dense>
-    <v-col>
-      <v-card outlined>
-        <v-expansion-panels flat>
-          <v-expansion-panel>
-            <v-expansion-panel-header>
-              <span>
-                <v-icon>mdi-magnify</v-icon>
+    <v-row dense>
+        <v-col>
+            <v-card outlined>
+                <v-expansion-panels flat>
+                    <v-expansion-panel>
+                        <v-expansion-panel-header>
+                            <span>
+                                <v-icon>mdi-magnify</v-icon>
                 <span>{{ $t("Query settings") }}</span>
-              </span>
-            </v-expansion-panel-header>
-            <v-expansion-panel-content>
-              <v-row align="baseline">
-                <v-col cols="">
-                  <DatePicker label="From" v-model="from" />
-                </v-col>
-                <v-col cols="">
-                  <DatePicker label="To" v-model="to" />
-                </v-col>
-              </v-row>
+                            </span>
+                        </v-expansion-panel-header>
+                        <v-expansion-panel-content>
+                            <v-row align="baseline">
+                                <v-col cols="">
+                                    <DatePicker label="From" v-model="from" />
+                                </v-col>
+                                <v-col cols="">
+                                    <DatePicker label="To" v-model="to" />
+                                </v-col>
+                            </v-row>
 
               <v-row v-for="(key, index) in Object.keys(filters)" :key="index">
-                <v-col cols="">
+                                <v-col cols="">
                   <v-text-field :value="key" label="Field" readonly />
-                </v-col>
-                <v-col cols="">
+                                </v-col>
+                                <v-col cols="">
                   <v-text-field :value="filters[key]" label="Value" readonly />
-                </v-col>
-                <v-col cols="auto">
+                                </v-col>
+                                <v-col cols="auto">
                   <v-btn @click="removeFilter(key)" icon color="#c00000">
-                    <v-icon>mdi-delete</v-icon>
-                  </v-btn>
-                </v-col>
-              </v-row>
+                                        <v-icon>mdi-delete</v-icon>
+                                    </v-btn>
+                                </v-col>
+                            </v-row>
 
-              <v-form @submit.prevent="addFilter()">
-                <v-row>
-                  <v-col>
-                    <v-select
-                      :items="unusedFilters"
-                      v-model="newFilterField"
-                      label="New filter field"
-                    />
-                  </v-col>
-                  <v-col>
-                    <v-text-field
-                      label="New filter value"
-                      v-model="newFilterValue"
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="auto">
+                            <v-form @submit.prevent="addFilter()">
+                                <v-row>
+                                    <v-col>
+                                        <v-select
+                                            :items="unusedFilters"
+                                            v-model="newFilterField"
+                                            label="New filter field"
+                                        />
+                                    </v-col>
+                                    <v-col>
+                                        <v-text-field
+                                            label="New filter value"
+                                            v-model="newFilterValue"
+                                        ></v-text-field>
+                                    </v-col>
+                                    <v-col cols="auto">
                     <v-btn type="submit" :disabled="!newFilterValue" icon>
-                      <v-icon>mdi-plus</v-icon>
-                    </v-btn>
-                  </v-col>
-                </v-row>
-              </v-form>
+                                            <v-icon>mdi-plus</v-icon>
+                                        </v-btn>
+                                    </v-col>
+                                </v-row>
+                            </v-form>
 
-              <!-- TODO: regex -->
-              <v-row align="baseline">
-                <v-col cols="auto">
+                            <!-- TODO: regex -->
+                            <v-row align="baseline">
+                                <v-col cols="auto">
                   <v-switch label="Partial match" v-model="regex"></v-switch>
-                </v-col>
-              </v-row>
-            </v-expansion-panel-content>
-          </v-expansion-panel>
-        </v-expansion-panels>
-      </v-card>
-    </v-col>
-  </v-row>
+                                </v-col>
+                            </v-row>
+                        </v-expansion-panel-content>
+                    </v-expansion-panel>
+                </v-expansion-panels>
+            </v-card>
+        </v-col>
+    </v-row>
 </template>
 
 <script>
@@ -154,7 +154,7 @@ export default {
     unusedFilters() {
       return ["file", ...this.fields].filter(
         (f) => !Object.keys(this.filters).includes(f)
-      )
+      ).sort((a,b)=> a.localeCompare(b, ['ja', 'en']))
     },
   },
 }
