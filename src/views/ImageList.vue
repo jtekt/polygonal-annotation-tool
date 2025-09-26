@@ -214,20 +214,18 @@ export default {
                     break
             }
         },
-        handleQueryItemClick(event) {
+        handleQueryItemClick(event, i) {
             const document_id = event._id
-            const params = this.query
+            const { skip = 0, limit = 50, sort = 'time', order = 1, ...rest } = this.query
 
-            // Remove pagination params to avoid confusion
-            delete params.limit
-            delete params.skip
-            delete params.order
-            delete params.sort
-
+            const indexInPage = i.index
+            
+            const cursor = Number(skip) + Number(indexInPage)
+            
             this.$router.push({
                 name: 'annotate',
                 params: { document_id },
-                query: params,
+                query: { ...rest, skip, limit, sort, order, cursor },
             })
         },
         annotate_all_items() {
