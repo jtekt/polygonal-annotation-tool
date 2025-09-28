@@ -13,13 +13,7 @@
                 <v-list-item
                     :to="{
                         name: 'images',
-                        query: {
-                            ...$route.query,
-                            limit: '10',
-                            sort: 'time',
-                            order: '-1',
-                            skip: '0',
-                        },
+                        query,
                     }"
                     exact
                 >
@@ -90,6 +84,16 @@ export default {
         },
     }),
     methods: {},
+    computed:{
+         query() {
+            // Remove cursor
+            // eslint-disable-next-line no-unused-vars
+            const {cursor, ...rest} = this.$route.query
+            
+
+            return rest
+        },
+    }
 }
 </script>
 

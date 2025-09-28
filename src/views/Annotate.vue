@@ -73,7 +73,7 @@
                         icon
                         v-bind="attrs"
                         v-on="on"
-                        @click="get_previous_item_by_date()"
+                        @click="get_previous_item()"
                     >
                         <v-icon>mdi-arrow-left</v-icon>
                     </v-btn>
@@ -90,7 +90,7 @@
                         icon
                         v-bind="attrs"
                         v-on="on"
-                        @click="get_next_item_by_date()"
+                        @click="get_next_item()"
                     >
                         <v-icon>mdi-arrow-right</v-icon>
                     </v-btn>
@@ -446,7 +446,7 @@ export default {
                 .finally(() => (this.loading = false))
         },
 
-        get_items_with_options(options) {
+        get_items_with_options(options, nextQuery) {
             // This function simply navigates to the next item
             // The item itself is obtained with get_item_by_id
             if (
@@ -455,6 +455,7 @@ export default {
             )
                 return
             if (this.loading) return
+            
             this.loading = true
             this.axios
                 .get(`/images`, options)
@@ -471,7 +472,7 @@ export default {
                         this.$router.push({
                             name: 'annotate',
                             params: { document_id: item._id },
-                            query: this.$route.query, // Preserve the original query parameters
+                            query: { ...this.$route.query, ...(nextQuery || {}) }, // update cursor
                         })
                     }
                 })
@@ -489,33 +490,56 @@ export default {
                 .finally(() => (this.loading = false))
         },
 
-        get_next_item_by_date() {
-            // eslint-disable-next-line no-unused-vars
-            const { limit, skip, order, sort, ...baseQuery } = this.query
+        get_next_item() {
+            const { sort = 'time', order = 1, ...rest } = this.query
+            const cursor = Number(this.$route.query.cursor || 0) + 1
 
             const params = {
-                ...baseQuery,
-                from: this.item.time,
-                sort: 'time',
-                order: 1,
+                ...rest,
+                sort,
+                order,
+                skip: cursor, // fetch the item at the next global index
                 limit: 1,
             }
 
-            this.get_items_with_options({ params })
+            // Remove the cursor from the options
+            delete params.cursor 
+
+            this.get_items_with_options({ params }, {cursor})
         },
 
-        get_previous_item_by_date() {
-            // eslint-disable-next-line no-unused-vars
-            const { limit, skip, order, sort, ...baseQuery } = this.query
+        get_previous_item() {
+            const { sort = 'time', order = 1, ...rest } = this.query
+            const currentCursor = Number(this.$route.query.cursor || 0)
+
+            if (currentCursor === 0) {
+                this.snackbar.show = true
+                this.snackbar.text = 'No previous items'
+                this.snackbar.color = 'orange'
+                return
+            }
+
+            const cursor = Math.max(0, currentCursor - 1)
+
+            if (cursor < 0) {
+                this.snackbar.show = true
+                this.snackbar.text = 'Error, cursor not set correctly'
+                this.snackbar.color = '#c00000'
+                return
+            }
 
             const params = {
-                ...baseQuery,
-                to: this.item.time,
-                sort: 'time',
-                order: -1,
+                ...rest,
+                sort,
+                order,
+                skip: cursor, // fetch the item at the previous global index
                 limit: 1,
             }
-            this.get_items_with_options({ params })
+
+             // Remove the cursor from the options
+            delete params.cursor 
+
+            this.get_items_with_options({ params }, {cursor})
         },
 
         create_annotation_array_not_exists() {
@@ -589,12 +613,12 @@ export default {
             // Left arrow key: previous item
             else if (e.keyCode === 37) {
                 e.preventDefault()
-                this.get_previous_item_by_date()
+                this.get_previous_item()
             }
             // Right arrow key: next item
             else if (e.keyCode === 39) {
                 e.preventDefault()
-                this.get_next_item_by_date()
+                this.get_next_item()
             }
         },
         delete_single_annotation(index) {
