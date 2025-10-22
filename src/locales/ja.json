@@ -10,5 +10,8 @@
   "Empty set": "空",
   "Query settings": "検索設定",
   "Save annotations": "アノテーション保存",
-  "Mark as unannotated": "アノテーションされてない状態にする"
+  "Mark as unannotated": "アノテーションされてない状態にする",
+  "Set annotations to empty set": "アノテーションを空に設定",
+  "Sample Color": "サンプルカラー",
+  "Gray Scale": "グレースケール"
 }
