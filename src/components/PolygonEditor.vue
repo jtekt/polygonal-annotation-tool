@@ -1,9 +1,10 @@
 <template>
     <svg
         ref="svg"
-        @mousedown.self="area_mouseDown()"
-        @mouseup="area_mouseUp()"
-        @mousemove="area_mouseMove($event)"
+        :style="{ pointerEvents: disableEvents ? 'none' : 'auto' }"
+        @mousedown.self="!disableEvents && area_mouseDown()"
+        @mouseup="!disableEvents && area_mouseUp()"
+        @mousemove="!disableEvents && area_mouseMove($event)"
     >
         <template v-for="(polygon, polygon_index) in polygons">
             <!-- Polyline when polygon is not closed -->
@@ -12,7 +13,7 @@
                 :points="polygon_svg_points(polygon.points)"
                 :key="`polyline_${polygon_index}`"
                 :class="polyline_class(polygon_index)"
-                @click="polyline_clicked(polygon_index)"
+                @click="!disableEvents && polyline_clicked(polygon_index)"
             />
 
             <!-- polygon when polygon is closed -->
@@ -21,7 +22,7 @@
                 :points="polygon_svg_points(polygon.points)"
                 :key="`polygon_${polygon_index}`"
                 :class="polygon_classes(polygon_index)"
-                @click="polygon_clicked(polygon_index)"
+                @click="!disableEvents && polygon_clicked(polygon_index)"
             />
 
             <!-- midpoints between vertices -->
@@ -32,7 +33,10 @@
                 )"
                 :key="`polygon_${polygon_index}_midpoint_${point_index}`"
                 :class="midpoint_classes(polygon_index, point_index)"
-                @mousedown="midpoint_clicked(polygon_index, point_index)"
+                @mousedown="
+                    !disableEvents &&
+                        midpoint_clicked(polygon_index, point_index)
+                "
                 :cx="point.x"
                 :cy="point.y"
             />
@@ -44,8 +48,11 @@
                     polygon.points
                 )"
                 :key="`polygon_${polygon_index}_point_${point_index}`"
-                @mousedown="point_mousedown(polygon_index, point_index)"
-                @mouseup="point_mouseup()"
+                @mousedown="
+                    !disableEvents &&
+                        point_mousedown(polygon_index, point_index)
+                "
+                @mouseup="!disableEvents && point_mouseup()"
                 :class="point_classes(polygon_index, point_index)"
                 :cx="point.x"
                 :cy="point.y"
@@ -77,6 +84,7 @@ export default {
 
         // Only used for brush mode
         brushThickness: { type: Number, default: 5 },
+        disableEvents: { type: Boolean, default: false },
     },
     data() {
         return {
@@ -110,6 +118,7 @@ export default {
             this.svg.height = this.$refs.svg.clientHeight
         },
         handle_keydown(e) {
+            if (this.disableEvents) return
             // Could think of using arrow keys to navigate between polygons
             const { key, keyCode, ctrlKey } = e
 
