@@ -472,7 +472,7 @@ export default {
             const r = data[0]
             const g = data[1]
             const b = data[2]
-            
+
             this.snackbar.show = true
             this.snackbar.text = `RGB(${r}, ${g}, ${b})`
             this.snackbar.color = `rgb(${r},${g},${b})`
@@ -634,6 +634,27 @@ export default {
         },
 
         save_item() {
+            const annotations = this.item.data[this.annotation_field]
+
+            for (let i = 0; i < annotations.length; i++) {
+                const element = annotations[i]
+
+                if (element.open) {
+                    this.snackbar.show = true
+                    this.snackbar.text = `Annotation ${element.label} is still open`
+                    this.snackbar.color = '#c00000'
+                    return
+                }
+
+                // Validate if it has enough points
+                if (element.points.length < 3) {
+                    this.snackbar.show = true
+                    this.snackbar.text = `Annotation ${element.label} has not enough points`
+                    this.snackbar.color = '#c00000'
+                    return
+                }
+            }
+
             const route = `/images/${this.document_id}`
             const body = {
                 [this.annotation_field]: this.item.data[this.annotation_field],
@@ -698,7 +719,7 @@ export default {
             // Esc key: Reset
             else if (e.key === 'Escape') {
                 e.preventDefault()
-                
+
                 // Reset sampleMode
                 this.sampleMode = false
             }
