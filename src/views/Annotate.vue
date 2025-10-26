@@ -95,6 +95,24 @@
                 </div>
             </v-tooltip>
 
+            <v-tooltip bottom>
+                <template v-slot:activator="{ on, attrs }">
+                    <v-btn
+                        icon
+                        v-bind="attrs"
+                        v-on="on"
+                        @click="toggle_annotations()"
+                    >
+                        <v-icon v-if="showAnnotations">mdi-eye</v-icon>
+                        <v-icon v-else>mdi-eye-off</v-icon>
+                    </v-btn>
+                </template>
+                <div class="text-center">
+                    <div>{{ $t('Hide annotations') }}</div>
+                    <div>(Ctrl + H)</div>
+                </div>
+            </v-tooltip>
+
             <v-divider vertical />
 
             <v-tooltip bottom>
@@ -191,6 +209,7 @@
                     />
                     <!-- The polygon editing tool -->
                     <PolygonEditor
+                        v-show="showAnnotations"
                         @polygonCreated="polygonCreated()"
                         v-model="item.data[annotation_field]"
                         :width="image.naturalWidth"
@@ -198,7 +217,7 @@
                         :mode="mode_lookup[mode_index]"
                         :selected_polygon_index.sync="selected_annotation"
                         :brushThickness="brushThickness"
-                        :disable-events="sampleMode"
+                        :disable-events="sampleMode || !showAnnotations"
                     />
                 </v-card>
             </v-col>
@@ -415,6 +434,8 @@ export default {
                 naturalWidth: 800,
                 naturalHeight: 600,
             },
+
+            showAnnotations: true,
 
             selected_annotation: -1,
 
@@ -684,6 +705,10 @@ export default {
                 })
         },
 
+        toggle_annotations() {
+            this.showAnnotations = !this.showAnnotations
+        },
+
         getImageSize() {
             // Provide image size to editor when loaded
             // const {width, height} = this.$refs.image
@@ -705,6 +730,11 @@ export default {
             else if (e.key === 'a' && e.ctrlKey) {
                 e.preventDefault()
                 this.empty_annotations()
+            }
+            // Ctrl h
+            else if (e.key === 'h' && e.ctrlKey) {
+                e.preventDefault()
+                this.toggle_annotations()
             }
             // Left arrow key: previous item
             else if (e.keyCode === 37) {

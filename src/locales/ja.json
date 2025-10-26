@@ -13,5 +13,6 @@
   "Mark as unannotated": "アノテーションされてない状態にする",
   "Set annotations to empty set": "アノテーションを空に設定",
   "Sample Color": "サンプルカラー",
-  "Gray Scale": "グレースケール"
+  "Gray Scale": "グレースケール",
+  "Hide annotations": "アノテーションを非表示"
 }
