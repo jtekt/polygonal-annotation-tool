@@ -1,27 +1,48 @@
 <template>
     <g>
-        <g v-for="(polygon, polygon_index) in polygons" :key="`polygon_${polygon_index}`">
+        <g
+            v-for="(polygon, polygon_index) in polygons"
+            :key="`polygon_${polygon_index}`"
+        >
+            <!-- Polyline when polygon is not closed -->
             <polyline
+                v-if="polygon.open"
                 :points="polygon_svg_points(polygon.points)"
                 :class="polyline_class(polygon_index)"
                 @click="!disableEvents && polyline_clicked(polygon_index)"
             />
+            <!-- polygon when polygon is closed -->
+            <polygon
+                v-else
+                :points="polygon_svg_points(polygon.points)"
+                :class="polygon_classes(polygon_index)"
+            />
             <!-- midpoints between vertices -->
             <circle
                 class="midpoint"
-                v-for="(point, point_index) in denormalize_points(midpoints(polygon))"
+                v-for="(point, point_index) in denormalize_points(
+                    midpoints(polygon)
+                )"
                 :key="`polygon_${polygon_index}_midpoint_${point_index}`"
                 :class="midpoint_classes(polygon_index, point_index)"
-                @mousedown="!disableEvents && midpoint_clicked(polygon_index, point_index)"
+                @mousedown="
+                    !disableEvents &&
+                        midpoint_clicked(polygon_index, point_index)
+                "
                 :cx="point.x"
                 :cy="point.y"
             />
             <!-- polygon vertices (points) -->
             <circle
                 class="vertex"
-                v-for="(point, point_index) in denormalize_points(polygon.points)"
+                v-for="(point, point_index) in denormalize_points(
+                    polygon.points
+                )"
                 :key="`polygon_${polygon_index}_point_${point_index}`"
-                @mousedown="!disableEvents && point_mousedown(polygon_index, point_index)"
+                @mousedown="
+                    !disableEvents &&
+                        point_mousedown(polygon_index, point_index)
+                "
                 @mouseup="!disableEvents && point_mouseup()"
                 :class="point_classes(polygon_index, point_index)"
                 :cx="point.x"
@@ -43,7 +64,7 @@ export default {
     methods: {
         area_mouseDown() {
             if (!this.polygons) this.polygons = []
-            
+
             this.$nextTick(() => {
                 let polygon = this.getSelectedPolygon()
                 if (!polygon || !polygon.open) {
@@ -59,7 +80,7 @@ export default {
 
         area_mouseMove(event) {
             this.mousePosition = this.getNormalizedMousePos(event)
-            
+
             if (this.grabbed_point_index !== -1 && this.selectedPolygon) {
                 this.$set(
                     this.selectedPolygon.points,
@@ -99,12 +120,6 @@ export default {
             return this.polygons[this.selected_polygon_index]
         },
 
-        polyline_class(polygon_index) {
-            return {
-                selected: polygon_index === this.selected_polygon_index,
-            }
-        },
-
         point_classes(polygon_index, point_index) {
             const selectedPolygon = this.getSelectedPolygon()
             const lastPointIndex = selectedPolygon
@@ -128,7 +143,7 @@ export default {
         midpoint_classes(polygon_index) {
             return {
                 active: polygon_index === this.selected_polygon_index,
-                            }
+            }
         },
 
         midpoints(polygon) {
@@ -153,9 +168,9 @@ export default {
 
         handle_keydown(e) {
             if (this.disableEvents) return
-            
+
             const { key, keyCode, ctrlKey } = e
-            
+
             if (keyCode === 46) {
                 e.preventDefault()
                 this.delete_selected_item()
@@ -183,22 +198,26 @@ export default {
             this.select_polygon(this.polygons.length - 1)
             this.selected_point_index = -1
             return this.polygons[this.polygons.length - 1]
-        }
+        },
     },
 
     computed: {
         ghost_polyline_points() {
             const points = [this.mousePosition]
-            
-            if (this.selectedPolygon?.open && this.selectedPolygon.points.length >= 1) {
-                const lastPoint = this.selectedPolygon.points[
-                    this.selectedPolygon.points.length - 1
-                ]
+
+            if (
+                this.selectedPolygon?.open &&
+                this.selectedPolygon.points.length >= 1
+            ) {
+                const lastPoint =
+                    this.selectedPolygon.points[
+                        this.selectedPolygon.points.length - 1
+                    ]
                 if (lastPoint) points.push(lastPoint)
             }
-            
+
             return this.polygon_svg_points(points)
-        }
-    }
+        },
+    },
 }
 </script>

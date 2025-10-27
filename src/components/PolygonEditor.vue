@@ -1,15 +1,14 @@
 <template>
-    <svg
-        ref="svg"
-        :style="{ pointerEvents: disableEvents ? 'none' : 'auto' }"
-    >
+    <svg ref="svg" :style="{ pointerEvents: disableEvents ? 'none' : 'auto' }">
         <!-- Mode-specific component -->
         <component
             :is="currentModeComponent"
             v-bind="modeProps"
             @input="$emit('input', $event)"
             @polygonCreated="$emit('polygonCreated')"
-            @update:selected_polygon_index="$emit('update:selected_polygon_index', $event)"
+            @update:selected_polygon_index="
+                $emit('update:selected_polygon_index', $event)
+            "
         />
     </svg>
 </template>
@@ -63,7 +62,7 @@ export default {
         currentModeComponent() {
             const modeMap = {
                 polygon: 'PolygonMode',
-                rectangle: 'RectangleMode', 
+                rectangle: 'RectangleMode',
                 polyline: 'PolylineMode',
                 brush: 'BrushMode',
                 eraser: 'BrushMode',
@@ -81,8 +80,8 @@ export default {
                 disableEvents: this.disableEvents,
                 svg: this.svg,
             }
-        }
-    }
+        },
+    },
 }
 </script>
 
@@ -101,7 +100,8 @@ svg {
 
 polygon,
 polyline {
-    stroke: #c0000066;
+    stroke: #7f000084;
+    z-index: 0;
 }
 polyline {
     fill: none;
@@ -110,19 +110,24 @@ polyline {
 }
 
 polyline.selected {
-    stroke: #c00000;
+    stroke: #ff3333;
+    stroke-width: 3px;
+    z-index: 50;
 }
 
 polygon {
-    fill: #c0000022;
+    fill: #fc5f5f48;
     cursor: pointer;
-    stroke-width: 2px;
+    stroke-width: 1.5px;
     transition: stroke 0.25s, fill 0.25s;
 }
 
 polygon.selected {
-    fill: #c0000044;
-    stroke: #c00000;
+    fill: #ff333387;
+    stroke: #ff3333;
+    stroke-width: 2.5px;
+    filter: drop-shadow(0 0 4px rgba(255, 51, 51, 0.5));
+    z-index: 50;
 }
 
 circle {

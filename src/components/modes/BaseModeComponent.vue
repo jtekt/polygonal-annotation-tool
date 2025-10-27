@@ -148,6 +148,19 @@ export default {
         point_mousedown() {
             // Override in child components
         },
+
+        // Styles
+        polygon_classes(polygon_index) {
+            return {
+                selected: polygon_index === this.selected_polygon_index,
+            }
+        },
+        
+        polyline_class(polygon_index) {
+            return {
+                selected: polygon_index === this.selected_polygon_index,
+            }
+        },
     },
     computed: {
         polygons: {

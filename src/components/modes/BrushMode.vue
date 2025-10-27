@@ -6,7 +6,15 @@
             :key="`polygon_${polygon_index}`"
             @mousedown="area_mouseDown"
         >
+            <!-- Polyline when polygon is not closed -->
+            <polyline
+                v-if="polygon.open"
+                :points="polygon_svg_points(polygon.points)"
+                :class="polyline_class(polygon_index)"
+            />
+            <!-- polygon when polygon is closed -->
             <polygon
+                v-else
                 :points="polygon_svg_points(polygon.points)"
                 :class="polygon_classes(polygon_index)"
             />
@@ -65,7 +73,7 @@ export default {
             isDrawing: false,
             currentStroke: [],
             showCursor: false,
-            POLYGON_SIMPLIFICATION_TOLERANCE: 1, // Add this - higher = fewer points, less precise
+            POLYGON_SIMPLIFICATION_TOLERANCE: 1.4, // higher = fewer points, less precise
             lastRecordedPoint: null,
         }
     },
@@ -379,13 +387,6 @@ export default {
             this.grabbed_point_index = -1
         },
 
-        polygon_classes(polygon_index) {
-            return {
-                selected: polygon_index === this.selected_polygon_index,
-                'brush-polygon': true,
-            }
-        },
-
         point_classes(polygon_index, point_index) {
             return {
                 active: polygon_index === this.selected_polygon_index,
@@ -416,19 +417,5 @@ export default {
 .brush-cursor {
     pointer-events: none;
     opacity: 0.5;
-}
-
-.brush-polygon {
-    fill: rgba(255, 129, 129, 0.2);
-    stroke: #913838;
-    stroke-width: 2px;
-    z-index: 0;
-}
-
-.brush-polygon.selected {
-    fill: rgba(161, 7, 7, 0.2);
-    stroke: #ff0000;
-    stroke-width: 3px;
-    z-index: 50;
 }
 </style>

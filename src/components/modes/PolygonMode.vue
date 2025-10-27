@@ -124,18 +124,6 @@ export default {
             return this.polygons[this.selected_polygon_index]
         },
 
-        polygon_classes(polygon_index) {
-            return {
-                selected: polygon_index === this.selected_polygon_index,
-            }
-        },
-
-        polyline_class(polygon_index) {
-            return {
-                selected: polygon_index === this.selected_polygon_index,
-            }
-        },
-
         point_classes(polygon_index, point_index) {
             const selectedPolygon = this.getSelectedPolygon()
             const lastPointIndex = selectedPolygon

@@ -1,7 +1,15 @@
 <template>
     <g>
         <g v-for="(polygon, polygon_index) in polygons" :key="`polygon_${polygon_index}`">
+            <!-- Polyline when polygon is not closed -->
+            <polyline
+                v-if="polygon.open"
+                :points="polygon_svg_points(polygon.points)"
+                :class="polyline_class(polygon_index)"
+            />
+            <!-- polygon when polygon is closed -->
             <polygon
+                v-else
                 :points="polygon_svg_points(polygon.points)"
                 :class="polygon_classes(polygon_index)"
                 @click="!disableEvents && polygon_clicked(polygon_index)"
@@ -130,12 +138,6 @@ export default {
         polygon_clicked(polygon_index) {
             this.select_polygon(polygon_index)
             this.selected_point_index = -1
-        },
-
-        polygon_classes(polygon_index) {
-            return {
-                selected: polygon_index === this.selected_polygon_index,
-            }
         },
 
         point_classes(polygon_index, point_index) {
