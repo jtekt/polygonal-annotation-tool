@@ -13,6 +13,7 @@
     "dependencies": {
         "@moreillon/vue_application_template_vuetify": "^3.2.1",
         "axios": "^0.21.4",
+        "clipper-lib": "^6.4.2",
         "core-js": "^3.22.8",
         "vue": "^2.6.14",
         "vue-axios": "^3.4.1",

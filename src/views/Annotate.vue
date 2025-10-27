@@ -18,12 +18,18 @@
                 <v-btn icon v-if="brushEnabled">
                     <v-icon>mdi-brush</v-icon>
                 </v-btn>
+
+                <v-btn icon v-if="brushEnabled">
+                    <v-icon>mdi-eraser</v-icon>
+                </v-btn>
             </v-btn-toggle>
 
-            <!-- This is wrong -->
             <v-slider
+                v-if="
+                    mode_lookup[mode_index] === 'brush' ||
+                    mode_lookup[mode_index] === 'eraser'
+                "
                 class="mt-6"
-                v-if="mode_lookup[mode_index] === 'brush'"
                 v-model="brushThickness"
                 step="1"
                 :thumb-label="true"
@@ -243,7 +249,11 @@
                                                 cursor: 'pointer',
                                             }"
                                             @click="
-                                                selected_annotation = row.index
+                                                selected_annotation =
+                                                    selected_annotation ===
+                                                    row.index
+                                                        ? -1
+                                                        : row.index
                                             "
                                         >
                                             <td>
@@ -438,7 +448,10 @@ export default {
     mounted() {
         this.get_item_by_id()
         if (this.polylineEnabled) this.mode_lookup.push('polyline')
-        if (this.brushEnabled) this.mode_lookup.push('brush')
+        if (this.brushEnabled) {
+            this.mode_lookup.push('brush')
+            this.mode_lookup.push('eraser')
+        }
 
         // Listen to keyboard events for key shortcuts
         document.addEventListener('keydown', this.handle_keydown)
