@@ -50,16 +50,19 @@
             <v-tooltip bottom>
                 <template v-slot:activator="{ on, attrs }">
                     <v-btn
-                        :color="sampleMode ? 'primary' : 'default'"
                         icon
                         v-bind="attrs"
                         v-on="on"
-                        @click="toggleSampleMode"
+                        @click="toggle_annotations()"
                     >
-                        <v-icon>mdi-eyedropper</v-icon>
+                        <v-icon v-if="showAnnotations">mdi-eye</v-icon>
+                        <v-icon v-else>mdi-eye-off</v-icon>
                     </v-btn>
                 </template>
-                <div class="text-center">{{ $t('Sample Color') }}</div>
+                <div class="text-center">
+                    <div>{{ $t('Hide annotations') }}</div>
+                    <div>(Ctrl + H)</div>
+                </div>
             </v-tooltip>
 
             <v-tooltip bottom>
@@ -92,24 +95,6 @@
                 <div class="text-center">
                     <div>{{ $t('Save annotations') }}</div>
                     <div>(Ctrl + S)</div>
-                </div>
-            </v-tooltip>
-
-            <v-tooltip bottom>
-                <template v-slot:activator="{ on, attrs }">
-                    <v-btn
-                        icon
-                        v-bind="attrs"
-                        v-on="on"
-                        @click="toggle_annotations()"
-                    >
-                        <v-icon v-if="showAnnotations">mdi-eye</v-icon>
-                        <v-icon v-else>mdi-eye-off</v-icon>
-                    </v-btn>
-                </template>
-                <div class="text-center">
-                    <div>{{ $t('Hide annotations') }}</div>
-                    <div>(Ctrl + H)</div>
                 </div>
             </v-tooltip>
 
@@ -187,7 +172,6 @@
             <v-col cols="12" :lg="fullscreen ? 12 : 6">
                 <v-card
                     class="image_wrapper"
-                    :style="{ cursor: sampleMode ? 'crosshair' : 'auto' }"
                 >
                     <!-- This wrapper gets the same size as the img -->
                     <!-- The actual image -->
@@ -197,7 +181,6 @@
                         :src="image_src"
                         crossorigin="anonymous"
                         @load="getImageSize()"
-                        @click="onImageClick"
                         :style="{
                             filter: grayscale ? 'grayscale(100%)' : 'none',
                         }"
@@ -217,7 +200,7 @@
                         :mode="mode_lookup[mode_index]"
                         :selected_polygon_index.sync="selected_annotation"
                         :brushThickness="brushThickness"
-                        :disable-events="sampleMode || !showAnnotations"
+                        :disable-events="!showAnnotations"
                     />
                 </v-card>
             </v-col>
@@ -422,7 +405,6 @@ export default {
             brushThickness: 5,
 
             grayscale: false,
-            sampleMode: false,
 
             headers: [
                 // { text: "ID", value: "index" },
@@ -470,33 +452,6 @@ export default {
     methods: {
         toggleGrayscale() {
             this.grayscale = !this.grayscale
-        },
-        toggleSampleMode() {
-            this.sampleMode = !this.sampleMode
-        },
-        onImageClick(event) {
-            if (!this.sampleMode) return
-            const img = this.$refs.image
-            if (!img || !img.naturalWidth || !img.naturalHeight) return
-            const rect = img.getBoundingClientRect()
-            const scaleX = img.naturalWidth / img.offsetWidth
-            const scaleY = img.naturalHeight / img.offsetHeight
-            const x = Math.floor((event.clientX - rect.left) * scaleX)
-            const y = Math.floor((event.clientY - rect.top) * scaleY)
-            const canvas = document.createElement('canvas')
-            const ctx = canvas.getContext('2d')
-            canvas.width = img.naturalWidth
-            canvas.height = img.naturalHeight
-            ctx.drawImage(img, 0, 0)
-            const pixel = ctx.getImageData(x, y, 1, 1)
-            const data = pixel.data
-            const r = data[0]
-            const g = data[1]
-            const b = data[2]
-
-            this.snackbar.show = true
-            this.snackbar.text = `RGB(${r}, ${g}, ${b})`
-            this.snackbar.color = `rgb(${r},${g},${b})`
         },
         unannotate() {
             // Completely remove the annotation field, marking the item as not annotated yet
@@ -745,13 +700,6 @@ export default {
             else if (e.keyCode === 39) {
                 e.preventDefault()
                 this.get_next_item()
-            }
-            // Esc key: Reset
-            else if (e.key === 'Escape') {
-                e.preventDefault()
-
-                // Reset sampleMode
-                this.sampleMode = false
             }
         },
         delete_single_annotation(index) {
