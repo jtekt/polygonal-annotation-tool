@@ -323,9 +323,11 @@ export default {
         subtractPolygonFromExisting(subtractPoints) {
             if (this.selected_polygon_index === -1) return
 
-            const selected = this.polygons[this.selected_polygon_index]
+            // Convert subtractPoints to Clipper path
             const subtractPath = this.pointsToClipperPath(subtractPoints)
-            const updatedPolygons = [...this.polygons] // Create a copy of the polygons array
+
+            const selected = this.polygons[this.selected_polygon_index]
+            const updatedPolygons = [...this.polygons]
 
             // Convert selected polygon's points to Clipper path
             const polyPoints = []
@@ -333,6 +335,25 @@ export default {
                 polyPoints.push(point.x, point.y)
             })
             const polyPath = this.pointsToClipperPath(polyPoints)
+
+            // Check if all subtractPoints are inside the selected polygon
+            let allInside = true
+            for (const p of subtractPath) {
+                const result = ClipperLib.Clipper.PointInPolygon(
+                    p,
+                    polyPath
+                )
+                if (result <= 0) {
+                    // 0 = on edge, -1 = outside
+                    allInside = false
+                    break
+                }
+            }
+
+            // If all points are inside, skip subtraction (Only allow polygons without holes)
+            if (allInside) {
+                return
+            }
 
             // Perform the difference operation
             const clipperDiff = new ClipperLib.Clipper()
