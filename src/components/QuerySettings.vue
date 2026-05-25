@@ -37,7 +37,7 @@
               <v-form @submit.prevent="addFilter()">
                 <v-row>
                   <v-col>
-                                        <v-combobox
+                    <v-combobox
                       :items="unusedFilters"
                       v-model="newFilterField"
                       label="New filter field"
