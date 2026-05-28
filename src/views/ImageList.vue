@@ -3,27 +3,20 @@
         <v-toolbar flat>
             <v-toolbar-title>Images</v-toolbar-title>
             <v-spacer />
-            <v-menu :close-on-click="true" :offset-y="true">
-                <template v-slot:activator="{ on, attrs }">
-                    <v-btn icon v-bind="attrs" v-on="on">
+            <v-menu :close-on-content-click="true">
+                <template v-slot:activator="{ props: menuProps }">
+                    <v-btn icon v-bind="menuProps">
                         <v-icon>mdi-dots-vertical</v-icon>
                     </v-btn>
                 </template>
-
                 <v-list>
                     <v-list-item
                         v-for="(menu, index) in menu_items"
                         :key="index"
-                        link
+                        :prepend-icon="menu.icon"
+                        :title="menu.title"
                         @click="handleMenuItemClick(index)"
-                    >
-                        <v-list-item-icon>
-                            <v-icon dense :color="menu.color">{{
-                                menu.icon
-                            }}</v-icon>
-                        </v-list-item-icon>
-                        <v-list-item-title>{{ menu.title }}</v-list-item-title>
-                    </v-list-item>
+                    />
                 </v-list>
             </v-menu>
         </v-toolbar>
@@ -33,26 +26,25 @@
                 <QuerySettings :fields="displayed_fields" />
             </v-container>
 
-            <v-data-table
+            <v-data-table-server
                 :loading="loading"
                 :headers="headers"
                 :items="items"
-                :options.sync="tableOptions"
-                :server-items-length="item_count"
-                :footer-props="footerProps"
+                :items-length="item_count"
+                :items-per-page="tableItemsPerPage"
+                :items-per-page-options="[
+                    { value: 10, title: '10' },
+                    { value: 50, title: '50' },
+                    { value: 100, title: '100' },
+                ]"
                 v-model="selected"
                 :show-select="allow_select"
-                item-key="_id"
+                item-value="_id"
+                @update:options="handleOptionsUpdate"
                 @click:row="handleQueryItemClick"
             >
-                <!-- Thumbnails -->
                 <template v-slot:item.file="{ item }">
-                    <v-img
-                        height="5emc"
-                        width="5em"
-                        contain
-                        :src="image_src(item)"
-                    />
+                    <v-img height="5em" width="5em" contain :src="image_src(item)" />
                 </template>
 
                 <template v-slot:item.time="{ item }">
@@ -60,22 +52,19 @@
                 </template>
 
                 <template v-slot:item.annotation="{ item }">
-                    <!-- An item can either has not annotation field or an empty annotation array -->
-
-                    <v-icon v-if="!item.data[annotation_field]" color="#c00000"
-                        >mdi-tag-off</v-icon
-                    >
+                    <v-icon v-if="!item.data[annotation_field]" color="#c00000">
+                        mdi-tag-off
+                    </v-icon>
                     <v-icon
-                        v-else-if="!item.data[annotation_field].length"
+                        v-else-if="!(item.data[annotation_field] as Polygon[]).length"
                         color="green"
                     >
                         mdi-tag-check
                     </v-icon>
-
                     <div v-else class="classes_wrapper">
                         <v-chip
                             v-for="(summary_item, index) in annotation_summary(
-                                item.data[annotation_field]
+                                item.data[annotation_field] as Polygon[]
                             )"
                             :key="`${item._id}_${index}`"
                         >
@@ -87,290 +76,215 @@
                         </v-chip>
                     </div>
                 </template>
-            </v-data-table>
+            </v-data-table-server>
         </v-card-text>
 
         <v-snackbar :color="snackbar.color" v-model="snackbar.show">
             {{ snackbar.text }}
-
-            <template v-slot:action="{ attrs }">
-                <v-btn dark text v-bind="attrs" @click="snackbar.show = false">
-                    Close
-                </v-btn>
+            <template v-slot:actions>
+                <v-btn variant="text" @click="snackbar.show = false">Close</v-btn>
             </template>
         </v-snackbar>
     </v-card>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import QuerySettings from '../components/QuerySettings.vue'
 import { ANNOTATION_FIELD } from '@/config'
+import axios from '@/axios'
+import type { Polygon } from '@/composables/useBaseMode'
 
-const { VUE_APP_STORAGE_SERVICE_API_URL, VUE_APP_DISPLAYED_FIELDS } =
-    process.env
-export default {
-    name: 'Images',
+const storageApiUrl = import.meta.env.VITE_STORAGE_SERVICE_API_URL
+const displayedFieldsEnv = import.meta.env.VITE_DISPLAYED_FIELDS
 
-    components: {
-        QuerySettings,
+interface AnnotationItem {
+    _id: string
+    file: string
+    time: string
+    data: Record<string, Polygon[] | null | unknown>
+}
+
+interface DataTableOptions {
+    page: number
+    itemsPerPage: number
+    sortBy: Array<{ key: string; order: 'asc' | 'desc' }>
+}
+
+const route = useRoute()
+const router = useRouter()
+const { t } = useI18n()
+
+const annotation_field = ANNOTATION_FIELD
+const selected = ref<AnnotationItem[]>([])
+const allow_select = true
+const items = ref<AnnotationItem[]>([])
+const item_count = ref(0)
+const loading = ref(false)
+const fields = ref<string[]>([])
+const tableItemsPerPage = ref(10)
+
+const snackbar = ref({ show: false, text: '', color: 'green' })
+
+const query = computed(() => route.query)
+
+const displayed_fields = computed<string[]>(() => {
+    const raw = displayedFieldsEnv ? displayedFieldsEnv.split(',') : fields.value
+    return raw.filter((f) => f !== annotation_field)
+})
+
+const headers = computed(() => {
+    const annotationFieldText = `${t('Annotations')} (${annotation_field})`
+    return [
+        { key: 'file', sortable: false },
+        { title: t('Time'), key: 'time' },
+        { title: annotationFieldText, key: 'annotation', sortable: false },
+        ...displayed_fields.value.map((f) => ({ title: f, key: `data.${f}` })),
+    ]
+})
+
+const selectedIds = computed(() => selected.value.map((item) => item._id))
+
+const menu_items = computed(() => [
+    {
+        title:
+            selected.value.length > 0
+                ? 'Mark selected item(s) as unannotated'
+                : 'Mark all as unannotated',
+        icon: 'mdi-tag-off',
     },
-    data() {
-        return {
-            selected: [],
-            allow_select: true,
-            items: [],
-            item_count: 0,
-            loading: false,
-            menu: false,
-            fields: [],
-            field: null,
-            footerProps: { 'items-per-page-options': [10, 50, 100] },
-
-            snackbar: {
-                show: false,
-                text: '',
-                color: 'green',
-            },
-        }
+    {
+        title:
+            selected.value.length > 0
+                ? "Set selected item(s)' annotation to an empty set"
+                : 'Set all annotations to empty set',
+        icon: 'mdi-tag-check',
     },
-    mounted() {
-        this.get_items_and_fields()
-    },
+])
 
-    watch: {
-        query: {
-            handler() {
-                this.get_items()
-            },
-            deep: true,
-        },
-    },
-    methods: {
-        get_items_and_fields() {
-            this.get_items()
-            if (!VUE_APP_DISPLAYED_FIELDS) this.get_fields()
-        },
+watch(query, () => get_items(), { deep: true })
 
-        get_items() {
-            this.loading = true
+onMounted(() => {
+    get_items()
+    if (!displayedFieldsEnv) get_fields()
+})
 
-            const params = this.query
+function get_items() {
+    loading.value = true
+    const params = query.value
+    axios
+        .get('/images', { params })
+        .then(({ data: { total, items: newItems } }) => {
+            items.value = newItems
+            item_count.value = total
+        })
+        .catch(console.error)
+        .finally(() => {
+            loading.value = false
+            selected.value = []
+        })
+}
 
-            this.axios
-                .get('/images', { params })
-                .then(({ data: { total, items } }) => {
-                    this.items = items
-                    this.item_count = total
-                })
-                .catch((error) => {
-                    console.error(error)
-                })
-                .finally(() => {
-                    this.loading = false
-                    this.reset_selection()
-                })
-        },
+function get_fields() {
+    axios
+        .get('/fields')
+        .then(({ data }) => {
+            fields.value = data
+        })
+        .catch(console.error)
+}
 
-        get_fields() {
-            this.axios
-                .get('/fields')
-                .then(({ data }) => {
-                    this.fields = data
-                })
-                .catch((error) => {
-                    console.error(error)
-                })
-        },
+function format_date(item: AnnotationItem) {
+    return new Date(item.time).toLocaleString('ja-JP')
+}
 
-        format_date({ time }) {
-            const date = new Date(time)
-            return date.toLocaleString('Ja-JP')
-        },
-
-        annotation_summary(annotation) {
-            const summary = annotation.reduce((acc, item) => {
-                let found = acc.find((x) => x.label === item.label)
-                if (!found) {
-                    found = { label: item.label, count: 0 }
-                    acc.push(found)
-                }
-                found.count++
-                return acc
-            }, [])
-
-            return summary
-        },
-
-        image_src({ _id }) {
-            return `${VUE_APP_STORAGE_SERVICE_API_URL}/images/${_id}/image`
-        },
-        handleMenuItemClick(index) {
-            switch (index) {
-                case 0:
-                    this.unannotate_all_items()
-                    break
-                case 1:
-                    this.annotate_all_items()
-                    break
+function annotation_summary(annotation: Polygon[]) {
+    return annotation.reduce<Array<{ label: string | undefined; count: number }>>(
+        (acc, item) => {
+            let found = acc.find((x) => x.label === item.label)
+            if (!found) {
+                found = { label: item.label, count: 0 }
+                acc.push(found)
             }
+            found.count++
+            return acc
         },
-        handleQueryItemClick(event, i) {
-            const document_id = event._id
-            const { skip = 0, limit = 50, sort = 'time', order = 1, ...rest } = this.query
+        []
+    )
+}
 
-            const indexInPage = i.index
-            
-            const cursor = Number(skip) + Number(indexInPage)
-            
-            this.$router.push({
-                name: 'annotate',
-                params: { document_id },
-                query: { ...rest, skip, limit, sort, order, cursor },
-            })
-        },
-        annotate_all_items() {
-            let msg = `Are you sure you want to set the annotation for all ${this.item_count} items to an empty set?`
-            if (this.selected.length > 0)
-                msg = `Are you sure you want to set the annotation for all ${this.selected.length} selected items to an empty set?`
+function image_src(item: AnnotationItem) {
+    return `${storageApiUrl}/images/${item._id}/image`
+}
 
-            if (!confirm(msg)) return
-            this.save_bulk_annotation({
-                [this.annotation_field]: [],
-            })
-        },
-        unannotate_all_items() {
-            let msg = `Mark all ${this.item_count} items unannotated?`
-            if (this.selected.length > 0)
-                msg = `Mark all selected ${this.selected.length} items unannotated?`
+function handleMenuItemClick(index: number) {
+    if (index === 0) unannotate_all_items()
+    else if (index === 1) annotate_all_items()
+}
 
-            if (!confirm(msg)) return
-            this.save_bulk_annotation({
-                [this.annotation_field]: null,
-            })
-        },
-        save_bulk_annotation(body) {
-            let params = this.query
-            if (this.selected.length > 0)
-                params = { ...params, ids: this.selectedIds }
-            this.loading = true
-            this.axios
-                .patch('/images', body, { params })
-                .then(() => {
-                    this.snackbar.show = true
-                    this.snackbar.text = 'Items annotation successful'
-                    this.snackbar.color = 'green'
-                    this.get_items()
-                })
-                .catch((error) => {
-                    this.error = true
-                    if (error.response) console.error(error.response.data)
-                    else console.error(error)
-                    this.snackbar.show = true
-                    this.snackbar.text = 'Error, see console for details'
-                    this.snackbar.color = '#c00000'
-                })
-                .finally(() => {
-                    this.loading = false
-                })
-        },
-        reset_selection() {
-            this.selected = []
-        },
-    },
-    computed: {
-        annotation_field() {
-            return ANNOTATION_FIELD
-        },
-        base_headers() {
-            const annotationFieldText = `${this.$t('Annotations')} (${
-                this.annotation_field
-            })`
-            return [
-                { value: 'file' },
-                { text: this.$t('Time'), value: 'time' },
-                {
-                    text: annotationFieldText,
-                    value: 'annotation',
-                },
-            ]
-        },
-        displayed_fields() {
-            const fields = VUE_APP_DISPLAYED_FIELDS
-                ? VUE_APP_DISPLAYED_FIELDS.split(',')
-                : this.fields
+function handleQueryItemClick(_event: MouseEvent, row: { item: AnnotationItem; index: number }) {
+    const document_id = row.item._id
+    const { skip = 0, limit = 50, sort = 'time', order = 1, ...rest } = query.value
+    const cursor = Number(skip) + Number(row.index)
+    router.push({
+        name: 'annotate',
+        params: { document_id },
+        query: { ...rest, skip, limit, sort, order, cursor },
+    })
+}
 
-            return fields.filter((f) => f !== this.annotation_field)
-        },
-        headers() {
-            return [
-                ...this.base_headers,
-                ...this.displayed_fields.map((f) => ({
-                    text: f,
-                    value: `data.${f}`,
-                })),
-            ]
-        },
-        query() {
-            return this.$route.query
-        },
-        selectedIds() {
-            // Extract _id from selected items
-            return this.selected.map((item) => item._id)
-        },
-        menu_items() {
-            return [
-                {
-                    title:
-                        this.selected.length > 0
-                            ? 'Mark selected item(s) as unannotated'
-                            : 'Mark all as unannotated',
-                    icon: 'mdi-tag-off',
-                    color: 'red',
-                    active: true,
-                },
-                {
-                    title:
-                        this.selected.length > 0
-                            ? `Set selected item(s)' annotation to an empty set`
-                            : 'Set all annotations to empty set',
-                    icon: 'mdi-tag-check',
-                    color: 'green',
-                    active: true,
-                },
-            ]
-        },
-        tableOptions: {
-            get() {
-                const {
-                    limit = 10,
-                    sort = 'time',
-                    order = 1,
-                    skip = 0,
-                } = this.$route.query
+function handleOptionsUpdate(options: DataTableOptions) {
+    const { itemsPerPage, page, sortBy } = options
+    tableItemsPerPage.value = itemsPerPage
+    const sort = sortBy[0]?.key ?? 'time'
+    const order = sortBy[0]?.order === 'desc' ? '-1' : '1'
+    const params = {
+        limit: String(itemsPerPage),
+        skip: String((page - 1) * itemsPerPage),
+        order,
+        sort,
+    }
+    const newQuery = { ...route.query, ...params }
+    if (JSON.stringify(route.query) !== JSON.stringify(newQuery))
+        router.replace({ query: newQuery })
+}
 
-                return {
-                    itemsPerPage: Number(limit),
-                    sortBy: [sort],
-                    sortDesc: [order === '-1'],
-                    page: skip / limit + 1,
-                }
-            },
-            set(newVal) {
-                const { itemsPerPage, page, sortBy, sortDesc } = newVal
-                const params = {
-                    limit: String(itemsPerPage),
-                    skip: String((page - 1) * itemsPerPage),
-                    order: String(sortDesc[0] ? -1 : 1),
-                    sort: sortBy[0],
-                }
-                const query = { ...this.$route.query, ...params }
+function annotate_all_items() {
+    let msg = `Are you sure you want to set the annotation for all ${item_count.value} items to an empty set?`
+    if (selected.value.length > 0)
+        msg = `Are you sure you want to set the annotation for all ${selected.value.length} selected items to an empty set?`
+    if (!confirm(msg)) return
+    save_bulk_annotation({ [annotation_field]: [] })
+}
 
-                // Preventing route duplicates
-                if (JSON.stringify(this.$route.query) !== JSON.stringify(query))
-                    this.$router.replace({ query })
-            },
-        },
-    },
+function unannotate_all_items() {
+    let msg = `Mark all ${item_count.value} items unannotated?`
+    if (selected.value.length > 0)
+        msg = `Mark all selected ${selected.value.length} items unannotated?`
+    if (!confirm(msg)) return
+    save_bulk_annotation({ [annotation_field]: null })
+}
+
+function save_bulk_annotation(body: Record<string, unknown>) {
+    let params: Record<string, unknown> = { ...query.value }
+    if (selected.value.length > 0) params = { ...params, ids: selectedIds.value }
+    loading.value = true
+    axios
+        .patch('/images', body, { params })
+        .then(() => {
+            snackbar.value = { show: true, text: 'Items annotation successful', color: 'green' }
+            get_items()
+        })
+        .catch((error) => {
+            if (error.response) console.error(error.response.data)
+            else console.error(error)
+            snackbar.value = { show: true, text: 'Error, see console for details', color: '#c00000' }
+        })
+        .finally(() => {
+            loading.value = false
+        })
 }
 </script>
 

@@ -1,35 +1,34 @@
 <template>
     <g>
-        <g v-for="(polygon, polygon_index) in polygons" :key="`polygon_${polygon_index}`">
-            <!-- Polyline when polygon is not closed -->
+        <g
+            v-for="(polygon, polygon_index) in polygons"
+            :key="`polygon_${polygon_index}`"
+        >
             <polyline
                 v-if="polygon.open"
                 :points="polygon_svg_points(polygon.points)"
                 :class="polyline_class(polygon_index)"
             />
-            <!-- polygon when polygon is closed -->
             <polygon
                 v-else
                 :points="polygon_svg_points(polygon.points)"
                 :class="polygon_classes(polygon_index)"
                 @click="!disableEvents && polygon_clicked(polygon_index)"
             />
-            <!-- midpoints between vertices -->
             <circle
                 class="midpoint"
                 v-for="(point, point_index) in denormalize_points(midpoints(polygon))"
                 :key="`polygon_${polygon_index}_midpoint_${point_index}`"
-                :class="midpoint_classes(polygon_index, point_index)"
+                :class="midpoint_classes(polygon_index)"
                 @mousedown="!disableEvents && midpoint_clicked(polygon_index, point_index)"
                 :cx="point.x"
                 :cy="point.y"
             />
-            <!-- polygon vertices (points) -->
             <circle
                 class="vertex"
                 v-for="(point, point_index) in denormalize_points(polygon.points)"
                 :key="`polygon_${polygon_index}_point_${point_index}`"
-                @mousedown="!disableEvents && point_mousedown(polygon_index, point_index)"
+                @mousedown="!disableEvents && onPointMousedown(polygon_index, point_index)"
                 @mouseup="!disableEvents && point_mouseup()"
                 :class="point_classes(polygon_index, point_index)"
                 :cx="point.x"
@@ -39,150 +38,173 @@
     </g>
 </template>
 
-<script>
-import BaseModeComponent from './BaseModeComponent.vue'
-import { midpoint } from '@/vectorUtils.js'
+<script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useBaseMode, type Polygon } from '@/composables/useBaseMode'
+import { midpoint } from '@/vectorUtils'
 
-export default {
-    name: 'RectangleMode',
-    extends: BaseModeComponent,
-    data() {
-        return {
-            rectanglePending: false,
-        }
-    },
-    methods: {
-        area_mouseDown() {
-            if (!this.polygons) this.polygons = []
-            
-            this.$nextTick(() => {
-                this.rectanglePending = true
-                const rectangle = this.create_polygon()
-                const margin = 10
+const props = defineProps<{
+    width: number
+    height: number
+    mode: string
+    selectedPolygonIndex: number
+    modelValue: Polygon[]
+    brushThickness: number
+    disableEvents: boolean
+    svg: { width: number; height: number }
+}>()
 
-                // Add rectangle points in correct order
-                rectangle.points.push(this.mousePosition)
-                rectangle.points.push({
-                    x: this.mousePosition.x,
-                    y: this.mousePosition.y + margin,
-                })
-                rectangle.points.push({
-                    x: this.mousePosition.x + margin,
-                    y: this.mousePosition.y + margin,
-                })
-                rectangle.points.push({
-                    x: this.mousePosition.x + margin,
-                    y: this.mousePosition.y,
-                })
-            })
-        },
+const emit = defineEmits<{
+    'update:modelValue': [value: Polygon[]]
+    'update:selectedPolygonIndex': [index: number]
+    polygonCreated: []
+}>()
 
-        area_mouseUp() {
-            if (this.rectanglePending) {
-                this.rectanglePending = false
-            }
-        },
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const base = useBaseMode(props, emit as any)
+const {
+    svgEl,
+    selected_point_index,
+    grabbed_point_index,
+    mousePosition,
+    polygons,
+    selectedPolygon,
+    denormalize_points,
+    getNormalizedMousePos,
+    polygon_svg_points,
+    select_polygon,
+    delete_selected_item,
+    point_mouseup,
+    polygon_classes,
+    polyline_class,
+} = base
 
-        area_mouseMove(event) {
-            this.mousePosition = this.getNormalizedMousePos(event)
-            
-            if (!this.selectedPolygon) return
-            
-            // Move grabbed point
-            if (this.grabbed_point_index !== -1) {
-                this.$set(
-                    this.selectedPolygon.points,
-                    this.grabbed_point_index,
-                    this.mousePosition
-                )
-            }
-            
-            // Update rectangle while being created
-                        if (this.rectanglePending) {
-                const rectanglePoint = this.selectedPolygon.points[0]
-                const { x: startX, y: startY } = rectanglePoint
-                
-                this.$set(this.selectedPolygon.points, 1, {
-                    x: startX,
-                    y: this.mousePosition.y,
-                })
-                this.$set(this.selectedPolygon.points, 2, this.mousePosition)
-                this.$set(this.selectedPolygon.points, 3, {
-                    x: this.mousePosition.x,
-                    y: startY,
-                })
-            }
-        },
+const rectanglePending = ref(false)
 
-        point_mousedown(polygon_index, point_index) {
-            this.select_polygon(polygon_index)
-            this.grab_point(polygon_index, point_index)
-        },
+function create_rectangle(): Polygon {
+    const new_polygon: Polygon = { points: [], open: false }
+    polygons.value = [...polygons.value, new_polygon]
+    emit('polygonCreated')
+    select_polygon(polygons.value.length - 1)
+    selected_point_index.value = -1
+    return polygons.value[polygons.value.length - 1]
+}
 
-        grab_point(polygon_index, point_index) {
-            this.select_polygon(polygon_index)
-            this.selected_point_index = point_index
-            this.grabbed_point_index = point_index
-        },
+function area_mouseDown() {
+    rectanglePending.value = true
+    const rect = create_rectangle()
+    const m = 10
+    rect.points.push(
+        { ...mousePosition.value },
+        { x: mousePosition.value.x, y: mousePosition.value.y + m },
+        { x: mousePosition.value.x + m, y: mousePosition.value.y + m },
+        { x: mousePosition.value.x + m, y: mousePosition.value.y }
+    )
+}
 
-        midpoint_clicked(polygon_index, point_index) {
-            if (!this.selectedPolygon) return
-            this.selectedPolygon.points.splice(
-                point_index + 1,
-                0,
-                this.mousePosition
-            )
-            this.grab_point(polygon_index, point_index + 1)
-        },
+function area_mouseUp() {
+    rectanglePending.value = false
+}
 
-        polygon_clicked(polygon_index) {
-            this.select_polygon(polygon_index)
-            this.selected_point_index = -1
-        },
-
-        point_classes(polygon_index, point_index) {
-            return {
-                active: polygon_index === this.selected_polygon_index,
-                selected:
-                    polygon_index === this.selected_polygon_index &&
-                    point_index === this.selected_point_index,
-                grabbed:
-                    polygon_index === this.selected_polygon_index &&
-                    point_index === this.grabbed_point_index,
-            }
-        },
-
-        midpoint_classes(polygon_index) {
-            return {
-                active: polygon_index === this.selected_polygon_index,
-            }
-        },
-
-        midpoints(polygon) {
-            const points_copy = polygon.points.slice()
-            points_copy.push(points_copy[0]) // Close the rectangle
-            const points_sliced = points_copy.slice(0, -1)
-            return points_sliced.map((point, index) =>
-                midpoint(point, points_copy[index + 1])
-            )
-        },
-
-        finish_editing() {
-            this.rectanglePending = false
-            this.select_polygon(-1)
-        },
-
-        create_polygon() {
-            const new_polygon = {
-                points: [],
-                open: false, // Rectangles are always closed
-            }
-            this.polygons.push(new_polygon)
-            this.$emit('polygonCreated')
-            this.select_polygon(this.polygons.length - 1)
-            this.selected_point_index = -1
-            return this.polygons[this.polygons.length - 1]
-        }
+function area_mouseMove(e: MouseEvent) {
+    mousePosition.value = getNormalizedMousePos(e)
+    if (!selectedPolygon.value) return
+    if (grabbed_point_index.value !== -1) {
+        selectedPolygon.value.points[grabbed_point_index.value] = { ...mousePosition.value }
+    }
+    if (rectanglePending.value) {
+        const { x: startX, y: startY } = selectedPolygon.value.points[0]
+        selectedPolygon.value.points[1] = { x: startX, y: mousePosition.value.y }
+        selectedPolygon.value.points[2] = { ...mousePosition.value }
+        selectedPolygon.value.points[3] = { x: mousePosition.value.x, y: startY }
     }
 }
+
+function grab_point(polygon_index: number, point_index: number) {
+    select_polygon(polygon_index)
+    selected_point_index.value = point_index
+    grabbed_point_index.value = point_index
+}
+
+function onPointMousedown(polygon_index: number, point_index: number) {
+    grab_point(polygon_index, point_index)
+}
+
+function midpoint_clicked(polygon_index: number, point_index: number) {
+    if (!selectedPolygon.value) return
+    selectedPolygon.value.points.splice(point_index + 1, 0, { ...mousePosition.value })
+    grab_point(polygon_index, point_index + 1)
+}
+
+function polygon_clicked(polygon_index: number) {
+    select_polygon(polygon_index)
+    selected_point_index.value = -1
+}
+
+function finish_editing() {
+    rectanglePending.value = false
+    select_polygon(-1)
+}
+
+function point_classes(polygon_index: number, point_index: number) {
+    return {
+        active: polygon_index === props.selectedPolygonIndex,
+        selected:
+            polygon_index === props.selectedPolygonIndex &&
+            point_index === selected_point_index.value,
+        grabbed:
+            polygon_index === props.selectedPolygonIndex &&
+            point_index === grabbed_point_index.value,
+    }
+}
+
+function midpoint_classes(polygon_index: number) {
+    return { active: polygon_index === props.selectedPolygonIndex }
+}
+
+function midpoints(polygon: Polygon) {
+    const pts = polygon.points.slice()
+    pts.push(pts[0])
+    return pts.slice(0, -1).map((p, i) => midpoint(p, pts[i + 1]))
+}
+
+function onSvgMouseDown(e: MouseEvent) {
+    if (props.disableEvents) return
+    if (e.target === svgEl.value) area_mouseDown()
+}
+
+function onSvgMouseUp(e: MouseEvent) {
+    if (props.disableEvents) return
+    area_mouseUp()
+}
+
+function onSvgMouseMove(e: MouseEvent) {
+    if (props.disableEvents) return
+    area_mouseMove(e)
+}
+
+function handle_keydown(e: KeyboardEvent) {
+    if (props.disableEvents) return
+    if (e.keyCode === 46) {
+        e.preventDefault()
+        delete_selected_item()
+    } else if (e.keyCode === 13 || e.keyCode === 27) {
+        e.preventDefault()
+        finish_editing()
+    }
+}
+
+onMounted(() => {
+    document.addEventListener('keydown', handle_keydown)
+    svgEl.value?.addEventListener('mousedown', onSvgMouseDown)
+    svgEl.value?.addEventListener('mouseup', onSvgMouseUp)
+    svgEl.value?.addEventListener('mousemove', onSvgMouseMove)
+})
+
+onBeforeUnmount(() => {
+    document.removeEventListener('keydown', handle_keydown)
+    svgEl.value?.removeEventListener('mousedown', onSvgMouseDown)
+    svgEl.value?.removeEventListener('mouseup', onSvgMouseUp)
+    svgEl.value?.removeEventListener('mousemove', onSvgMouseMove)
+})
 </script>

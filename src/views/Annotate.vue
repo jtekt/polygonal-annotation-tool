@@ -1,51 +1,42 @@
 <template>
     <div>
         <v-toolbar>
-            <!-- Polygon editor controls -->
-            <v-btn-toggle v-model="mode_index" borderless group mandatory>
-                <v-btn icon>
+            <v-btn-toggle v-model="mode_index" group mandatory>
+                <v-btn :value="0" icon>
                     <v-icon>mdi-vector-polygon</v-icon>
                 </v-btn>
-
-                <v-btn icon>
+                <v-btn :value="1" icon>
                     <v-icon>mdi-vector-rectangle</v-icon>
                 </v-btn>
-
-                <v-btn icon v-if="polylineEnabled">
+                <v-btn v-if="polylineEnabled" :value="2" icon>
                     <v-icon>mdi-vector-polyline</v-icon>
                 </v-btn>
-
-                <v-btn icon v-if="brushEnabled">
+                <v-btn v-if="brushEnabled" :value="polylineEnabled ? 3 : 2" icon>
                     <v-icon>mdi-brush</v-icon>
                 </v-btn>
-
-                <v-btn icon v-if="brushEnabled">
+                <v-btn v-if="brushEnabled" :value="polylineEnabled ? 4 : 3" icon>
                     <v-icon>mdi-eraser</v-icon>
                 </v-btn>
             </v-btn-toggle>
 
             <v-slider
-                v-if="
-                    mode_lookup[mode_index] === 'brush' ||
-                    mode_lookup[mode_index] === 'eraser'
-                "
+                v-if="mode_lookup[mode_index] === 'brush' || mode_lookup[mode_index] === 'eraser'"
                 class="mt-6"
                 v-model="brushThickness"
                 step="1"
-                :thumb-label="true"
-                thumb-size="24"
+                thumb-label
+                :thumb-size="24"
             />
 
             <v-spacer />
 
-            <v-tooltip bottom>
-                <template v-slot:activator="{ on, attrs }">
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
                     <v-btn
-                        :color="grayscale ? 'primary' : 'default'"
+                        :color="grayscale ? 'primary' : undefined"
                         icon
-                        v-bind="attrs"
-                        v-on="on"
-                        @click="toggleGrayscale"
+                        v-bind="props"
+                        @click="grayscale = !grayscale"
                     >
                         <v-icon>mdi-scale</v-icon>
                     </v-btn>
@@ -53,14 +44,9 @@
                 <div class="text-center">{{ $t('Gray Scale') }}</div>
             </v-tooltip>
 
-            <v-tooltip bottom>
-                <template v-slot:activator="{ on, attrs }">
-                    <v-btn
-                        icon
-                        v-bind="attrs"
-                        v-on="on"
-                        @click="toggle_annotations()"
-                    >
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn icon v-bind="props" @click="showAnnotations = !showAnnotations">
                         <v-icon v-if="showAnnotations">mdi-eye</v-icon>
                         <v-icon v-else>mdi-eye-off</v-icon>
                     </v-btn>
@@ -71,30 +57,18 @@
                 </div>
             </v-tooltip>
 
-            <v-tooltip bottom>
-                <template v-slot:activator="{ on, attrs }">
-                    <v-btn
-                        color="#c00000"
-                        icon
-                        v-bind="attrs"
-                        v-on="on"
-                        @click="unannotate()"
-                    >
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn color="#c00000" icon v-bind="props" @click="unannotate">
                         <v-icon>mdi-tag-off</v-icon>
                     </v-btn>
                 </template>
                 <div class="text-center">{{ $t('Mark as unannotated') }}</div>
             </v-tooltip>
 
-            <v-tooltip bottom>
-                <template v-slot:activator="{ on, attrs }">
-                    <v-btn
-                        color="green"
-                        icon
-                        v-bind="attrs"
-                        v-on="on"
-                        @click="save_annotations()"
-                    >
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn color="green" icon v-bind="props" @click="save_annotations">
                         <v-icon>mdi-tag-check</v-icon>
                     </v-btn>
                 </template>
@@ -106,14 +80,9 @@
 
             <v-divider vertical />
 
-            <v-tooltip bottom>
-                <template v-slot:activator="{ on, attrs }">
-                    <v-btn
-                        icon
-                        v-bind="attrs"
-                        v-on="on"
-                        @click="get_previous_item()"
-                    >
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn icon v-bind="props" @click="get_previous_item">
                         <v-icon>mdi-arrow-left</v-icon>
                     </v-btn>
                 </template>
@@ -123,14 +92,9 @@
                 </div>
             </v-tooltip>
 
-            <v-tooltip bottom>
-                <template v-slot:activator="{ on, attrs }">
-                    <v-btn
-                        icon
-                        v-bind="attrs"
-                        v-on="on"
-                        @click="get_next_item()"
-                    >
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn icon v-bind="props" @click="get_next_item">
                         <v-icon>mdi-arrow-right</v-icon>
                     </v-btn>
                 </template>
@@ -142,14 +106,9 @@
 
             <v-divider vertical />
 
-            <v-tooltip bottom>
-                <template v-slot:activator="{ on, attrs }">
-                    <v-btn
-                        icon
-                        v-bind="attrs"
-                        v-on="on"
-                        @click="fullscreen = !fullscreen"
-                    >
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn icon v-bind="props" @click="fullscreen = !fullscreen">
                         <v-icon v-if="fullscreen">mdi-fullscreen-exit</v-icon>
                         <v-icon v-else>mdi-fullscreen</v-icon>
                     </v-btn>
@@ -169,109 +128,85 @@
         </v-row>
 
         <v-row v-else-if="!item" justify="center">
-            <v-col class="mt-10" cols="auto" style="color: #c00000">
-                Image not found
-            </v-col>
+            <v-col class="mt-10" cols="auto" style="color: #c00000">Image not found</v-col>
         </v-row>
 
         <v-row v-else class="mt-2">
             <v-col cols="12" :lg="fullscreen ? 12 : 6">
-                <v-card
-                    class="image_wrapper"
-                >
-                    <!-- This wrapper gets the same size as the img -->
-                    <!-- The actual image -->
+                <v-card class="image_wrapper">
                     <img
-                        ref="image"
+                        ref="imageEl"
                         draggable="false"
                         :src="image_src"
                         crossorigin="anonymous"
-                        @load="getImageSize()"
-                        :style="{
-                            filter: grayscale ? 'grayscale(100%)' : 'none',
-                        }"
+                        @load="getImageSize"
+                        :style="{ filter: grayscale ? 'grayscale(100%)' : 'none' }"
                     />
-
-                    <div
-                        class="helper_rectangle"
-                        :style="helper_rectangle_style"
-                    />
-                    <!-- The polygon editing tool -->
+                    <div class="helper_rectangle" :style="helper_rectangle_style" />
                     <PolygonEditor
                         v-show="showAnnotations"
-                        @polygonCreated="polygonCreated()"
-                        v-model="item.data[annotation_field]"
-                        :width="image.naturalWidth"
-                        :height="image.naturalHeight"
+                        @polygonCreated="polygonCreated"
+                        :modelValue="(item.data[annotation_field] as Polygon[])"
+                        @update:modelValue="item!.data[annotation_field] = $event"
+                        :width="imageSize.naturalWidth"
+                        :height="imageSize.naturalHeight"
                         :mode="mode_lookup[mode_index]"
-                        :selected_polygon_index.sync="selected_annotation"
+                        v-model:selectedPolygonIndex="selected_annotation"
                         :brushThickness="brushThickness"
                         :disable-events="!showAnnotations"
                     />
                 </v-card>
             </v-col>
+
             <v-col>
                 <v-row>
                     <v-col>
                         <v-card>
-                            <v-card-title
-                                >{{ $t('Annotations') }} ({{
-                                    annotation_field
-                                }})</v-card-title
-                            >
+                            <v-card-title>
+                                {{ $t('Annotations') }} ({{ annotation_field }})
+                            </v-card-title>
                             <v-card-text>
                                 <div
                                     class="text-center my-5"
                                     style="color: #c00000"
                                     v-if="!item.data[annotation_field]"
                                 >
-                                    <v-icon left color="#c00000"
-                                        >mdi-tag-off</v-icon
-                                    >
+                                    <v-icon left color="#c00000">mdi-tag-off</v-icon>
                                     <span>{{ $t('Not annotated yet') }}</span>
                                 </div>
 
                                 <v-data-table
                                     v-else
                                     hide-default-footer
-                                    :itemsPerPage="-1"
+                                    :items-per-page="-1"
                                     :loading="loading"
-                                    :items="item.data[annotation_field]"
-                                    :headers="headers"
+                                    :items="(item.data[annotation_field] as Polygon[])"
+                                    :headers="annotationHeaders"
                                     disable-sort
                                 >
-                                    <template v-slot:item="row">
+                                    <template v-slot:item="{ item: ann, index }">
                                         <tr
                                             :style="{
                                                 'background-color':
-                                                    selected_annotation ===
-                                                    row.index
+                                                    selected_annotation === index
                                                         ? '#c0000044'
                                                         : '',
                                                 cursor: 'pointer',
                                             }"
                                             @click="
                                                 selected_annotation =
-                                                    selected_annotation ===
-                                                    row.index
-                                                        ? -1
-                                                        : row.index
+                                                    selected_annotation === index ? -1 : index
                                             "
                                         >
                                             <td>
                                                 <v-combobox
-                                                    v-model="row.item.label"
+                                                    v-model="ann.label"
                                                     :items="labels"
                                                 />
                                             </td>
-
                                             <td>
                                                 <v-icon
-                                                    @click="
-                                                        delete_single_annotation(
-                                                            row.index
-                                                        )
-                                                    "
+                                                    @click.stop="delete_single_annotation(index)"
                                                 >
                                                     mdi-delete
                                                 </v-icon>
@@ -285,83 +220,48 @@
 
                     <v-col>
                         <v-card>
-                            <v-card-title>
-                                {{ $t('Image metadata') }}
-                            </v-card-title>
-
+                            <v-card-title>{{ $t('Image metadata') }}</v-card-title>
                             <v-list>
-                                <v-list-item two-line>
-                                    <v-list-item-content>
-                                        <v-list-item-subtitle>
-                                            {{ $t('File') }}
-                                        </v-list-item-subtitle>
-                                        <v-list-item-title>{{
-                                            item.file
-                                        }}</v-list-item-title>
-                                    </v-list-item-content>
+                                <v-list-item lines="two">
+                                    <v-list-item-subtitle>{{ $t('File') }}</v-list-item-subtitle>
+                                    <v-list-item-title>{{ item.file }}</v-list-item-title>
                                 </v-list-item>
-                                <v-list-item two-line>
-                                    <v-list-item-content>
-                                        <v-list-item-subtitle>
-                                            {{ $t('Time') }}
-                                        </v-list-item-subtitle>
-                                        <v-list-item-title>{{
-                                            item.time
-                                        }}</v-list-item-title>
-                                    </v-list-item-content>
+                                <v-list-item lines="two">
+                                    <v-list-item-subtitle>{{ $t('Time') }}</v-list-item-subtitle>
+                                    <v-list-item-title>{{ item.time }}</v-list-item-title>
                                 </v-list-item>
-
                                 <v-list-item
                                     v-for="(key, index) of displayed_fields"
                                     :key="index"
-                                    two-line
+                                    lines="two"
                                 >
-                                    <v-list-item-content>
-                                        <v-list-item-subtitle>{{
-                                            key
-                                        }}</v-list-item-subtitle>
-                                        <v-list-item-title>
-                                            <pre>{{ item.data[key] }}</pre>
-                                        </v-list-item-title>
-                                    </v-list-item-content>
+                                    <v-list-item-subtitle>{{ key }}</v-list-item-subtitle>
+                                    <v-list-item-title>
+                                        <pre>{{ item.data[key] }}</pre>
+                                    </v-list-item-title>
                                 </v-list-item>
                             </v-list>
 
-                            <v-expansion-panels
-                                flat
-                                v-if="hidden_fields.length"
-                            >
+                            <v-expansion-panels v-if="hidden_fields.length" variant="accordion">
                                 <v-expansion-panel>
-                                    <v-expansion-panel-header>
-                                        <span>
-                                            <v-icon left
-                                                >mdi-dots-horizontal</v-icon
-                                            >
-                                            <span>See more</span>
-                                        </span>
-                                    </v-expansion-panel-header>
-                                    <v-expansion-panel-content>
+                                    <v-expansion-panel-title>
+                                        <v-icon>mdi-dots-horizontal</v-icon>
+                                        <span>See more</span>
+                                    </v-expansion-panel-title>
+                                    <v-expansion-panel-text>
                                         <v-list>
                                             <v-list-item
-                                                v-for="(
-                                                    key, index
-                                                ) of hidden_fields"
+                                                v-for="(key, index) of hidden_fields"
                                                 :key="index"
-                                                two-line
+                                                lines="two"
                                             >
-                                                <v-list-item-content>
-                                                    <v-list-item-subtitle>{{
-                                                        key
-                                                    }}</v-list-item-subtitle>
-                                                    <v-list-item-title>
-                                                        <pre>{{
-                                                            item.data[key]
-                                                        }}</pre>
-                                                    </v-list-item-title>
-                                                </v-list-item-content>
+                                                <v-list-item-subtitle>{{ key }}</v-list-item-subtitle>
+                                                <v-list-item-title>
+                                                    <pre>{{ item.data[key] }}</pre>
+                                                </v-list-item-title>
                                             </v-list-item>
                                         </v-list>
-                                    </v-expansion-panel-content>
+                                    </v-expansion-panel-text>
                                 </v-expansion-panel>
                             </v-expansion-panels>
                         </v-card>
@@ -372,413 +272,279 @@
 
         <v-snackbar :color="snackbar.color" v-model="snackbar.show">
             {{ snackbar.text }}
-
-            <template v-slot:action="{ attrs }">
-                <v-btn dark text v-bind="attrs" @click="snackbar.show = false">
-                    Close
-                </v-btn>
+            <template v-slot:actions>
+                <v-btn variant="text" @click="snackbar.show = false">Close</v-btn>
             </template>
         </v-snackbar>
     </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import PolygonEditor from '@/components/PolygonEditor.vue'
 import KeyboardShortcuts from '@/components/KeyboardShortcuts.vue'
-import { ANNOTATION_FIELD } from '../config'
-const {
-    VUE_APP_DISPLAYED_FIELDS,
-    VUE_APP_STORAGE_SERVICE_API_URL,
-    VUE_APP_HELPER_RECTANGLE,
-    VUE_APP_DEFAULT_LABEL,
-    VUE_APP_ENABLE_BRUSH,
-    VUE_APP_ENABLE_POLYLINE,
-} = process.env
+import { ANNOTATION_FIELD } from '@/config'
+import { useAppStore } from '@/store'
+import axios from '@/axios'
+import type { Polygon } from '@/composables/useBaseMode'
 
-export default {
-    name: 'Annotate',
-    components: {
-        PolygonEditor,
-        KeyboardShortcuts,
-    },
-    data() {
-        return {
-            loading: false,
-            fullscreen: false,
-            item: null,
+const storageApiUrl = import.meta.env.VITE_STORAGE_SERVICE_API_URL
+const displayedFieldsEnv = import.meta.env.VITE_DISPLAYED_FIELDS
+const helperRectangle = import.meta.env.VITE_HELPER_RECTANGLE
+const defaultLabel = import.meta.env.VITE_DEFAULT_LABEL
+const polylineEnabled = !!import.meta.env.VITE_ENABLE_POLYLINE
+const brushEnabled = !!import.meta.env.VITE_ENABLE_BRUSH
 
-            // used to keep track of unsaved changes
-            unmodified_item_copy: null,
+interface AnnotationItem {
+    _id: string
+    file: string
+    time: string
+    data: Record<string, Polygon[] | null | unknown>
+}
 
-            polylineEnabled: !!VUE_APP_ENABLE_POLYLINE,
-            brushEnabled: !!VUE_APP_ENABLE_BRUSH,
-            brushThickness: 5,
+const route = useRoute()
+const router = useRouter()
+const { t } = useI18n()
+const store = useAppStore()
 
-            grayscale: false,
+const annotation_field = ANNOTATION_FIELD
+const loading = ref(false)
+const fullscreen = ref(false)
+const item = ref<AnnotationItem | null>(null)
+const unmodified_item_copy = ref<AnnotationItem | null>(null)
+const grayscale = ref(false)
+const showAnnotations = ref(true)
+const selected_annotation = ref(-1)
+const brushThickness = ref(5)
+const imageEl = ref<HTMLImageElement | null>(null)
+const imageSize = ref({ naturalWidth: 800, naturalHeight: 600 })
+const mode_index = ref(0)
+const snackbar = ref({ show: false, text: '', color: 'green' })
 
-            headers: [
-                // { text: "ID", value: "index" },
-                { text: 'Label / Class', value: 'label' },
-                { text: 'Delete', value: 'actions' },
-            ],
+const labels = (import.meta.env.VITE_LABELS || '').split(',')
 
-            image: {
-                naturalWidth: 800,
-                naturalHeight: 600,
-            },
+const mode_lookup = computed(() => {
+    const modes = ['polygon', 'rectangle']
+    if (polylineEnabled) modes.push('polyline')
+    if (brushEnabled) { modes.push('brush'); modes.push('eraser') }
+    return modes
+})
 
-            showAnnotations: true,
+const annotationHeaders = [
+    { title: 'Label / Class', key: 'label' },
+    { title: 'Delete', key: 'actions', sortable: false },
+]
 
-            selected_annotation: -1,
+const document_id = computed(() => route.params.document_id as string)
 
-            mode_index: 0,
-            mode_lookup: ['polygon', 'rectangle'],
+const image_src = computed(
+    () => `${storageApiUrl}/images/${document_id.value}/image`
+)
 
-            labels: process.env.VUE_APP_LABELS.split(','),
+const query = computed(() => route.query)
 
-            snackbar: {
-                show: false,
-                text: '',
-                color: 'green',
-            },
-        }
-    },
-    watch: {
-        document_id() {
-            this.get_item_by_id()
-        },
-    },
-    mounted() {
-        this.get_item_by_id()
-        if (this.polylineEnabled) this.mode_lookup.push('polyline')
-        if (this.brushEnabled) {
-            this.mode_lookup.push('brush')
-            this.mode_lookup.push('eraser')
-        }
+const displayed_fields = computed<string[]>(() => {
+    if (displayedFieldsEnv) return displayedFieldsEnv.split(',')
+    if (!item.value) return []
+    return Object.keys(item.value.data)
+})
 
-        // Listen to keyboard events for key shortcuts
-        document.addEventListener('keydown', this.handle_keydown)
-    },
-    beforeDestroy() {
-        document.removeEventListener('keydown', this.handle_keydown)
-    },
-    methods: {
-        toggleGrayscale() {
-            this.grayscale = !this.grayscale
-        },
-        unannotate() {
-            // Completely remove the annotation field, marking the item as not annotated yet
-            if (!this.item.data[this.annotation_field]) return
-            if (!confirm('Mark the item unannotated?')) return
+const hidden_fields = computed(() => {
+    if (!item.value) return []
+    return Object.keys(item.value.data).filter(
+        (f) => !displayed_fields.value.includes(f)
+    )
+})
 
-            this.$set(this.item.data, this.annotation_field, null)
-            this.save_item()
-        },
-        empty_annotations() {
-            // Empty the annotation array but keep the field
-            // Might not be used
-            if (
-                this.item.data[this.annotation_field] &&
-                this.item.data[this.annotation_field].length &&
-                !confirm('ホンマ？')
-            )
-                return
+const item_has_unsaved_modifications = computed(() => {
+    if (!item.value || !unmodified_item_copy.value) return false
+    return JSON.stringify(item.value) !== JSON.stringify(unmodified_item_copy.value)
+})
 
-            this.$set(this.item.data, this.annotation_field, [])
-        },
-        save_annotations() {
-            this.create_annotation_array_not_exists()
-            this.save_item()
-        },
+const helper_rectangle_style = computed(() => {
+    if (!helperRectangle) return { display: 'none' }
+    const [x, y, w, h] = helperRectangle.split(',')
+    return {
+        left: `${(100 * Number(x)) / imageSize.value.naturalWidth}%`,
+        top: `${(100 * Number(y)) / imageSize.value.naturalWidth}%`,
+        width: `${(100 * Number(w)) / imageSize.value.naturalHeight}%`,
+        height: `${(100 * Number(h)) / imageSize.value.naturalHeight}%`,
+    }
+})
 
-        get_item_by_id() {
-            this.loading = true
-            this.axios
-                .get(`/images/${this.document_id}`)
-                .then(({ data }) => {
-                    this.item = data
-                    this.save_item_copy()
-                })
-                .catch((error) => {
-                    this.error = true
-                    if (error.response) console.error(error.response.data)
-                    else console.error(error)
-                })
-                .finally(() => (this.loading = false))
-        },
+watch(document_id, () => get_item_by_id())
 
-        get_items_with_options(options, nextQuery) {
-            // This function simply navigates to the next item
-            // The item itself is obtained with get_item_by_id
-            if (
-                this.item_has_unsaved_modifications &&
-                !confirm('Item has modifications, discard?')
-            )
-                return
-            if (this.loading) return
+onMounted(() => {
+    get_item_by_id()
+    document.addEventListener('keydown', handle_keydown)
+})
 
-            this.loading = true
-            this.axios
-                .get(`/images`, options)
-                .then(({ data: { items } }) => {
-                    if (items.length === 0) {
-                        this.snackbar.show = true
-                        this.snackbar.text = 'No more items'
-                        this.snackbar.color = 'orange'
-                        return
-                    }
-                    const item = items[0]
-                    // Prevent reloading current route
-                    if (this.document_id !== item._id) {
-                        this.$router.push({
-                            name: 'annotate',
-                            params: { document_id: item._id },
-                            query: {
-                                ...this.$route.query,
-                                ...(nextQuery || {}),
-                            }, // update cursor
-                        })
-                    }
-                })
-                .catch((error) => {
-                    this.error = true
-                    if (error.response) {
-                        console.error(error.response.data)
-                    } else {
-                        console.error(error)
-                    }
-                    this.snackbar.show = true
-                    this.snackbar.text = 'Error loading next/previous item'
-                    this.snackbar.color = '#c00000'
-                })
-                .finally(() => (this.loading = false))
-        },
+onBeforeUnmount(() => {
+    document.removeEventListener('keydown', handle_keydown)
+})
 
-        get_next_item() {
-            const { sort = 'time', order = 1, ...rest } = this.query
-            const cursor = Number(this.$route.query.cursor || 0) + 1
+function getImageSize() {
+    if (!imageEl.value) return
+    imageSize.value.naturalWidth = imageEl.value.naturalWidth
+    imageSize.value.naturalHeight = imageEl.value.naturalHeight
+}
 
-            const params = {
-                ...rest,
-                sort,
-                order,
-                skip: cursor, // fetch the item at the next global index
-                limit: 1,
-            }
+function get_item_by_id() {
+    loading.value = true
+    axios
+        .get(`/images/${document_id.value}`)
+        .then(({ data }) => {
+            item.value = data
+            unmodified_item_copy.value = JSON.parse(JSON.stringify(data))
+        })
+        .catch(console.error)
+        .finally(() => (loading.value = false))
+}
 
-            // Remove the cursor from the options
-            delete params.cursor
+function get_items_with_options(
+    options: { params: Record<string, unknown> },
+    nextQuery?: Record<string, unknown>
+) {
+    if (item_has_unsaved_modifications.value && !confirm('Item has modifications, discard?'))
+        return
+    if (loading.value) return
 
-            this.get_items_with_options({ params }, { cursor })
-        },
-
-        get_previous_item() {
-            const { sort = 'time', order = 1, ...rest } = this.query
-            const currentCursor = Number(this.$route.query.cursor || 0)
-
-            if (currentCursor === 0) {
-                this.snackbar.show = true
-                this.snackbar.text = 'No previous items'
-                this.snackbar.color = 'orange'
+    loading.value = true
+    axios
+        .get('/images', options)
+        .then(({ data: { items } }) => {
+            if (!items.length) {
+                snackbar.value = { show: true, text: 'No more items', color: 'orange' }
                 return
             }
-
-            const cursor = Math.max(0, currentCursor - 1)
-
-            if (cursor < 0) {
-                this.snackbar.show = true
-                this.snackbar.text = 'Error, cursor not set correctly'
-                this.snackbar.color = '#c00000'
-                return
+            const next = items[0]
+            if (document_id.value !== next._id) {
+                router.push({
+                    name: 'annotate',
+                    params: { document_id: next._id },
+                    query: { ...route.query, ...(nextQuery ?? {}) } as Record<string, string>,
+                })
             }
-
-            const params = {
-                ...rest,
-                sort,
-                order,
-                skip: cursor, // fetch the item at the previous global index
-                limit: 1,
+        })
+        .catch((error) => {
+            console.error(error.response?.data ?? error)
+            snackbar.value = {
+                show: true,
+                text: 'Error loading next/previous item',
+                color: '#c00000',
             }
+        })
+        .finally(() => (loading.value = false))
+}
 
-            // Remove the cursor from the options
-            delete params.cursor
+function get_next_item() {
+    const { sort = 'time', order = 1, ...rest } = query.value
+    const cursor = Number(route.query.cursor ?? 0) + 1
+    const params = { ...rest, sort, order, skip: cursor, limit: 1 }
+    delete (params as Record<string, unknown>).cursor
+    get_items_with_options({ params }, { cursor })
+}
 
-            this.get_items_with_options({ params }, { cursor })
-        },
+function get_previous_item() {
+    const { sort = 'time', order = 1, ...rest } = query.value
+    const currentCursor = Number(route.query.cursor ?? 0)
+    if (currentCursor === 0) {
+        snackbar.value = { show: true, text: 'No previous items', color: 'orange' }
+        return
+    }
+    const cursor = Math.max(0, currentCursor - 1)
+    const params = { ...rest, sort, order, skip: cursor, limit: 1 }
+    delete (params as Record<string, unknown>).cursor
+    get_items_with_options({ params }, { cursor })
+}
 
-        create_annotation_array_not_exists() {
-            // If the item has not been annotated yet. the annotation property must be created as an array
-            // Note the usage of $set for reactivity
-            if (!this.item.data) this.$set(this.item, 'data', {})
-            if (!this.item.data[this.annotation_field])
-                this.$set(this.item.data, this.annotation_field, [])
-        },
+function unannotate() {
+    if (!item.value?.data[annotation_field]) return
+    if (!confirm('Mark the item unannotated?')) return
+    item.value.data[annotation_field] = null
+    save_item()
+}
 
-        get_copy_of_item(object) {
-            return JSON.parse(JSON.stringify(object))
-        },
+function save_annotations() {
+    if (!item.value) return
+    if (!item.value.data) item.value.data = {}
+    if (!item.value.data[annotation_field]) item.value.data[annotation_field] = []
+    save_item()
+}
 
-        save_item_copy() {
-            this.unmodified_item_copy = this.get_copy_of_item(this.item)
-        },
-
-        save_item() {
-            const annotations = this.item.data[this.annotation_field]
-
-            for (let i = 0; i < annotations.length; i++) {
-                const element = annotations[i]
-
-                if (element.open) {
-                    this.snackbar.show = true
-                    this.snackbar.text = `Annotation ${element.label} is still open`
-                    this.snackbar.color = '#c00000'
-                    return
+function save_item() {
+    if (!item.value) return
+    const annotations = item.value.data[annotation_field] as Polygon[] | null
+    if (annotations) {
+        for (let i = 0; i < annotations.length; i++) {
+            const el = annotations[i]
+            if (el.open) {
+                snackbar.value = {
+                    show: true,
+                    text: `Annotation ${el.label} is still open`,
+                    color: '#c00000',
                 }
-
-                // Validate if it has enough points
-                if (element.points.length < 3) {
-                    this.snackbar.show = true
-                    this.snackbar.text = `Annotation ${element.label} has not enough points`
-                    this.snackbar.color = '#c00000'
-                    return
+                return
+            }
+            if (el.points.length < 3) {
+                snackbar.value = {
+                    show: true,
+                    text: `Annotation ${el.label} has not enough points`,
+                    color: '#c00000',
                 }
+                return
             }
+        }
+    }
 
-            const route = `/images/${this.document_id}`
-            const body = {
-                [this.annotation_field]: this.item.data[this.annotation_field],
-            }
+    const body: Record<string, unknown> = {
+        [annotation_field]: item.value.data[annotation_field],
+    }
+    const current_user = store.current_user
+    if (current_user)
+        body.annotator_id = current_user._id ?? current_user.properties?._id
 
-            const { current_user } = this.$store.state
-            // WARNING: This uses a fixed field
-            if (current_user)
-                body.annotator_id =
-                    current_user._id || current_user.properties._id
+    axios
+        .patch(`/images/${document_id.value}`, body)
+        .then(() => {
+            snackbar.value = { show: true, text: 'Item saved successful', color: 'green' }
+            unmodified_item_copy.value = JSON.parse(JSON.stringify(item.value))
+        })
+        .catch((error) => {
+            console.error(error.response?.data ?? error)
+            snackbar.value = { show: true, text: 'Error, see console for details', color: '#c00000' }
+        })
+}
 
-            this.axios
-                .patch(route, body)
-                .then(() => {
-                    this.snackbar.show = true
-                    this.snackbar.text = 'Item saved successful'
-                    this.snackbar.color = 'green'
-                    this.save_item_copy()
-                })
-                .catch((error) => {
-                    this.error = true
-                    if (error.response) console.error(error.response.data)
-                    else console.error(error)
-                    this.snackbar.show = true
-                    this.snackbar.text = 'Error, see console for details'
-                    this.snackbar.color = '#c00000'
-                })
-        },
+function delete_single_annotation(index: number) {
+    if (!confirm(`Delete polygon ${index}?`)) return
+    const annotations = item.value?.data[annotation_field] as Polygon[]
+    annotations.splice(index, 1)
+    selected_annotation.value = -1
+}
 
-        toggle_annotations() {
-            this.showAnnotations = !this.showAnnotations
-        },
+function polygonCreated() {
+    const annotations = item.value?.data[annotation_field] as Polygon[]
+    if (!annotations?.length) return
+    annotations[annotations.length - 1].label = defaultLabel
+}
 
-        getImageSize() {
-            // Provide image size to editor when loaded
-            // const {width, height} = this.$refs.image
-            if (!this.$refs.image) return
-            const { naturalWidth, naturalHeight } = this.$refs.image
-            this.image.naturalWidth = naturalWidth
-            this.image.naturalHeight = naturalHeight
-        },
-
-        handle_keydown(e) {
-            // Keyboard events
-
-            // Ctrl S
-            if (e.key === 's' && e.ctrlKey) {
-                e.preventDefault()
-                this.save_annotations()
-            }
-            // Ctrl a
-            else if (e.key === 'a' && e.ctrlKey) {
-                e.preventDefault()
-                this.empty_annotations()
-            }
-            // Ctrl h
-            else if (e.key === 'h' && e.ctrlKey) {
-                e.preventDefault()
-                this.toggle_annotations()
-            }
-            // Left arrow key: previous item
-            else if (e.keyCode === 37) {
-                e.preventDefault()
-                this.get_previous_item()
-            }
-            // Right arrow key: next item
-            else if (e.keyCode === 39) {
-                e.preventDefault()
-                this.get_next_item()
-            }
-        },
-        delete_single_annotation(index) {
-            if (!confirm(`Delete polygon ${index}?`)) return
-            this.item.data[this.annotation_field].splice(index, 1)
-            this.selected_annotation = -1
-        },
-        object_equals(x, y) {
-            return JSON.stringify(x) !== JSON.stringify(y)
-        },
-        format_metadata(data) {
-            try {
-                return JSON.stringify(data, null, 2)
-            } catch (error) {
-                console.warn(error)
-                return data
-            }
-        },
-        polygonCreated() {
-            // Assign default label
-            const lastItem =
-                this.item.data[this.annotation_field][
-                    this.item.data[this.annotation_field].length - 1
-                ]
-            lastItem.label = VUE_APP_DEFAULT_LABEL
-        },
-    },
-    computed: {
-        annotation_field() {
-            return ANNOTATION_FIELD
-        },
-        document_id() {
-            return this.$route.params.document_id
-        },
-        image_src() {
-            return `${VUE_APP_STORAGE_SERVICE_API_URL}/images/${this.document_id}/image`
-        },
-        item_has_unsaved_modifications() {
-            if (!this.item) return false
-            if (!this.unmodified_item_copy) return false
-            return this.object_equals(this.item, this.unmodified_item_copy)
-        },
-        query() {
-            return this.$route.query
-        },
-        displayed_fields() {
-            if (VUE_APP_DISPLAYED_FIELDS)
-                return VUE_APP_DISPLAYED_FIELDS.split(',')
-            return Object.keys(this.item.data)
-        },
-        hidden_fields() {
-            return Object.keys(this.item.data).filter(
-                (field) => !this.displayed_fields.includes(field)
-            )
-        },
-        helper_rectangle_style() {
-            if (!VUE_APP_HELPER_RECTANGLE) return { display: 'none' }
-            const [x, y, w, h] = VUE_APP_HELPER_RECTANGLE.split(',')
-            return {
-                left: `${(100 * x) / this.image.naturalWidth}%`,
-                top: `${(100 * y) / this.image.naturalWidth}%`,
-                width: `${(100 * w) / this.image.naturalHeight}%`,
-                height: `${(100 * h) / this.image.naturalHeight}%`,
-            }
-        },
-    },
+function handle_keydown(e: KeyboardEvent) {
+    if (e.key === 's' && e.ctrlKey) {
+        e.preventDefault()
+        save_annotations()
+    } else if (e.key === 'h' && e.ctrlKey) {
+        e.preventDefault()
+        showAnnotations.value = !showAnnotations.value
+    } else if (e.keyCode === 37) {
+        e.preventDefault()
+        get_previous_item()
+    } else if (e.keyCode === 39) {
+        e.preventDefault()
+        get_next_item()
+    }
 }
 </script>
 
@@ -794,10 +560,6 @@ export default {
 
 tr {
     transition: background-color 0.25s;
-}
-
-tr.selected {
-    background-color: #c0000044;
 }
 
 .helper_rectangle {

@@ -1,88 +1,80 @@
 <template>
-    <svg ref="svg" :style="{ pointerEvents: disableEvents ? 'none' : 'auto' }">
-        <!-- Mode-specific component -->
+    <svg ref="svgEl" :style="{ pointerEvents: disableEvents ? 'none' : 'auto' }">
         <component
             :is="currentModeComponent"
             v-bind="modeProps"
-            @input="$emit('input', $event)"
+            @update:modelValue="$emit('update:modelValue', $event)"
             @polygonCreated="$emit('polygonCreated')"
-            @update:selected_polygon_index="
-                $emit('update:selected_polygon_index', $event)
-            "
+            @update:selectedPolygonIndex="$emit('update:selectedPolygonIndex', $event)"
         />
     </svg>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, provide, onMounted, onBeforeUnmount } from 'vue'
 import PolygonMode from './modes/PolygonMode.vue'
 import RectangleMode from './modes/RectangleMode.vue'
 import PolylineMode from './modes/PolylineMode.vue'
 import BrushMode from './modes/BrushMode.vue'
+import type { Polygon } from '@/composables/useBaseMode'
 
-export default {
-    name: 'PolygonEditor',
-    components: {
-        PolygonMode,
-        RectangleMode,
-        PolylineMode,
-        BrushMode,
-    },
-    props: {
-        width: { type: Number, default: 800 },
-        height: { type: Number, default: 600 },
-        mode: { type: String, default: 'polygon' },
-        selected_polygon_index: { type: Number, default: -1 },
-        value: { type: Array },
-        brushThickness: { type: Number, default: 5 },
-        disableEvents: { type: Boolean, default: false },
-    },
-    data() {
-        return {
-            svg: {
-                width: 800,
-                height: 600,
-            },
-            resizeObserver: new ResizeObserver(this.getSizeOfSvg),
-        }
-    },
-    mounted() {
-        this.resizeObserver.observe(this.$refs.svg)
-    },
-    beforeDestroy() {
-        this.resizeObserver.disconnect()
-    },
-    methods: {
-        getSizeOfSvg() {
-            if (!this.$refs.svg) return
-            this.svg.width = this.$refs.svg.clientWidth
-            this.svg.height = this.$refs.svg.clientHeight
-        },
-    },
-    computed: {
-        currentModeComponent() {
-            const modeMap = {
-                polygon: 'PolygonMode',
-                rectangle: 'RectangleMode',
-                polyline: 'PolylineMode',
-                brush: 'BrushMode',
-                eraser: 'BrushMode',
-            }
-            return modeMap[this.mode] || 'PolygonMode'
-        },
-        modeProps() {
-            return {
-                width: this.width,
-                height: this.height,
-                mode: this.mode,
-                selected_polygon_index: this.selected_polygon_index,
-                value: this.value,
-                brushThickness: this.brushThickness,
-                disableEvents: this.disableEvents,
-                svg: this.svg,
-            }
-        },
-    },
-}
+const props = defineProps<{
+    width: number
+    height: number
+    mode: string
+    selectedPolygonIndex: number
+    modelValue: Polygon[]
+    brushThickness: number
+    disableEvents: boolean
+}>()
+
+defineEmits<{
+    'update:modelValue': [value: Polygon[]]
+    'update:selectedPolygonIndex': [index: number]
+    polygonCreated: []
+}>()
+
+const svgEl = ref<SVGElement | null>(null)
+provide('svgEl', svgEl)
+
+const svgSize = ref({ width: 800, height: 600 })
+
+let resizeObserver: ResizeObserver | null = null
+
+onMounted(() => {
+    resizeObserver = new ResizeObserver(() => {
+        if (!svgEl.value) return
+        svgSize.value.width = svgEl.value.clientWidth
+        svgSize.value.height = svgEl.value.clientHeight
+    })
+    if (svgEl.value) resizeObserver.observe(svgEl.value)
+})
+
+onBeforeUnmount(() => {
+    resizeObserver?.disconnect()
+})
+
+const currentModeComponent = computed(() => {
+    const modeMap: Record<string, typeof PolygonMode> = {
+        polygon: PolygonMode,
+        rectangle: RectangleMode,
+        polyline: PolylineMode,
+        brush: BrushMode,
+        eraser: BrushMode,
+    }
+    return modeMap[props.mode] ?? PolygonMode
+})
+
+const modeProps = computed(() => ({
+    width: props.width,
+    height: props.height,
+    mode: props.mode,
+    selectedPolygonIndex: props.selectedPolygonIndex,
+    modelValue: props.modelValue,
+    brushThickness: props.brushThickness,
+    disableEvents: props.disableEvents,
+    svg: svgSize.value,
+}))
 </script>
 
 <style>
@@ -94,7 +86,6 @@ svg {
     bottom: 0;
     width: 100%;
     height: 100%;
-    /* Prevent selection */
     user-select: none;
 }
 
@@ -137,12 +128,11 @@ circle {
 .vertex {
     cursor: grab;
     fill: #c0000044;
-    r: 2.5px; /* Small by default */
+    r: 2.5px;
     stroke-width: 0;
 }
 
 .vertex.active {
-    /* i.e. point of a selected polygon */
     fill: #c00000;
     r: 5px;
 }

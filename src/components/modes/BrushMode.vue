@@ -1,30 +1,24 @@
 <template>
     <g>
-        <!-- Existing polygons -->
         <g
             v-for="(polygon, polygon_index) in polygons"
             :key="`polygon_${polygon_index}`"
             @mousedown="area_mouseDown"
         >
-            <!-- Polyline when polygon is not closed -->
             <polyline
                 v-if="polygon.open"
                 :points="polygon_svg_points(polygon.points)"
                 :class="polyline_class(polygon_index)"
             />
-            <!-- polygon when polygon is closed -->
             <polygon
                 v-else
                 :points="polygon_svg_points(polygon.points)"
                 :class="polygon_classes(polygon_index)"
             />
-            <!-- Vertices for selected polygon -->
-            <template v-if="polygon_index === selected_polygon_index">
+            <template v-if="polygon_index === selectedPolygonIndex">
                 <circle
                     class="vertex"
-                    v-for="(point, point_index) in denormalize_points(
-                        polygon.points
-                    )"
+                    v-for="(point, point_index) in denormalize_points(polygon.points)"
                     :key="`polygon_${polygon_index}_point_${point_index}`"
                     @mouseup="!disableEvents && point_mouseup()"
                     :class="point_classes(polygon_index, point_index)"
@@ -34,7 +28,6 @@
             </template>
         </g>
 
-        <!-- Brush stroke preview -->
         <path
             v-if="currentStroke.length > 0"
             :d="strokeToPath(currentStroke)"
@@ -46,7 +39,6 @@
             class="brush-preview"
         />
 
-        <!-- Brush cursor -->
         <circle
             v-if="showCursor"
             :cx="denormalize_point(mousePosition).x"
@@ -61,372 +53,292 @@
     </g>
 </template>
 
-<script>
-import BaseModeComponent from './BaseModeComponent.vue'
+<script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useBaseMode, type Polygon, type Point } from '@/composables/useBaseMode'
 import ClipperLib from 'clipper-lib'
 
-export default {
-    name: 'BrushMode',
-    extends: BaseModeComponent,
-    data() {
-        return {
-            isDrawing: false,
-            currentStroke: [],
-            showCursor: false,
-            POLYGON_SIMPLIFICATION_TOLERANCE: 1.4, // higher = fewer points, less precise
-            lastRecordedPoint: null,
-        }
-    },
-    methods: {
-        area_mouseDown(event) {
-            // Don't prevent drawing if clicking inside selected polygon
-            if (
-                event.target.classList &&
-                event.target.classList.contains('vertex')
-            ) {
-                return // Let vertex handling take precedence
-            }
+const props = defineProps<{
+    width: number
+    height: number
+    mode: string
+    selectedPolygonIndex: number
+    modelValue: Polygon[]
+    brushThickness: number
+    disableEvents: boolean
+    svg: { width: number; height: number }
+}>()
 
-            if (!this.polygons) this.polygons = []
+const emit = defineEmits<{
+    'update:modelValue': [value: Polygon[]]
+    'update:selectedPolygonIndex': [index: number]
+    polygonCreated: []
+}>()
 
-            this.isDrawing = true
-            this.currentStroke = [this.mousePosition]
-            this.lastRecordedPoint = this.mousePosition
-        },
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const base = useBaseMode(props, emit as any)
+const {
+    svgEl,
+    selected_point_index,
+    grabbed_point_index,
+    mousePosition,
+    polygons,
+    selectedPolygon,
+    denormalize_point,
+    denormalize_points,
+    getNormalizedMousePos,
+    polygon_svg_points,
+    select_polygon,
+    delete_selected_item,
+    point_mouseup,
+    polygon_classes,
+    polyline_class,
+} = base
 
-        area_mouseUp() {
-            if (!this.isDrawing) return
-            this.isDrawing = false
+const POLYGON_SIMPLIFICATION_TOLERANCE = 1.4
+const isDrawing = ref(false)
+const currentStroke = ref<Point[]>([])
+const showCursor = ref(false)
 
-            if (this.currentStroke.length > 1 || this.mode === 'eraser') {
-                const polygonPoints = this.strokeToPolygon(this.currentStroke)
-
-                if (this.mode === 'brush') {
-                    this.mergePolygonIntoExisting(polygonPoints)
-                } else if (this.mode === 'eraser') {
-                    this.subtractPolygonFromExisting(polygonPoints)
-                }
-            }
-
-            this.currentStroke = []
-        },
-
-        area_mouseMove(event) {
-            this.mousePosition = this.getNormalizedMousePos(event)
-            this.showCursor = true
-
-            if (this.isDrawing) {
-                this.currentStroke.push(this.mousePosition)
-                this.lastRecordedPoint = this.mousePosition
-            }
-        },
-
-        getDistance(point1, point2) {
-            const dx = point1.x - point2.x
-            const dy = point1.y - point2.y
-            return Math.sqrt(dx * dx + dy * dy)
-        },
-
-        strokeToPolygon(stroke) {
-            // Convert stroke points to flat array format for ClipperLib
-            const flatPoints = []
-            stroke.forEach((point) => {
-                flatPoints.push(point.x, point.y)
-            })
-
-            return this.lineToPolygon(flatPoints, this.brushThickness)
-        },
-
-        lineToPolygon(linePoints, strokeWidth) {
-            const scale = 1000
-            const path = []
-
-            for (let i = 0; i < linePoints.length; i += 2) {
-                path.push({
-                    X: linePoints[i] * scale,
-                    Y: linePoints[i + 1] * scale,
-                })
-            }
-
-            const co = new ClipperLib.ClipperOffset()
-            co.AddPath(
-                path,
-                ClipperLib.JoinType.jtRound,
-                ClipperLib.EndType.etOpenRound
-            )
-
-            const offsetPaths = []
-            co.Execute(offsetPaths, (strokeWidth / 2) * scale)
-
-            // Simplify the generated polygon to reduce points
-            const simplifiedPaths = []
-            offsetPaths.forEach((path) => {
-                const simplified = ClipperLib.JS.Lighten(
-                    path,
-                    this.POLYGON_SIMPLIFICATION_TOLERANCE * scale
-                )
-
-                simplifiedPaths.push(simplified)
-            })
-
-            const polygonPoints = []
-            simplifiedPaths.forEach((p) => {
-                p.forEach((pt) => {
-                    polygonPoints.push(pt.X / scale, pt.Y / scale)
-                })
-            })
-
-            return polygonPoints
-        },
-
-        strokeToPath(stroke) {
-            if (stroke.length === 0) return ''
-
-            const denormalizedPoints = stroke.map((point) =>
-                this.denormalize_point(point)
-            )
-            let path = `M ${denormalizedPoints[0].x} ${denormalizedPoints[0].y}`
-
-            for (let i = 1; i < denormalizedPoints.length; i++) {
-                path += ` L ${denormalizedPoints[i].x} ${denormalizedPoints[i].y}`
-            }
-
-            return path
-        },
-
-        pointsToClipperPath(points) {
-            const scale = 100
-            const path = []
-            for (let i = 0; i < points.length; i += 2) {
-                path.push({ X: points[i] * scale, Y: points[i + 1] * scale })
-            }
-            return path
-        },
-
-        clipperPathsToPoints(paths) {
-            const scale = 100
-            const result = []
-            paths.forEach((path) => {
-                path.forEach((pt) => {
-                    result.push(pt.X / scale, pt.Y / scale)
-                })
-            })
-            return result
-        },
-
-        mergePolygonIntoExisting(newPolyPoints) {
-            const newPath = this.pointsToClipperPath(newPolyPoints)
-
-            if (this.selected_polygon_index === -1) {
-                // If no polygon is selected, create a new one
-                const finalPoints = this.clipperPathsToPoints([newPath])
-                const convertedPoints = []
-                for (let i = 0; i < finalPoints.length; i += 2) {
-                    convertedPoints.push({
-                        x: finalPoints[i],
-                        y: finalPoints[i + 1],
-                    })
-                }
-
-                this.polygons.push({
-                    points: convertedPoints,
-                    open: false,
-                })
-
-                // Select the newly created polygon
-                this.select_polygon(this.polygons.length - 1)
-                return
-            }
-
-            // If there is a selected polygon, try to merge only with that one
-            const selectedPolygon = this.polygons[this.selected_polygon_index]
-            const selectedPolyPoints = []
-            selectedPolygon.points.forEach((point) => {
-                selectedPolyPoints.push(point.x, point.y)
-            })
-
-            const selectedPath = this.pointsToClipperPath(selectedPolyPoints)
-
-            // Check if the new stroke intersects with the selected polygon
-            const clipperIntersect = new ClipperLib.Clipper()
-            clipperIntersect.AddPath(
-                selectedPath,
-                ClipperLib.PolyType.ptSubject,
-                true
-            )
-            clipperIntersect.AddPath(newPath, ClipperLib.PolyType.ptClip, true)
-
-            const intersection = new ClipperLib.Paths()
-            const hasIntersection = clipperIntersect.Execute(
-                ClipperLib.ClipType.ctIntersection,
-                intersection,
-                ClipperLib.PolyFillType.pftNonZero,
-                ClipperLib.PolyFillType.pftNonZero
-            )
-
-            if (hasIntersection && intersection.length > 0) {
-                // Merge with the selected polygon
-                const clipperUnion = new ClipperLib.Clipper()
-                clipperUnion.AddPath(
-                    selectedPath,
-                    ClipperLib.PolyType.ptSubject,
-                    true
-                )
-                clipperUnion.AddPath(newPath, ClipperLib.PolyType.ptClip, true)
-
-                const union = new ClipperLib.Paths()
-                const succeeded = clipperUnion.Execute(
-                    ClipperLib.ClipType.ctUnion,
-                    union,
-                    ClipperLib.PolyFillType.pftNonZero,
-                    ClipperLib.PolyFillType.pftNonZero
-                )
-
-                if (succeeded && union.length > 0) {
-                    // Update the selected polygon with the merged result
-                    const mergedPoints = this.clipperPathsToPoints([union[0]])
-                    const convertedPoints = []
-                    for (let i = 0; i < mergedPoints.length; i += 2) {
-                        convertedPoints.push({
-                            x: mergedPoints[i],
-                            y: mergedPoints[i + 1],
-                        })
-                    }
-
-                    // Replace the selected polygon with the merged version
-                    this.$set(this.polygons, this.selected_polygon_index, {
-                        points: convertedPoints,
-                        open: false,
-                    })
-                }
-            } else {
-                // No collision with selected polygon, create a new one
-                const finalPoints = this.clipperPathsToPoints([newPath])
-                const convertedPoints = []
-                for (let i = 0; i < finalPoints.length; i += 2) {
-                    convertedPoints.push({
-                        x: finalPoints[i],
-                        y: finalPoints[i + 1],
-                    })
-                }
-
-                this.polygons.push({
-                    points: convertedPoints,
-                    open: false,
-                })
-
-                // Select the newly created polygon
-                this.select_polygon(this.polygons.length - 1)
-            }
-        },
-
-        subtractPolygonFromExisting(subtractPoints) {
-            if (this.selected_polygon_index === -1) return
-
-            // Convert subtractPoints to Clipper path
-            const subtractPath = this.pointsToClipperPath(subtractPoints)
-
-            const selected = this.polygons[this.selected_polygon_index]
-            const updatedPolygons = [...this.polygons]
-
-            // Convert selected polygon's points to Clipper path
-            const polyPoints = []
-            selected.points.forEach((point) => {
-                polyPoints.push(point.x, point.y)
-            })
-            const polyPath = this.pointsToClipperPath(polyPoints)
-
-            // Check if all subtractPoints are inside the selected polygon
-            let allInside = true
-            for (const p of subtractPath) {
-                const result = ClipperLib.Clipper.PointInPolygon(
-                    p,
-                    polyPath
-                )
-                if (result <= 0) {
-                    // 0 = on edge, -1 = outside
-                    allInside = false
-                    break
-                }
-            }
-
-            // If all points are inside, skip subtraction (Only allow polygons without holes)
-            if (allInside) {
-                return
-            }
-
-            // Perform the difference operation
-            const clipperDiff = new ClipperLib.Clipper()
-            clipperDiff.AddPath(polyPath, ClipperLib.PolyType.ptSubject, true)
-            clipperDiff.AddPath(subtractPath, ClipperLib.PolyType.ptClip, true)
-
-            const diffResult = new ClipperLib.Paths()
-            const succeeded = clipperDiff.Execute(
-                ClipperLib.ClipType.ctDifference,
-                diffResult,
-                ClipperLib.PolyFillType.pftNonZero,
-                ClipperLib.PolyFillType.pftNonZero
-            )
-
-            if (succeeded && diffResult.length > 0) {
-                const newPolygons = []
-                diffResult.forEach((path) => {
-                    const newPoints = this.clipperPathsToPoints([path])
-                    const convertedPoints = []
-                    for (let i = 0; i < newPoints.length; i += 2) {
-                        convertedPoints.push({
-                            x: newPoints[i],
-                            y: newPoints[i + 1],
-                        })
-                    }
-                    // Create a new polygon with the original properties
-                    newPolygons.push({
-                        ...selected, // Copy all properties from the original polygon
-                        points: convertedPoints, // Update points with the new ones
-                    })
-                })
-
-                // Replace the selected polygon with all new polygons
-                updatedPolygons.splice(
-                    this.selected_polygon_index,
-                    1,
-                    ...newPolygons
-                )
-
-                // Update the selected index to point to the first new polygon
-                this.select_polygon(this.selected_polygon_index)
-            } else {
-                // If the operation failed or no result, remove the selected polygon
-                updatedPolygons.splice(this.selected_polygon_index, 1)
-                this.select_polygon(-1)
-            }
-
-            this.polygons = updatedPolygons
-        },
-
-        point_mouseup() {
-            this.grabbed_point_index = -1
-        },
-
-        point_classes(polygon_index, point_index) {
-            return {
-                active: polygon_index === this.selected_polygon_index,
-                selected:
-                    polygon_index === this.selected_polygon_index &&
-                    point_index === this.selected_point_index,
-                grabbed:
-                    polygon_index === this.selected_polygon_index &&
-                    point_index === this.grabbed_point_index,
-            }
-        },
-
-        finish_editing() {
-            this.isDrawing = false
-            this.currentStroke = []
-            this.select_polygon(-1)
-        },
-    },
+function point_classes(polygon_index: number, point_index: number) {
+    return {
+        active: polygon_index === props.selectedPolygonIndex,
+        selected:
+            polygon_index === props.selectedPolygonIndex &&
+            point_index === selected_point_index.value,
+        grabbed:
+            polygon_index === props.selectedPolygonIndex &&
+            point_index === grabbed_point_index.value,
+    }
 }
+
+function area_mouseDown(event: MouseEvent) {
+    if (event.target instanceof Element && event.target.classList.contains('vertex')) return
+    if (props.disableEvents) return
+    isDrawing.value = true
+    currentStroke.value = [{ ...mousePosition.value }]
+}
+
+function area_mouseUp() {
+    if (!isDrawing.value) return
+    isDrawing.value = false
+    if (currentStroke.value.length > 1 || props.mode === 'eraser') {
+        const polygonPoints = strokeToPolygon(currentStroke.value)
+        if (props.mode === 'brush') {
+            mergePolygonIntoExisting(polygonPoints)
+        } else {
+            subtractPolygonFromExisting(polygonPoints)
+        }
+    }
+    currentStroke.value = []
+}
+
+function area_mouseMove(e: MouseEvent) {
+    mousePosition.value = getNormalizedMousePos(e)
+    showCursor.value = true
+    if (isDrawing.value) {
+        currentStroke.value.push({ ...mousePosition.value })
+    }
+}
+
+function strokeToPolygon(stroke: Point[]): number[] {
+    const flatPoints: number[] = []
+    stroke.forEach((p) => flatPoints.push(p.x, p.y))
+    return lineToPolygon(flatPoints, props.brushThickness)
+}
+
+function lineToPolygon(linePoints: number[], strokeWidth: number): number[] {
+    const scale = 1000
+    const path = []
+    for (let i = 0; i < linePoints.length; i += 2) {
+        path.push({ X: linePoints[i] * scale, Y: linePoints[i + 1] * scale })
+    }
+    const co = new ClipperLib.ClipperOffset()
+    co.AddPath(path, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etOpenRound)
+    const offsetPaths: typeof path[] = []
+    co.Execute(offsetPaths, (strokeWidth / 2) * scale)
+    const polygonPoints: number[] = []
+    offsetPaths.forEach((p) => {
+        const simplified = ClipperLib.JS.Lighten(p, POLYGON_SIMPLIFICATION_TOLERANCE * scale)
+        simplified.forEach((pt: { X: number; Y: number }) => {
+            polygonPoints.push(pt.X / scale, pt.Y / scale)
+        })
+    })
+    return polygonPoints
+}
+
+function strokeToPath(stroke: Point[]): string {
+    if (stroke.length === 0) return ''
+    const pts = stroke.map((p) => denormalize_point(p))
+    let path = `M ${pts[0].x} ${pts[0].y}`
+    for (let i = 1; i < pts.length; i++) path += ` L ${pts[i].x} ${pts[i].y}`
+    return path
+}
+
+function pointsToClipperPath(points: number[]) {
+    const scale = 100
+    const path = []
+    for (let i = 0; i < points.length; i += 2) {
+        path.push({ X: points[i] * scale, Y: points[i + 1] * scale })
+    }
+    return path
+}
+
+function clipperPathsToPoints(paths: { X: number; Y: number }[][]): number[] {
+    const scale = 100
+    const result: number[] = []
+    paths.forEach((path) => path.forEach((pt) => result.push(pt.X / scale, pt.Y / scale)))
+    return result
+}
+
+function flatToPointArray(flat: number[]): Point[] {
+    const pts: Point[] = []
+    for (let i = 0; i < flat.length; i += 2) pts.push({ x: flat[i], y: flat[i + 1] })
+    return pts
+}
+
+function mergePolygonIntoExisting(newPolyPoints: number[]) {
+    const newPath = pointsToClipperPath(newPolyPoints)
+    if (props.selectedPolygonIndex === -1) {
+        polygons.value = [
+            ...polygons.value,
+            { points: flatToPointArray(clipperPathsToPoints([newPath])), open: false },
+        ]
+        select_polygon(polygons.value.length - 1)
+        return
+    }
+    const selected = polygons.value[props.selectedPolygonIndex]
+    const selectedFlat: number[] = []
+    selected.points.forEach((p) => selectedFlat.push(p.x, p.y))
+    const selectedPath = pointsToClipperPath(selectedFlat)
+
+    const clipperIntersect = new ClipperLib.Clipper()
+    clipperIntersect.AddPath(selectedPath, ClipperLib.PolyType.ptSubject, true)
+    clipperIntersect.AddPath(newPath, ClipperLib.PolyType.ptClip, true)
+    const intersection = new ClipperLib.Paths()
+    const hasIntersection = clipperIntersect.Execute(
+        ClipperLib.ClipType.ctIntersection,
+        intersection,
+        ClipperLib.PolyFillType.pftNonZero,
+        ClipperLib.PolyFillType.pftNonZero
+    )
+
+    if (hasIntersection && intersection.length > 0) {
+        const clipperUnion = new ClipperLib.Clipper()
+        clipperUnion.AddPath(selectedPath, ClipperLib.PolyType.ptSubject, true)
+        clipperUnion.AddPath(newPath, ClipperLib.PolyType.ptClip, true)
+        const union = new ClipperLib.Paths()
+        const succeeded = clipperUnion.Execute(
+            ClipperLib.ClipType.ctUnion,
+            union,
+            ClipperLib.PolyFillType.pftNonZero,
+            ClipperLib.PolyFillType.pftNonZero
+        )
+        if (succeeded && union.length > 0) {
+            const newPolygons = [...polygons.value]
+            newPolygons[props.selectedPolygonIndex] = {
+                points: flatToPointArray(clipperPathsToPoints([union[0]])),
+                open: false,
+            }
+            polygons.value = newPolygons
+        }
+    } else {
+        polygons.value = [
+            ...polygons.value,
+            { points: flatToPointArray(clipperPathsToPoints([newPath])), open: false },
+        ]
+        select_polygon(polygons.value.length - 1)
+    }
+}
+
+function subtractPolygonFromExisting(subtractPoints: number[]) {
+    if (props.selectedPolygonIndex === -1) return
+    const subtractPath = pointsToClipperPath(subtractPoints)
+    const selected = polygons.value[props.selectedPolygonIndex]
+    const polyFlat: number[] = []
+    selected.points.forEach((p) => polyFlat.push(p.x, p.y))
+    const polyPath = pointsToClipperPath(polyFlat)
+
+    let allInside = true
+    for (const p of subtractPath) {
+        if (ClipperLib.Clipper.PointInPolygon(p, polyPath) <= 0) {
+            allInside = false
+            break
+        }
+    }
+    if (allInside) return
+
+    const clipperDiff = new ClipperLib.Clipper()
+    clipperDiff.AddPath(polyPath, ClipperLib.PolyType.ptSubject, true)
+    clipperDiff.AddPath(subtractPath, ClipperLib.PolyType.ptClip, true)
+    const diffResult = new ClipperLib.Paths()
+    const succeeded = clipperDiff.Execute(
+        ClipperLib.ClipType.ctDifference,
+        diffResult,
+        ClipperLib.PolyFillType.pftNonZero,
+        ClipperLib.PolyFillType.pftNonZero
+    )
+
+    const updatedPolygons = [...polygons.value]
+    if (succeeded && diffResult.length > 0) {
+        const newPolygons = diffResult.map((path: { X: number; Y: number }[]) => ({
+            ...selected,
+            points: flatToPointArray(clipperPathsToPoints([path])),
+        }))
+        updatedPolygons.splice(props.selectedPolygonIndex, 1, ...newPolygons)
+        select_polygon(props.selectedPolygonIndex)
+    } else {
+        updatedPolygons.splice(props.selectedPolygonIndex, 1)
+        select_polygon(-1)
+    }
+    polygons.value = updatedPolygons
+}
+
+function finish_editing() {
+    isDrawing.value = false
+    currentStroke.value = []
+    select_polygon(-1)
+}
+
+function onSvgMouseDown(e: MouseEvent) {
+    if (props.disableEvents) return
+    area_mouseDown(e)
+}
+
+function onSvgMouseUp() {
+    if (props.disableEvents) return
+    area_mouseUp()
+}
+
+function onSvgMouseMove(e: MouseEvent) {
+    if (props.disableEvents) return
+    area_mouseMove(e)
+}
+
+function handle_keydown(e: KeyboardEvent) {
+    if (props.disableEvents) return
+    if (e.keyCode === 46) {
+        e.preventDefault()
+        delete_selected_item()
+    } else if (e.keyCode === 13 || e.keyCode === 27) {
+        e.preventDefault()
+        finish_editing()
+    }
+}
+
+onMounted(() => {
+    document.addEventListener('keydown', handle_keydown)
+    svgEl.value?.addEventListener('mousedown', onSvgMouseDown)
+    svgEl.value?.addEventListener('mouseup', onSvgMouseUp)
+    svgEl.value?.addEventListener('mousemove', onSvgMouseMove)
+})
+
+onBeforeUnmount(() => {
+    document.removeEventListener('keydown', handle_keydown)
+    svgEl.value?.removeEventListener('mousedown', onSvgMouseDown)
+    svgEl.value?.removeEventListener('mouseup', onSvgMouseUp)
+    svgEl.value?.removeEventListener('mousemove', onSvgMouseMove)
+})
 </script>
 
 <style scoped>
@@ -434,7 +346,6 @@ export default {
     opacity: 0.8;
     pointer-events: none;
 }
-
 .brush-cursor {
     pointer-events: none;
     opacity: 0.5;

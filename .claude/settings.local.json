@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E '\\\\.js$|\\\\.eslintrc')",
+      "Bash(npm install *)",
+      "Bash(npx vite *)",
+      "Bash(grep -v \"DEPRECATION WARNING\\\\|More info\\\\|more info\\\\|↵\\\\|^\\\\s*$\\\\|^\\\\s*[|╷╵]\")",
+      "Bash(npm show *)",
+      "Bash(npm uninstall *)",
+      "Bash(npx vue-tsc *)"
+    ]
+  }
+}
