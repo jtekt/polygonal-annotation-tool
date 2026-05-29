@@ -11,16 +11,27 @@
                 <v-btn v-if="polylineEnabled" :value="2" icon>
                     <v-icon>mdi-vector-polyline</v-icon>
                 </v-btn>
-                <v-btn v-if="brushEnabled" :value="polylineEnabled ? 3 : 2" icon>
+                <v-btn
+                    v-if="brushEnabled"
+                    :value="polylineEnabled ? 3 : 2"
+                    icon
+                >
                     <v-icon>mdi-brush</v-icon>
                 </v-btn>
-                <v-btn v-if="brushEnabled" :value="polylineEnabled ? 4 : 3" icon>
+                <v-btn
+                    v-if="brushEnabled"
+                    :value="polylineEnabled ? 4 : 3"
+                    icon
+                >
                     <v-icon>mdi-eraser</v-icon>
                 </v-btn>
             </v-btn-toggle>
 
             <v-slider
-                v-if="mode_lookup[mode_index] === 'brush' || mode_lookup[mode_index] === 'eraser'"
+                v-if="
+                    mode_lookup[mode_index] === 'brush' ||
+                    mode_lookup[mode_index] === 'eraser'
+                "
                 class="mt-6"
                 v-model="brushThickness"
                 step="1"
@@ -46,7 +57,11 @@
 
             <v-tooltip location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-btn icon v-bind="props" @click="showAnnotations = !showAnnotations">
+                    <v-btn
+                        icon
+                        v-bind="props"
+                        @click="showAnnotations = !showAnnotations"
+                    >
                         <v-icon v-if="showAnnotations">mdi-eye</v-icon>
                         <v-icon v-else>mdi-eye-off</v-icon>
                     </v-btn>
@@ -59,7 +74,12 @@
 
             <v-tooltip location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-btn color="#c00000" icon v-bind="props" @click="unannotate">
+                    <v-btn
+                        color="#c00000"
+                        icon
+                        v-bind="props"
+                        @click="unannotate"
+                    >
                         <v-icon>mdi-tag-off</v-icon>
                     </v-btn>
                 </template>
@@ -68,7 +88,12 @@
 
             <v-tooltip location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-btn color="green" icon v-bind="props" @click="save_annotations">
+                    <v-btn
+                        color="green"
+                        icon
+                        v-bind="props"
+                        @click="save_annotations"
+                    >
                         <v-icon>mdi-tag-check</v-icon>
                     </v-btn>
                 </template>
@@ -108,7 +133,11 @@
 
             <v-tooltip location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-btn icon v-bind="props" @click="fullscreen = !fullscreen">
+                    <v-btn
+                        icon
+                        v-bind="props"
+                        @click="fullscreen = !fullscreen"
+                    >
                         <v-icon v-if="fullscreen">mdi-fullscreen-exit</v-icon>
                         <v-icon v-else>mdi-fullscreen</v-icon>
                     </v-btn>
@@ -128,7 +157,9 @@
         </v-row>
 
         <v-row v-else-if="!item" justify="center">
-            <v-col class="mt-10" cols="auto" style="color: #c00000">Image not found</v-col>
+            <v-col class="mt-10" cols="auto" style="color: #c00000"
+                >Image not found</v-col
+            >
         </v-row>
 
         <v-row v-else class="mt-2">
@@ -140,14 +171,21 @@
                         :src="image_src"
                         crossorigin="anonymous"
                         @load="getImageSize"
-                        :style="{ filter: grayscale ? 'grayscale(100%)' : 'none' }"
+                        :style="{
+                            filter: grayscale ? 'grayscale(100%)' : 'none',
+                        }"
                     />
-                    <div class="helper_rectangle" :style="helper_rectangle_style" />
+                    <div
+                        class="helper_rectangle"
+                        :style="helper_rectangle_style"
+                    />
                     <PolygonEditor
                         v-show="showAnnotations"
                         @polygonCreated="polygonCreated"
-                        :modelValue="(item.data[annotation_field] as Polygon[])"
-                        @update:modelValue="item!.data[annotation_field] = $event"
+                        :modelValue="item.data[annotation_field] as Polygon[]"
+                        @update:modelValue="
+                            item!.data[annotation_field] = $event
+                        "
                         :width="imageSize.naturalWidth"
                         :height="imageSize.naturalHeight"
                         :mode="mode_lookup[mode_index]"
@@ -171,42 +209,63 @@
                                     style="color: #c00000"
                                     v-if="!item.data[annotation_field]"
                                 >
-                                    <v-icon left color="#c00000">mdi-tag-off</v-icon>
+                                    <v-icon left color="#c00000"
+                                        >mdi-tag-off</v-icon
+                                    >
                                     <span>{{ $t('Not annotated yet') }}</span>
                                 </div>
 
                                 <v-data-table
-                                    v-else-if="Array.isArray(item.data[annotation_field])"
+                                    v-else-if="
+                                        Array.isArray(
+                                            item.data[annotation_field]
+                                        )
+                                    "
                                     hide-default-footer
                                     :items-per-page="-1"
                                     :loading="loading"
-                                    :items="(item.data[annotation_field] as Polygon[])"
+                                    :items="
+                                        item.data[annotation_field] as Polygon[]
+                                    "
                                     :headers="annotationHeaders"
                                     disable-sort
                                 >
-                                    <template v-slot:item="{ item: ann, index }">
+                                    <template
+                                        v-slot:item="{ item: ann, index }"
+                                    >
                                         <tr
                                             :style="{
                                                 'background-color':
-                                                    selected_annotation === index
+                                                    selected_annotation ===
+                                                    index
                                                         ? '#c0000044'
                                                         : '',
                                                 cursor: 'pointer',
                                             }"
                                             @click="
                                                 selected_annotation =
-                                                    selected_annotation === index ? -1 : index
+                                                    selected_annotation ===
+                                                    index
+                                                        ? -1
+                                                        : index
                                             "
                                         >
                                             <td>
                                                 <v-combobox
                                                     v-model="ann.label"
                                                     :items="labels"
+                                                    hide-details
+                                                    variant="outlined"
+                                                    density="compact"
                                                 />
                                             </td>
                                             <td>
                                                 <v-icon
-                                                    @click.stop="delete_single_annotation(index)"
+                                                    @click.stop="
+                                                        delete_single_annotation(
+                                                            index
+                                                        )
+                                                    "
                                                 >
                                                     mdi-delete
                                                 </v-icon>
@@ -220,29 +279,44 @@
 
                     <v-col>
                         <v-card>
-                            <v-card-title>{{ $t('Image metadata') }}</v-card-title>
+                            <v-card-title>{{
+                                $t('Image metadata')
+                            }}</v-card-title>
                             <v-list>
                                 <v-list-item lines="two">
-                                    <v-list-item-subtitle>{{ $t('File') }}</v-list-item-subtitle>
-                                    <v-list-item-title>{{ item.file }}</v-list-item-title>
+                                    <v-list-item-subtitle>{{
+                                        $t('File')
+                                    }}</v-list-item-subtitle>
+                                    <v-list-item-title>{{
+                                        item.file
+                                    }}</v-list-item-title>
                                 </v-list-item>
                                 <v-list-item lines="two">
-                                    <v-list-item-subtitle>{{ $t('Time') }}</v-list-item-subtitle>
-                                    <v-list-item-title>{{ item.time }}</v-list-item-title>
+                                    <v-list-item-subtitle>{{
+                                        $t('Time')
+                                    }}</v-list-item-subtitle>
+                                    <v-list-item-title>{{
+                                        item.time
+                                    }}</v-list-item-title>
                                 </v-list-item>
                                 <v-list-item
                                     v-for="(key, index) of displayed_fields"
                                     :key="index"
                                     lines="two"
                                 >
-                                    <v-list-item-subtitle>{{ key }}</v-list-item-subtitle>
+                                    <v-list-item-subtitle>{{
+                                        key
+                                    }}</v-list-item-subtitle>
                                     <v-list-item-title>
                                         <pre>{{ item.data[key] }}</pre>
                                     </v-list-item-title>
                                 </v-list-item>
                             </v-list>
 
-                            <v-expansion-panels v-if="hidden_fields.length" variant="accordion">
+                            <v-expansion-panels
+                                v-if="hidden_fields.length"
+                                variant="accordion"
+                            >
                                 <v-expansion-panel>
                                     <v-expansion-panel-title>
                                         <v-icon>mdi-dots-horizontal</v-icon>
@@ -251,13 +325,19 @@
                                     <v-expansion-panel-text>
                                         <v-list>
                                             <v-list-item
-                                                v-for="(key, index) of hidden_fields"
+                                                v-for="(
+                                                    key, index
+                                                ) of hidden_fields"
                                                 :key="index"
                                                 lines="two"
                                             >
-                                                <v-list-item-subtitle>{{ key }}</v-list-item-subtitle>
+                                                <v-list-item-subtitle>{{
+                                                    key
+                                                }}</v-list-item-subtitle>
                                                 <v-list-item-title>
-                                                    <pre>{{ item.data[key] }}</pre>
+                                                    <pre>{{
+                                                        item.data[key]
+                                                    }}</pre>
                                                 </v-list-item-title>
                                             </v-list-item>
                                         </v-list>
@@ -273,7 +353,9 @@
         <v-snackbar :color="snackbar.color" v-model="snackbar.show">
             {{ snackbar.text }}
             <template v-slot:actions>
-                <v-btn variant="text" @click="snackbar.show = false">Close</v-btn>
+                <v-btn variant="text" @click="snackbar.show = false"
+                    >Close</v-btn
+                >
             </template>
         </v-snackbar>
     </div>
@@ -328,7 +410,10 @@ const labels = (import.meta.env.VITE_LABELS || '').split(',')
 const mode_lookup = computed(() => {
     const modes = ['polygon', 'rectangle']
     if (polylineEnabled) modes.push('polyline')
-    if (brushEnabled) { modes.push('brush'); modes.push('eraser') }
+    if (brushEnabled) {
+        modes.push('brush')
+        modes.push('eraser')
+    }
     return modes
 })
 
@@ -360,7 +445,10 @@ const hidden_fields = computed(() => {
 
 const item_has_unsaved_modifications = computed(() => {
     if (!item.value || !unmodified_item_copy.value) return false
-    return JSON.stringify(item.value) !== JSON.stringify(unmodified_item_copy.value)
+    return (
+        JSON.stringify(item.value) !==
+        JSON.stringify(unmodified_item_copy.value)
+    )
 })
 
 const helper_rectangle_style = computed(() => {
@@ -407,7 +495,10 @@ function get_items_with_options(
     options: { params: Record<string, unknown> },
     nextQuery?: Record<string, unknown>
 ) {
-    if (item_has_unsaved_modifications.value && !confirm('Item has modifications, discard?'))
+    if (
+        item_has_unsaved_modifications.value &&
+        !confirm('Item has modifications, discard?')
+    )
         return
     if (loading.value) return
 
@@ -416,7 +507,11 @@ function get_items_with_options(
         .get('/images', options)
         .then(({ data: { items } }) => {
             if (!items.length) {
-                snackbar.value = { show: true, text: 'No more items', color: 'orange' }
+                snackbar.value = {
+                    show: true,
+                    text: 'No more items',
+                    color: 'orange',
+                }
                 return
             }
             const next = items[0]
@@ -424,7 +519,10 @@ function get_items_with_options(
                 router.push({
                     name: 'annotate',
                     params: { document_id: next._id },
-                    query: { ...route.query, ...(nextQuery ?? {}) } as Record<string, string>,
+                    query: { ...route.query, ...(nextQuery ?? {}) } as Record<
+                        string,
+                        string
+                    >,
                 })
             }
         })
@@ -451,7 +549,11 @@ function get_previous_item() {
     const { sort = 'time', order = 1, ...rest } = query.value
     const currentCursor = Number(route.query.cursor ?? 0)
     if (currentCursor === 0) {
-        snackbar.value = { show: true, text: 'No previous items', color: 'orange' }
+        snackbar.value = {
+            show: true,
+            text: 'No previous items',
+            color: 'orange',
+        }
         return
     }
     const cursor = Math.max(0, currentCursor - 1)
@@ -470,7 +572,8 @@ function unannotate() {
 function save_annotations() {
     if (!item.value) return
     if (!item.value.data) item.value.data = {}
-    if (!item.value.data[annotation_field]) item.value.data[annotation_field] = []
+    if (!item.value.data[annotation_field])
+        item.value.data[annotation_field] = []
     save_item()
 }
 
@@ -509,12 +612,20 @@ function save_item() {
     axios
         .patch(`/images/${document_id.value}`, body)
         .then(() => {
-            snackbar.value = { show: true, text: 'Item saved successful', color: 'green' }
+            snackbar.value = {
+                show: true,
+                text: 'Item saved successful',
+                color: 'green',
+            }
             unmodified_item_copy.value = JSON.parse(JSON.stringify(item.value))
         })
         .catch((error) => {
             console.error(error.response?.data ?? error)
-            snackbar.value = { show: true, text: 'Error, see console for details', color: '#c00000' }
+            snackbar.value = {
+                show: true,
+                text: 'Error, see console for details',
+                color: '#c00000',
+            }
         })
 }
 
