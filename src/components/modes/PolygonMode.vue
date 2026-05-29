@@ -90,12 +90,17 @@ function area_mouseMove(e: MouseEvent) {
 }
 
 function area_mouseDown() {
-    if (!polygons.value) polygons.value = []
-    let polygon = polygons.value[props.selectedPolygonIndex]
-    if (!polygon || !polygon.open) {
-        polygon = create_polygon()
+    const currentPolygon = polygons.value[props.selectedPolygonIndex]
+    if (!currentPolygon || !currentPolygon.open) {
+        // Include first point at creation — avoids stale-props mutation issue
+        create_polygon([{ ...mousePosition.value }])
+    } else {
+        // Add point to existing open polygon via immutable update through the setter
+        const idx = props.selectedPolygonIndex
+        polygons.value = polygons.value.map((p, i) =>
+            i === idx ? { ...p, points: [...p.points, { ...mousePosition.value }] } : p
+        )
     }
-    polygon.points.push({ ...mousePosition.value })
 }
 
 function close_polygon() {

@@ -81,25 +81,24 @@ const {
 
 const rectanglePending = ref(false)
 
-function create_rectangle(): Polygon {
-    const new_polygon: Polygon = { points: [], open: false }
-    polygons.value = [...polygons.value, new_polygon]
-    emit('polygonCreated')
-    select_polygon(polygons.value.length - 1)
-    selected_point_index.value = -1
-    return polygons.value[polygons.value.length - 1]
-}
-
 function area_mouseDown() {
     rectanglePending.value = true
-    const rect = create_rectangle()
+    const { x, y } = mousePosition.value
     const m = 10
-    rect.points.push(
-        { ...mousePosition.value },
-        { x: mousePosition.value.x, y: mousePosition.value.y + m },
-        { x: mousePosition.value.x + m, y: mousePosition.value.y + m },
-        { x: mousePosition.value.x + m, y: mousePosition.value.y }
-    )
+    const new_polygon: Polygon = {
+        points: [
+            { x, y },
+            { x, y: y + m },
+            { x: x + m, y: y + m },
+            { x: x + m, y },
+        ],
+        open: false,
+    }
+    const newPolygons = [...polygons.value, new_polygon]
+    polygons.value = newPolygons
+    emit('polygonCreated')
+    select_polygon(newPolygons.length - 1)
+    selected_point_index.value = -1
 }
 
 function area_mouseUp() {

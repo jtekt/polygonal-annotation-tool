@@ -41,7 +41,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount } from 'vue'
-import { useBaseMode, type Polygon } from '@/composables/useBaseMode'
+import { useBaseMode, type Polygon, type Point } from '@/composables/useBaseMode'
 import { midpoint } from '@/vectorUtils'
 
 const props = defineProps<{
@@ -80,19 +80,26 @@ const {
     polyline_class,
 } = base
 
-function create_polyline(): Polygon {
-    const new_polygon: Polygon = { points: [], open: true }
-    polygons.value = [...polygons.value, new_polygon]
+function create_polyline(initialPoints: Point[] = []): Polygon {
+    const new_polygon: Polygon = { points: initialPoints, open: true }
+    const newPolygons = [...polygons.value, new_polygon]
+    polygons.value = newPolygons
     emit('polygonCreated')
-    select_polygon(polygons.value.length - 1)
+    select_polygon(newPolygons.length - 1)
     selected_point_index.value = -1
-    return polygons.value[polygons.value.length - 1]
+    return new_polygon
 }
 
 function area_mouseDown() {
-    let polygon = polygons.value[props.selectedPolygonIndex]
-    if (!polygon || !polygon.open) polygon = create_polyline()
-    polygon.points.push({ ...mousePosition.value })
+    const currentPolygon = polygons.value[props.selectedPolygonIndex]
+    if (!currentPolygon || !currentPolygon.open) {
+        create_polyline([{ ...mousePosition.value }])
+    } else {
+        const idx = props.selectedPolygonIndex
+        polygons.value = polygons.value.map((p, i) =>
+            i === idx ? { ...p, points: [...p.points, { ...mousePosition.value }] } : p
+        )
+    }
 }
 
 function area_mouseMove(e: MouseEvent) {

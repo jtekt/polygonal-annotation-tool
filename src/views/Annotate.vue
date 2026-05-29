@@ -176,7 +176,7 @@
                                 </div>
 
                                 <v-data-table
-                                    v-else
+                                    v-else-if="Array.isArray(item.data[annotation_field])"
                                     hide-default-footer
                                     :items-per-page="-1"
                                     :loading="loading"
