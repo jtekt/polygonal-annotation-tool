@@ -182,9 +182,7 @@
                     <PolygonEditor
                         v-show="showAnnotations"
                         @polygonCreated="polygonCreated"
-                        :modelValue="
-                            (item.data[annotation_field] as Polygon[]) || []
-                        "
+                        :modelValue="item.data[annotation_field] as Polygon[]"
                         @update:modelValue="
                             item!.data[annotation_field] = $event
                         "
@@ -234,9 +232,7 @@
                                     :items-per-page="-1"
                                     :loading="loading"
                                     :items="
-                                        (item.data[
-                                            annotation_field
-                                        ] as Polygon[]) || []
+                                        item.data[annotation_field] as Polygon[]
                                     "
                                     :headers="annotationHeaders"
                                     disable-sort
