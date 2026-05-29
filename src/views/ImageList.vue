@@ -57,15 +57,18 @@
                 </template>
 
                 <template v-slot:item.annotation="{ item }">
-                    <!-- An item can either has not annotation field or an empty annotation array -->
-
                     <v-icon
-                        v-if="!item.data || !item.data[annotation_field]"
+                        v-if="
+                            item.data[annotation_field] === null ||
+                            item.data[annotation_field] === undefined
+                        "
                         color="#c00000"
-                        >mdi-tag-off</v-icon
                     >
+                        mdi-tag-off
+                    </v-icon>
                     <v-icon
                         v-else-if="
+                            !Array.isArray(item.data[annotation_field]) ||
                             !(item.data[annotation_field] as Polygon[]).length
                         "
                         color="green"
@@ -192,8 +195,8 @@ function get_items() {
     axios
         .get('/images', { params })
         .then(({ data: { total, items: newItems } }) => {
-            items.value = newItems
-            item_count.value = total
+            items.value = Array.isArray(newItems) ? newItems : []
+            item_count.value = total ?? 0
         })
         .catch(console.error)
         .finally(() => {
@@ -216,6 +219,7 @@ function format_date(item: AnnotationItem) {
 }
 
 function annotation_summary(annotation: Polygon[]) {
+    if (!Array.isArray(annotation)) return []
     return annotation.reduce<
         Array<{ label: string | undefined; count: number }>
     >((acc, item) => {

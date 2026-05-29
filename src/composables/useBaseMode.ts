@@ -38,7 +38,10 @@ export function useBaseMode(props: BaseModeProps, emit: EmitFn) {
     const mousePosition = ref<Point>({ x: 0, y: 0 })
 
     const polygons = computed({
-        get: (): Polygon[] => props.modelValue ?? [],
+        get: (): Polygon[] =>
+            (Array.isArray(props.modelValue) ? props.modelValue : []).map((p) =>
+                Array.isArray(p?.points) ? p : { ...p, points: [] }
+            ),
         set: (value: Polygon[]) => emit('update:modelValue', value),
     })
 
@@ -54,7 +57,8 @@ export function useBaseMode(props: BaseModeProps, emit: EmitFn) {
         }
     }
 
-    function denormalize_points(points: Point[]): Point[] {
+    function denormalize_points(points: Point[] | undefined): Point[] {
+        if (!Array.isArray(points)) return []
         return points.map(denormalize_point)
     }
 
@@ -70,7 +74,7 @@ export function useBaseMode(props: BaseModeProps, emit: EmitFn) {
         return normalize_point({ x, y })
     }
 
-    function polygon_svg_points(points: Point[]): string {
+    function polygon_svg_points(points: Point[] | undefined): string {
         return denormalize_points(points).reduce(
             (output, point) => `${output} ${point.x},${point.y}`,
             ''
@@ -81,16 +85,18 @@ export function useBaseMode(props: BaseModeProps, emit: EmitFn) {
         emit('update:selectedPolygonIndex', index)
     }
 
-    function create_polygon(): Polygon {
+    function create_polygon(initialPoints: Point[] = []): Polygon {
         const new_polygon: Polygon = {
-            points: [],
+            points: initialPoints,
             open: props.mode === 'polygon' || props.mode === 'polyline',
         }
-        polygons.value = [...polygons.value, new_polygon]
+        const newPolygons = [...polygons.value, new_polygon]
+        polygons.value = newPolygons
         emit('polygonCreated')
-        select_polygon(polygons.value.length - 1)
+        // Use newPolygons.length — polygons.value is stale until parent re-renders
+        select_polygon(newPolygons.length - 1)
         selected_point_index.value = -1
-        return polygons.value[polygons.value.length - 1]
+        return new_polygon
     }
 
     function delete_selected_item() {
