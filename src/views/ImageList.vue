@@ -62,7 +62,7 @@
                 <template v-slot:item.annotation="{ item }">
                     <!-- An item can either has not annotation field or an empty annotation array -->
 
-                    <v-icon v-if="!item.data[annotation_field]" color="#c00000"
+                    <v-icon v-if="!item.data || !item.data[annotation_field]" color="#c00000"
                         >mdi-tag-off</v-icon
                     >
                     <v-icon
