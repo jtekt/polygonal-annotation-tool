@@ -1,17 +1,14 @@
-FROM node:16 as build-stage
+FROM node:24 AS build-stage
 WORKDIR /app
 COPY package*.json ./
-
-RUN npm install
-COPY ./ .
+RUN npm ci
+COPY . .
 RUN npm run build
 
-FROM nginx as production-stage
-RUN mkdir /app
-COPY --from=build-stage /app/dist /app
-COPY nginx.conf /etc/nginx/nginx.conf
+FROM nginx AS production-stage
+COPY --from=build-stage /app/dist /usr/share/nginx/html
+COPY default.conf /etc/nginx/conf.d/default.conf
 
-# Loading environment variables atg runtime
-COPY ./entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+# Generates /usr/share/nginx/html/env.js from VITE_* env vars before nginx starts
+COPY ./40-env-config.sh /docker-entrypoint.d/40-env-config.sh
+RUN chmod +x /docker-entrypoint.d/40-env-config.sh

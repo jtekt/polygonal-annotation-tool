@@ -19,6 +19,7 @@
 import { ref, onMounted } from 'vue'
 import axios from '@/axios'
 import pjson from '../../package.json'
+import runtimeEnv from '@/runtimeEnv'
 
 interface Service {
     name: string
@@ -26,9 +27,9 @@ interface Service {
     version: string | null
 }
 
-const labels = import.meta.env.VITE_LABELS
-const annotation_field = import.meta.env.VITE_ANNOTATION_FIELD
-const storageApiUrl = import.meta.env.VITE_STORAGE_SERVICE_API_URL
+const labels = runtimeEnv.VITE_LABELS
+const annotation_field = runtimeEnv.VITE_ANNOTATION_FIELD
+const storageApiUrl = runtimeEnv.VITE_STORAGE_SERVICE_API_URL
 
 const headers = [
     { title: 'Service', key: 'name' },

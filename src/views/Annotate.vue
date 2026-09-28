@@ -371,13 +371,14 @@ import { ANNOTATION_FIELD } from '@/config'
 import { useAppStore } from '@/store'
 import axios from '@/axios'
 import type { Polygon } from '@/composables/useBaseMode'
+import runtimeEnv from '@/runtimeEnv'
 
-const storageApiUrl = import.meta.env.VITE_STORAGE_SERVICE_API_URL
-const displayedFieldsEnv = import.meta.env.VITE_DISPLAYED_FIELDS
-const helperRectangle = import.meta.env.VITE_HELPER_RECTANGLE
-const defaultLabel = import.meta.env.VITE_DEFAULT_LABEL
-const polylineEnabled = !!import.meta.env.VITE_ENABLE_POLYLINE
-const brushEnabled = !!import.meta.env.VITE_ENABLE_BRUSH
+const storageApiUrl = runtimeEnv.VITE_STORAGE_SERVICE_API_URL
+const displayedFieldsEnv = runtimeEnv.VITE_DISPLAYED_FIELDS
+const helperRectangle = runtimeEnv.VITE_HELPER_RECTANGLE
+const defaultLabel = runtimeEnv.VITE_DEFAULT_LABEL
+const polylineEnabled = !!runtimeEnv.VITE_ENABLE_POLYLINE
+const brushEnabled = !!runtimeEnv.VITE_ENABLE_BRUSH
 
 interface AnnotationItem {
     _id: string
@@ -405,7 +406,7 @@ const imageSize = ref({ naturalWidth: 800, naturalHeight: 600 })
 const mode_index = ref(0)
 const snackbar = ref({ show: false, text: '', color: 'green' })
 
-const labels = (import.meta.env.VITE_LABELS || '').split(',')
+const labels = (runtimeEnv.VITE_LABELS || '').split(',')
 
 const mode_lookup = computed(() => {
     const modes = ['polygon', 'rectangle']

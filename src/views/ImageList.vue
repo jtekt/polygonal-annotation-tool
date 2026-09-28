@@ -114,8 +114,10 @@ import { ANNOTATION_FIELD } from '@/config'
 import axios from '@/axios'
 import type { Polygon } from '@/composables/useBaseMode'
 
-const storageApiUrl = import.meta.env.VITE_STORAGE_SERVICE_API_URL
-const displayedFieldsEnv = import.meta.env.VITE_DISPLAYED_FIELDS
+import runtimeEnv from '@/runtimeEnv'
+
+const storageApiUrl = runtimeEnv.VITE_STORAGE_SERVICE_API_URL
+const displayedFieldsEnv = runtimeEnv.VITE_DISPLAYED_FIELDS
 
 interface AnnotationItem {
     _id: string
