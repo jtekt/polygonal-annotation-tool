@@ -18,7 +18,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import axios from '@/axios'
-import pjson from '../../package.json'
 import runtimeEnv from '@/runtimeEnv'
 
 interface Service {
@@ -30,6 +29,7 @@ interface Service {
 const labels = runtimeEnv.VITE_LABELS
 const annotation_field = runtimeEnv.VITE_ANNOTATION_FIELD
 const storageApiUrl = runtimeEnv.VITE_STORAGE_SERVICE_API_URL
+const appVersion = runtimeEnv.VITE_APP_VERSION
 
 const headers = [
     { title: 'Service', key: 'name' },
@@ -38,7 +38,11 @@ const headers = [
 ]
 
 const services = ref<Service[]>([
-    { name: 'Annotation tool', url: window.location.origin, version: pjson.version },
+    {
+        name: 'Annotation tool',
+        url: window.location.origin,
+        version: appVersion,
+    },
     { name: 'Image storage API', url: storageApiUrl, version: null },
 ])
 

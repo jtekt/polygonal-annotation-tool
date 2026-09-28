@@ -1,8 +1,12 @@
-FROM node:24 AS build-stage
+FROM node:24 as build-stage
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
-COPY . .
+RUN npm install
+COPY ./ .
+
+ARG APP_VERSION=dev
+ENV VITE_APP_VERSION=$APP_VERSION
+
 RUN npm run build
 
 FROM nginx AS production-stage
