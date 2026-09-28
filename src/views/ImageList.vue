@@ -1,13 +1,15 @@
 <template>
     <v-card>
-        <v-toolbar flat>
-            <v-toolbar-title>Images</v-toolbar-title>
-            <v-spacer />
+        <template #title> Images </template>
+
+        <template #append>
             <v-menu :close-on-content-click="true">
                 <template v-slot:activator="{ props: menuProps }">
-                    <v-btn icon v-bind="menuProps">
-                        <v-icon>mdi-dots-vertical</v-icon>
-                    </v-btn>
+                    <v-btn
+                        icon="mdi-dots-vertical"
+                        v-bind="menuProps"
+                        variant="text"
+                    />
                 </template>
                 <v-list>
                     <v-list-item
@@ -19,11 +21,14 @@
                     />
                 </v-list>
             </v-menu>
-        </v-toolbar>
-        <v-divider />
+        </template>
         <v-card-text>
             <v-container fluid>
-                <QuerySettings :fields="displayed_fields" />
+                <QueryFilter
+                    v-model="query"
+                    :fields="displayed_fields"
+                    :loading="loading"
+                />
             </v-container>
 
             <v-data-table-server
@@ -44,7 +49,12 @@
                 @click:row="handleQueryItemClick"
             >
                 <template v-slot:item.file="{ item }">
-                    <v-img height="5em" width="5em" contain :src="image_src(item)" />
+                    <v-img
+                        height="5em"
+                        width="5em"
+                        contain
+                        :src="image_src(item)"
+                    />
                 </template>
 
                 <template v-slot:item.time="{ item }">
@@ -52,11 +62,17 @@
                 </template>
 
                 <template v-slot:item.annotation="{ item }">
-                    <v-icon v-if="item.data[annotation_field] === null || item.data[annotation_field] === undefined" color="#c00000">
+                    <v-icon
+                        v-if="!item.data || !item.data[annotation_field]"
+                        color="#c00000"
+                    >
                         mdi-tag-off
                     </v-icon>
                     <v-icon
-                        v-else-if="!Array.isArray(item.data[annotation_field]) || !(item.data[annotation_field] as Polygon[]).length"
+                        v-else-if="
+                            !Array.isArray(item.data[annotation_field]) ||
+                            !(item.data[annotation_field] as Polygon[]).length
+                        "
                         color="green"
                     >
                         mdi-tag-check
@@ -82,7 +98,9 @@
         <v-snackbar :color="snackbar.color" v-model="snackbar.show">
             {{ snackbar.text }}
             <template v-slot:actions>
-                <v-btn variant="text" @click="snackbar.show = false">Close</v-btn>
+                <v-btn variant="text" @click="snackbar.show = false"
+                    >Close</v-btn
+                >
             </template>
         </v-snackbar>
     </v-card>
@@ -92,13 +110,14 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import QuerySettings from '../components/QuerySettings.vue'
 import { ANNOTATION_FIELD } from '@/config'
 import axios from '@/axios'
 import type { Polygon } from '@/composables/useBaseMode'
 
-const storageApiUrl = import.meta.env.VITE_STORAGE_SERVICE_API_URL
-const displayedFieldsEnv = import.meta.env.VITE_DISPLAYED_FIELDS
+import runtimeEnv from '@/runtimeEnv'
+
+const storageApiUrl = runtimeEnv.VITE_STORAGE_SERVICE_API_URL
+const displayedFieldsEnv = runtimeEnv.VITE_DISPLAYED_FIELDS
 
 interface AnnotationItem {
     _id: string
@@ -128,10 +147,31 @@ const tableItemsPerPage = ref(10)
 
 const snackbar = ref({ show: false, text: '', color: 'green' })
 
-const query = computed(() => route.query)
+const query = computed<Record<string, any>>({
+    get() {
+        return route.query as Record<string, any>
+    },
+    set(val) {
+        const newQuery: Record<string, any> = {}
+
+        // prune empty values, like setQueryParams does
+        Object.entries(val || {}).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                newQuery[key] = value
+            }
+        })
+
+        const currentQuery = route.query as Record<string, any>
+        if (JSON.stringify(currentQuery) === JSON.stringify(newQuery)) return
+
+        router.replace({ query: newQuery })
+    },
+})
 
 const displayed_fields = computed<string[]>(() => {
-    const raw = displayedFieldsEnv ? displayedFieldsEnv.split(',') : fields.value
+    const raw = displayedFieldsEnv
+        ? displayedFieldsEnv.split(',')
+        : fields.value
     return raw.filter((f) => f !== annotation_field)
 })
 
@@ -202,18 +242,17 @@ function format_date(item: AnnotationItem) {
 
 function annotation_summary(annotation: Polygon[]) {
     if (!Array.isArray(annotation)) return []
-    return annotation.reduce<Array<{ label: string | undefined; count: number }>>(
-        (acc, item) => {
-            let found = acc.find((x) => x.label === item.label)
-            if (!found) {
-                found = { label: item.label, count: 0 }
-                acc.push(found)
-            }
-            found.count++
-            return acc
-        },
-        []
-    )
+    return annotation.reduce<
+        Array<{ label: string | undefined; count: number }>
+    >((acc, item) => {
+        let found = acc.find((x) => x.label === item.label)
+        if (!found) {
+            found = { label: item.label, count: 0 }
+            acc.push(found)
+        }
+        found.count++
+        return acc
+    }, [])
 }
 
 function image_src(item: AnnotationItem) {
@@ -225,9 +264,18 @@ function handleMenuItemClick(index: number) {
     else if (index === 1) annotate_all_items()
 }
 
-function handleQueryItemClick(_event: MouseEvent, row: { item: AnnotationItem; index: number }) {
+function handleQueryItemClick(
+    _event: MouseEvent,
+    row: { item: AnnotationItem; index: number }
+) {
     const document_id = row.item._id
-    const { skip = 0, limit = 50, sort = 'time', order = 1, ...rest } = query.value
+    const {
+        skip = 0,
+        limit = 50,
+        sort = 'time',
+        order = 1,
+        ...rest
+    } = query.value
     const cursor = Number(skip) + Number(row.index)
     router.push({
         name: 'annotate',
@@ -270,18 +318,27 @@ function unannotate_all_items() {
 
 function save_bulk_annotation(body: Record<string, unknown>) {
     let params: Record<string, unknown> = { ...query.value }
-    if (selected.value.length > 0) params = { ...params, ids: selectedIds.value }
+    if (selected.value.length > 0)
+        params = { ...params, ids: selectedIds.value }
     loading.value = true
     axios
         .patch('/images', body, { params })
         .then(() => {
-            snackbar.value = { show: true, text: 'Items annotation successful', color: 'green' }
+            snackbar.value = {
+                show: true,
+                text: 'Items annotation successful',
+                color: 'green',
+            }
             get_items()
         })
         .catch((error) => {
             if (error.response) console.error(error.response.data)
             else console.error(error)
-            snackbar.value = { show: true, text: 'Error, see console for details', color: '#c00000' }
+            snackbar.value = {
+                show: true,
+                text: 'Error, see console for details',
+                color: '#c00000',
+            }
         })
         .finally(() => {
             loading.value = false

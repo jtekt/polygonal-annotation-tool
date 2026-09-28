@@ -1,7 +1,10 @@
 <template>
-    <AppTemplate :options="options" @user="store.set_current_user($event as any)">
+    <AppTemplate
+        :options="options"
+        @user="store.set_current_user($event as any)"
+    >
         <template v-slot:nav>
-            <v-list density="compact" nav>
+            <v-list nav>
                 <v-list-item>
                     <LocaleSelector />
                 </v-list-item>
@@ -36,21 +39,22 @@ import NavCategories from './components/NavCategories.vue'
 import { useAppStore } from './store'
 import jtektLogoNegative from '@/assets/jtekt_logo_negative.jpg'
 import jtektLogo from '@/assets/jtekt_logo.jpg'
+import runtimeEnv from '@/runtimeEnv'
 
 const store = useAppStore()
 const route = useRoute()
 
 const options = {
     title: 'Polygonal annotation tool',
-    login_url: import.meta.env.VITE_LOGIN_URL,
-    identification_url: import.meta.env.VITE_IDENTIFICATION_URL,
-    login_hint: import.meta.env.VITE_LOGIN_HINT,
-    homepage_url: import.meta.env.VITE_HOMEPAGE_URL,
+    login_url: runtimeEnv.VITE_LOGIN_URL,
+    identification_url: runtimeEnv.VITE_IDENTIFICATION_URL,
+    login_hint: runtimeEnv.VITE_LOGIN_HINT,
+    homepage_url: runtimeEnv.VITE_HOMEPAGE_URL,
     oidc: {
-        authority: import.meta.env.VITE_OIDC_AUTHORITY,
-        client_id: import.meta.env.VITE_OIDC_CLIENT_ID,
+        authority: runtimeEnv.VITE_OIDC_AUTHORITY,
+        client_id: runtimeEnv.VITE_OIDC_CLIENT_ID,
         extraQueryParams: {
-            audience: import.meta.env.VITE_OIDC_AUDIENCE,
+            audience: runtimeEnv.VITE_OIDC_AUDIENCE,
         },
     },
     header_logo: jtektLogoNegative,

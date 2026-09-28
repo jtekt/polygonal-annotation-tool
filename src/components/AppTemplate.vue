@@ -2,11 +2,20 @@
     <v-app>
         <v-app-bar :color="options.colors?.app_bar ?? 'primary'" elevation="0">
             <v-app-bar-nav-icon @click="drawer = !drawer" />
-            <v-toolbar-title style="color: white">{{ options.title }}</v-toolbar-title>
+            <v-toolbar-title style="color: white">{{
+                options.title
+            }}</v-toolbar-title>
             <v-spacer />
-            <span v-if="currentUser" style="color: white; font-size: 0.85em" class="mr-2">
+            <span
+                v-if="currentUser"
+                style="color: white; font-size: 0.85em"
+                class="mr-2"
+            >
                 {{ currentUser }}
             </span>
+            <template #append>
+                <ThemeToggle />
+            </template>
         </v-app-bar>
 
         <v-navigation-drawer v-model="drawer" :permanent="lgAndUp">
@@ -25,6 +34,7 @@
 import { ref, onMounted } from 'vue'
 import { useDisplay } from 'vuetify'
 import axios from '@/axios'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 
 interface AppOptions {
     title?: string
@@ -55,7 +65,10 @@ onMounted(async () => {
     try {
         const { data } = await axios.get(props.options.identification_url)
         currentUser.value =
-            data?.properties?.display_name ?? data?.display_name ?? data?.username ?? null
+            data?.properties?.display_name ??
+            data?.display_name ??
+            data?.username ??
+            null
         emit('user', data)
     } catch {
         // Not authenticated — continue without user
