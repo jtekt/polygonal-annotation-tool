@@ -1,7 +1,10 @@
 <template>
-    <AppTemplate :options="options" @user="store.set_current_user($event as any)">
+    <AppTemplate
+        :options="options"
+        @user="store.set_current_user($event as any)"
+    >
         <template v-slot:nav>
-            <v-list density="compact" nav>
+            <v-list nav>
                 <v-list-item>
                     <LocaleSelector />
                 </v-list-item>
