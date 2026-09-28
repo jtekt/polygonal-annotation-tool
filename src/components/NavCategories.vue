@@ -27,8 +27,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import axios from '@/axios'
+import runtimeEnv from '@/runtimeEnv'
 
-const field_name = import.meta.env.VITE_CATEGORIZER || ''
+const field_name = runtimeEnv.VITE_CATEGORIZER || ''
 const fieldValues = ref<string[]>([])
 
 onMounted(async () => {

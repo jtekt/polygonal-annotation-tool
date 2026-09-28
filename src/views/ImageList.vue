@@ -1,13 +1,15 @@
 <template>
     <v-card>
-        <v-toolbar flat>
-            <v-toolbar-title>Images</v-toolbar-title>
-            <v-spacer />
+        <template #title> Images </template>
+
+        <template #append>
             <v-menu :close-on-content-click="true">
                 <template v-slot:activator="{ props: menuProps }">
-                    <v-btn icon v-bind="menuProps">
-                        <v-icon>mdi-dots-vertical</v-icon>
-                    </v-btn>
+                    <v-btn
+                        icon="mdi-dots-vertical"
+                        v-bind="menuProps"
+                        variant="text"
+                    />
                 </template>
                 <v-list>
                     <v-list-item
@@ -19,11 +21,14 @@
                     />
                 </v-list>
             </v-menu>
-        </v-toolbar>
-        <v-divider />
+        </template>
         <v-card-text>
             <v-container fluid>
-                <QuerySettings :fields="displayed_fields" />
+                <QueryFilter
+                    v-model="query"
+                    :fields="displayed_fields"
+                    :loading="loading"
+                />
             </v-container>
 
             <v-data-table-server
@@ -58,10 +63,7 @@
 
                 <template v-slot:item.annotation="{ item }">
                     <v-icon
-                        v-if="
-                            item.data[annotation_field] === null ||
-                            item.data[annotation_field] === undefined
-                        "
+                        v-if="!item.data || !item.data[annotation_field]"
                         color="#c00000"
                     >
                         mdi-tag-off
@@ -108,13 +110,14 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import QuerySettings from '../components/QuerySettings.vue'
 import { ANNOTATION_FIELD } from '@/config'
 import axios from '@/axios'
 import type { Polygon } from '@/composables/useBaseMode'
 
-const storageApiUrl = import.meta.env.VITE_STORAGE_SERVICE_API_URL
-const displayedFieldsEnv = import.meta.env.VITE_DISPLAYED_FIELDS
+import runtimeEnv from '@/runtimeEnv'
+
+const storageApiUrl = runtimeEnv.VITE_STORAGE_SERVICE_API_URL
+const displayedFieldsEnv = runtimeEnv.VITE_DISPLAYED_FIELDS
 
 interface AnnotationItem {
     _id: string
@@ -144,7 +147,26 @@ const tableItemsPerPage = ref(10)
 
 const snackbar = ref({ show: false, text: '', color: 'green' })
 
-const query = computed(() => route.query)
+const query = computed<Record<string, any>>({
+    get() {
+        return route.query as Record<string, any>
+    },
+    set(val) {
+        const newQuery: Record<string, any> = {}
+
+        // prune empty values, like setQueryParams does
+        Object.entries(val || {}).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                newQuery[key] = value
+            }
+        })
+
+        const currentQuery = route.query as Record<string, any>
+        if (JSON.stringify(currentQuery) === JSON.stringify(newQuery)) return
+
+        router.replace({ query: newQuery })
+    },
+})
 
 const displayed_fields = computed<string[]>(() => {
     const raw = displayedFieldsEnv
