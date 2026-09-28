@@ -1,9 +1,6 @@
 stages:
     - build
     - deploy
-image: moreillon/tdd-dind
-services:
-    - name: docker:19.03.12-dind
 
 variables:
     APPLICATION_NAME: polygonal-annotation-tool
@@ -13,13 +10,9 @@ variables:
 
 build:
     stage: build
-    only:
-        - tags
-    tags:
-        - dind
+    rules:
+        - if: $CI_COMMIT_TAG =~ /^v[12]\./
     before_script:
-        # Registry login
-        - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${AWS_ECR_PUBLIC_URL}
         # Create repository in ECR if it does not exist yet
         - >
             aws ecr-public create-repository --region us-east-1 --repository-name ${APPLICATION_NAME}
@@ -34,14 +27,12 @@ build:
         - docker push ${CONTAINER_IMAGE_TAGGED}
 
 deploy:
-  stage: deploy
-  only:
-    - tags
-  tags:
-    - internal
-  script:
-    - envsubst < kubernetes_manifest.yml | kubectl apply -f -
-  environment:
-    name: onpremise
-    kubernetes:
-      namespace: ${K8S_NAMESPACE}
+    stage: deploy
+    rules:
+        - if: $CI_COMMIT_TAG =~ /^v[12]\./
+    tags:
+        - internal
+    script:
+        - kubectl config use-context on-premise-gpu-k8s-cluster/gitlab-agent-for-kubernetes:gpu-microk8s
+        - kubectl config set-context --current --namespace=${K8S_NAMESPACE}
+        - envsubst < kubernetes_manifest.yml | kubectl apply -f -
