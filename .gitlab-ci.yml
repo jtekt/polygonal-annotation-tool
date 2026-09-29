@@ -11,8 +11,7 @@ variables:
 build:
     stage: build
     rules:
-        # Only build and push images for tags that start with v0., v1., or v2. in preparation for vue3
-        - if: $CI_COMMIT_TAG =~ /^v[0-2]\./
+        - if: $CI_COMMIT_TAG =~ /^v3\./
     before_script:
         # Create repository in ECR if it does not exist yet
         - >
@@ -20,7 +19,7 @@ build:
             || echo "Repository might have already existed"
     script:
         # Building image
-        - docker build -t ${CONTAINER_IMAGE} .
+        - docker build --build-arg APP_VERSION=${CI_COMMIT_TAG} -t ${CONTAINER_IMAGE} .
         # Tagging images
         - docker tag ${CONTAINER_IMAGE} ${CONTAINER_IMAGE_TAGGED}
         # Pushing images
@@ -30,7 +29,7 @@ build:
 deploy:
     stage: deploy
     rules:
-        - if: $CI_COMMIT_TAG =~ /^v[0-2]\./
+        - if: $CI_COMMIT_TAG =~ /^v3\./
     tags:
         - internal
     script:

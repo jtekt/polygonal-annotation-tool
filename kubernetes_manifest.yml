@@ -16,13 +16,13 @@ spec:
                 - name: polygonal-annotation-tool
                   image: ${CONTAINER_IMAGE_TAGGED}
                   env:
-                      - name: VUE_APP_STORAGE_SERVICE_API_URL
+                      - name: VITE_STORAGE_SERVICE_API_URL
                         value: http://172.16.98.153:30011/api
-                      - name: VUE_APP_ANNOTATION_FIELD
+                      - name: VITE_ANNOTATION_FIELD
                         value: polygonalAnnotation
-                      - name: VUE_APP_LABELS
+                      - name: VITE_LABELS
                         value: example
-                      - name: VUE_APP_DEFAULT_LABEL
+                      - name: VITE_DEFAULT_LABEL
                         value: example
                   ports:
                       - containerPort: 80
@@ -35,7 +35,7 @@ metadata:
 spec:
     ports:
         - port: 80
-          nodePort: 30444
+          nodePort: 30446
     selector:
         app: polygonal-annotation-tool
     type: NodePort
