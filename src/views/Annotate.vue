@@ -182,12 +182,8 @@
                     <PolygonEditor
                         v-show="showAnnotations"
                         @polygonCreated="polygonCreated"
-                        :modelValue="
-                            (item.data[annotation_field] as Polygon[]) || []
-                        "
-                        @update:modelValue="
-                            item!.data[annotation_field] = $event
-                        "
+                        :modelValue="(item.data?.[annotation_field] ?? []) as Polygon[]"
+                        @update:modelValue="updateAnnotations($event)"
                         :width="imageSize.naturalWidth"
                         :height="imageSize.naturalHeight"
                         :mode="mode_lookup[mode_index]"
@@ -210,7 +206,7 @@
                                     class="text-center my-5"
                                     style="color: #c00000"
                                     v-if="
-                                        !item.data[annotation_field] ||
+                                        !item.data?.[annotation_field] ||
                                         !(
                                             item.data[
                                                 annotation_field
@@ -227,16 +223,14 @@
                                 <v-data-table
                                     v-else-if="
                                         Array.isArray(
-                                            item.data[annotation_field]
+                                            item.data?.[annotation_field]
                                         )
                                     "
                                     hide-default-footer
                                     :items-per-page="-1"
                                     :loading="loading"
                                     :items="
-                                        (item.data[
-                                            annotation_field
-                                        ] as Polygon[]) || []
+                                        item.data[annotation_field] as Polygon[]
                                     "
                                     :headers="annotationHeaders"
                                     disable-sort
@@ -444,12 +438,12 @@ const query = computed(() => route.query)
 
 const displayed_fields = computed<string[]>(() => {
     if (displayedFieldsEnv) return displayedFieldsEnv.split(',')
-    if (!item.value) return []
+    if (!item.value?.data) return []
     return Object.keys(item.value.data)
 })
 
 const hidden_fields = computed(() => {
-    if (!item.value) return []
+    if (!item.value?.data) return []
     return Object.keys(item.value.data).filter(
         (f) => !displayed_fields.value.includes(f)
     )
@@ -649,6 +643,12 @@ function delete_single_annotation(index: number) {
     if (!annotations) return
     annotations.splice(index, 1)
     selected_annotation.value = -1
+}
+
+function updateAnnotations(value: Polygon[]) {
+    if (!item.value) return
+    if (!item.value.data) item.value.data = {}
+    item.value.data[annotation_field] = value
 }
 
 function polygonCreated() {
