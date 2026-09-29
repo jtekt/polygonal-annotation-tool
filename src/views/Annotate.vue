@@ -176,9 +176,7 @@
 
         <v-row v-else class="mt-2">
             <v-col cols="12" :lg="fullscreen ? 12 : 6">
-                <v-card
-                    class="image_wrapper"
-                >
+                <v-card class="image_wrapper">
                     <!-- This wrapper gets the same size as the img -->
                     <!-- The actual image -->
                     <img
@@ -200,7 +198,7 @@
                     <PolygonEditor
                         v-show="showAnnotations"
                         @polygonCreated="polygonCreated()"
-                        v-model="item.data[annotation_field]"
+                        v-model="annotations"
                         :width="image.naturalWidth"
                         :height="image.naturalHeight"
                         :mode="mode_lookup[mode_index]"
@@ -223,7 +221,7 @@
                                 <div
                                     class="text-center my-5"
                                     style="color: #c00000"
-                                    v-if="!item.data[annotation_field]"
+                                    v-if="!annotations || !annotations.length"
                                 >
                                     <v-icon left color="#c00000"
                                         >mdi-tag-off</v-icon
@@ -236,7 +234,7 @@
                                     hide-default-footer
                                     :itemsPerPage="-1"
                                     :loading="loading"
-                                    :items="item.data[annotation_field]"
+                                    :items="annotations"
                                     :headers="headers"
                                     disable-sort
                                 >
@@ -403,7 +401,7 @@ export default {
     },
     data() {
         return {
-            loading: false,
+            loading: true,
             fullscreen: false,
             item: null,
 
@@ -468,7 +466,7 @@ export default {
         },
         unannotate() {
             // Completely remove the annotation field, marking the item as not annotated yet
-            if (!this.item.data[this.annotation_field]) return
+            if (!this.annotations || !this.annotations.length) return
             if (!confirm('Mark the item unannotated?')) return
 
             this.$set(this.item.data, this.annotation_field, null)
@@ -478,8 +476,8 @@ export default {
             // Empty the annotation array but keep the field
             // Might not be used
             if (
-                this.item.data[this.annotation_field] &&
-                this.item.data[this.annotation_field].length &&
+                this.annotations &&
+                this.annotations.length &&
                 !confirm('ホンマ？')
             )
                 return
@@ -623,11 +621,8 @@ export default {
         },
 
         save_item() {
-            const annotations = this.item.data[this.annotation_field]
-
-            for (let i = 0; i < annotations.length; i++) {
-                const element = annotations[i]
-
+            for (let i = 0; i < this.annotations.length; i++) {
+                const element = this.annotations[i]
                 if (element.open) {
                     this.snackbar.show = true
                     this.snackbar.text = `Annotation ${element.label} is still open`
@@ -646,7 +641,7 @@ export default {
 
             const route = `/images/${this.document_id}`
             const body = {
-                [this.annotation_field]: this.item.data[this.annotation_field],
+                [this.annotation_field]: this.annotations,
             }
 
             const { current_user } = this.$store.state
@@ -717,7 +712,7 @@ export default {
         },
         delete_single_annotation(index) {
             if (!confirm(`Delete polygon ${index}?`)) return
-            this.item.data[this.annotation_field].splice(index, 1)
+            this.annotations.splice(index, 1)
             this.selected_annotation = -1
         },
         object_equals(x, y) {
@@ -733,16 +728,23 @@ export default {
         },
         polygonCreated() {
             // Assign default label
-            const lastItem =
-                this.item.data[this.annotation_field][
-                    this.item.data[this.annotation_field].length - 1
-                ]
+            const lastItem = this.annotations[this.annotations.length - 1]
             lastItem.label = VUE_APP_DEFAULT_LABEL
         },
     },
     computed: {
         annotation_field() {
             return ANNOTATION_FIELD
+        },
+        annotations: {
+            get() {
+                if (!this.item || !this.item.data) return []
+                return this.item.data[this.annotation_field] || []
+            },
+            set(value) {
+                if (!this.item || !this.item.data) return
+                this.$set(this.item.data, this.annotation_field, value)
+            },
         },
         document_id() {
             return this.$route.params.document_id
@@ -761,9 +763,11 @@ export default {
         displayed_fields() {
             if (VUE_APP_DISPLAYED_FIELDS)
                 return VUE_APP_DISPLAYED_FIELDS.split(',')
+            if (!this.item || !this.item.data) return []
             return Object.keys(this.item.data)
         },
         hidden_fields() {
+            if (!this.item || !this.item.data) return []
             return Object.keys(this.item.data).filter(
                 (field) => !this.displayed_fields.includes(field)
             )
