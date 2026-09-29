@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    name: polygonal-annotation-tool
+    name: polygonal-annotation-tool-legacy
 spec:
     replicas: 1
     selector:
         matchLabels:
-            app: polygonal-annotation-tool
+            app: polygonal-annotation-tool-legacy
     template:
         metadata:
             labels:
-                app: polygonal-annotation-tool
+                app: polygonal-annotation-tool-legacy
         spec:
             containers:
-                - name: polygonal-annotation-tool
+                - name: polygonal-annotation-tool-legacy
                   image: ${CONTAINER_IMAGE_TAGGED}
                   env:
                       - name: VUE_APP_STORAGE_SERVICE_API_URL
@@ -31,11 +31,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-    name: polygonal-annotation-tool
+    name: polygonal-annotation-tool-legacy
 spec:
     ports:
         - port: 80
           nodePort: 30444
     selector:
-        app: polygonal-annotation-tool
+        app: polygonal-annotation-tool-legacy
     type: NodePort
