@@ -35,7 +35,7 @@ metadata:
 spec:
     ports:
         - port: 80
-          nodePort: 30444
+          nodePort: 30446
     selector:
         app: polygonal-annotation-tool-legacy
     type: NodePort
