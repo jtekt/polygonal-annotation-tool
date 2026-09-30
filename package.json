@@ -11,6 +11,7 @@
     "dependencies": {
         "@mdi/font": "7.4.47",
         "@jtekt/iss-query-filters": "^0.4.5",
+        "@jtekt/vuetify-auth": "^0.3.3",
         "axios": "^1.6.0",
         "clipper-lib": "^6.4.2",
         "pinia": "^3.0.0",
