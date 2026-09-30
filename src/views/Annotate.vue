@@ -370,10 +370,10 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useOptionalAuth } from '@/composables/useOptionalAuth'
 import PolygonEditor from '@/components/PolygonEditor.vue'
 import KeyboardShortcuts from '@/components/KeyboardShortcuts.vue'
 import { ANNOTATION_FIELD } from '@/config'
-import { useAppStore } from '@/store'
 import axios from '@/axios'
 import type { Polygon } from '@/composables/useBaseMode'
 import runtimeEnv from '@/runtimeEnv'
@@ -395,7 +395,8 @@ interface AnnotationItem {
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
-const store = useAppStore()
+const { session } = useOptionalAuth()
+const current_user_id = computed<string | undefined>(() => session.value?.user.id)
 
 const annotation_field = ANNOTATION_FIELD
 const loading = ref(true)
@@ -611,9 +612,7 @@ function save_item() {
     const body: Record<string, unknown> = {
         [annotation_field]: item.value.data[annotation_field],
     }
-    const current_user = store.current_user
-    if (current_user)
-        body.annotator_id = current_user._id ?? current_user.properties?._id
+    if (current_user_id.value) body.annotator_id = current_user_id.value
 
     axios
         .patch(`/images/${document_id.value}`, body)

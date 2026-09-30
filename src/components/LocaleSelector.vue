@@ -5,6 +5,7 @@
         prepend-inner-icon="mdi-translate"
         variant="outlined"
         hide-details
+        density="compact"
     />
 </template>
 
